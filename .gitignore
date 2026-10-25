@@ -1,0 +1,34 @@
+# He dieu hanh, editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Bi mat (giu lai .env.example)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Log va anh bao cao tu agent
+*.log
+/screenshots/
+
+# Java / Maven
+target/
+*.class
+hs_err_pid*
+
+# Maven di kem trong thu muc infra (nang, khong can dua len)
+infra/apache-maven-*/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log
+expo-env.d.ts

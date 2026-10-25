@@ -1,0 +1,30 @@
+export const APP_NAME = 'E-Shop';
+
+export const STRINGS = {
+  APP_NAME,
+  SEARCH_PLACEHOLDER: 'Search products',
+  CATEGORIES: 'Categories',
+  BEST_SALES: 'Best Sales',
+  POPULAR: 'Popular',
+  RECOMMENDED: 'Recommended for you',
+  SHOP_NOW: 'Shop now',
+  UP_TO: 'Up to',
+  OFF: 'OFF',
+  ADD_TO_CART: 'Add to Cart',
+  BUY_NOW: 'Buy Now',
+  SELECT_VARIANT: 'Select Variant',
+  CONFIRM: 'Confirm',
+  QUANTITY: 'Quantity',
+  DESCRIPTION: 'Description',
+  REVIEWS: 'Reviews',
+  VIEW_ALL_REVIEWS: 'View all reviews',
+  RELATED_PRODUCTS: 'Related Products',
+  FILTER: 'Filter',
+  PRICE_RANGE: 'Price Range',
+  MIN_PRICE: 'Min price',
+  MAX_PRICE: 'Max price',
+  APPLY: 'Apply',
+  RESET: 'Reset',
+  NO_PRODUCTS_FOUND: 'No products found',
+};
+

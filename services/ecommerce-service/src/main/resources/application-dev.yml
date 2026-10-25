@@ -1,0 +1,6 @@
+# Dev profile - override cho môi trường phát triển
+logging:
+  level:
+    com.team.ecommerce: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

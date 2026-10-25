@@ -1,0 +1,296 @@
+# Quy chuẩn dự án – Đề tài 4: E-Commerce Marketplace
+
+Tài liệu này là "luật chơi" chung của nhóm: phạm vi, công nghệ, kiến trúc, quy ước code, kiểm thử, triển khai. Mọi quyết định kỹ thuật phải bám theo tài liệu này; muốn đổi thì sửa tài liệu trước.
+
+---
+
+## 1. Mục tiêu và phạm vi
+
+**Mục tiêu:** Xây dựng sàn thương mại điện tử dạng mobile app theo đủ 6 giai đoạn SDLC (Requirement, Design, Implementation, Testing, Deployment, Maintenance), có kiến trúc chịu tải cao và số liệu đo chứng minh.
+
+**Sản phẩm nộp:** tài liệu SDLC (SRS, SDS, test report, hướng dẫn cài đặt), prototype/MVP chạy được, source code + hướng dẫn triển khai, slide báo cáo.
+
+### Phạm vi MVP (bắt buộc)
+Luồng chính: **Xem sản phẩm → Tìm/Lọc → Chi tiết → Giỏ hàng → Thanh toán → Đánh giá**.
+
+| Nhóm | Chức năng |
+|---|---|
+| Tài khoản | Đăng ký, đăng nhập, hồ sơ cơ bản |
+| Trang chủ | Danh mục, banner khuyến mãi, "Recommended for you" |
+| Danh sách | Dạng List và Grid, tab Best Sales / Best Matched / Popular, phân trang |
+| Tìm kiếm & lọc | Search, lọc theo shipping, khoảng giá, đánh giá từ N sao, 30-day return, Best Deal |
+| Chi tiết SP | Ảnh, giá, rating, mô tả, review, chọn màu/size/số lượng, sản phẩm liên quan |
+| Giỏ hàng | Thêm/sửa/xóa, nhập voucher, tổng tiền |
+| Thanh toán | Chọn Visa/Maestro/PayPal (giả lập), tạo đơn, màn kết quả |
+| Đánh giá | Chọn cảm xúc, tag, nhận xét, upload ảnh, chấm sao |
+
+### Ngoài MVP (làm nếu còn thời gian)
+Favorites, Inbox/chat, Ship to store, Buyer Protection, thông báo đẩy khuyến mãi, Seller portal, MongoDB.
+
+### Actor
+Buyer (chính), Admin (quản lý sản phẩm/voucher/đơn), Seller (mở rộng, tùy chọn), Hệ thống thanh toán giả lập (actor ngoài).
+
+---
+
+## 2. Công nghệ chốt (Tech stack)
+
+| Tầng | Công nghệ | Ghi chú |
+|---|---|---|
+| Mobile | **React Native (Expo) + TypeScript** | React Navigation, Axios, **React Query** (cache/đồng bộ), Zustand hoặc Redux Toolkit, SecureStore (lưu JWT) |
+| Backend | **Java 21 + Spring Boot 3.x** | Spring Web, Spring Data JPA, Spring Security + JWT, Validation, Actuator |
+| API Gateway | **Spring Cloud Gateway** | Route, kiểm JWT, rate limit (Redis) |
+| CSDL chính | **MySQL 8** | Mỗi service một schema riêng |
+| Cache / giỏ hàng / tồn kho | **Redis** | Cache-aside, trừ kho nguyên tử, rate limit |
+| Message broker | **Apache Kafka** | Giao tiếp bất đồng bộ giữa service |
+| Tìm kiếm | **Elasticsearch** | Search + filter (đọc), nguồn sự thật vẫn là MySQL |
+| Load balancer | **Nginx** | Chia tải nhiều instance, HTTPS |
+| Đóng gói | **Docker + Docker Compose** | Chạy toàn bộ stack bằng 1 lệnh |
+| CI/CD | **GitHub Actions** | Build, test, build image, deploy lên VPS |
+| Giám sát | **Prometheus + Grafana (+ Zipkin tùy chọn)** | Micrometer/Actuator xuất số đo |
+| Kiểm thử tải | **k6** | Số liệu cho báo cáo Testing |
+| Tài liệu API | **springdoc-openapi (Swagger UI)** | Tự sinh từ code |
+| Test | JUnit 5, Mockito, MockMvc, Testcontainers; Jest + React Native Testing Library; Postman collection | |
+| Hạ tầng chạy thật | **VPS Linux (Ubuntu)** | Khuyến nghị 4 vCPU, 8 GB RAM, 60 GB SSD |
+| Công cụ SDLC | draw.io/PlantUML/StarUML, dbdiagram.io, Figma (tham khảo UI), GitHub Projects/Issues | |
+
+### Quyết định về MongoDB: **KHÔNG dùng trong MVP**
+Lý do:
+1. Dữ liệu cốt lõi (user, đơn, tiền, tồn kho) cần ACID, hợp với MySQL.
+2. Thuộc tính sản phẩm linh hoạt (size, màu, cấu hình) xử lý được bằng **cột JSON của MySQL 8** + Elasticsearch cho tìm kiếm.
+3. Thêm một loại DB làm tăng RAM trên VPS, công cài đặt, backup và test, trong khi môn học chấm nặng ở app mobile và quy trình SDLC.
+4. Đã có sẵn đủ 4 "công nghệ xịn" nổi bật: Redis, Kafka, Elasticsearch, Nginx/Docker.
+
+Điều kiện để thêm MongoDB (Giai đoạn mở rộng): MVP đã chạy ổn, k6 đã có số liệu, còn thời gian. Khi đó chỉ chuyển **review/feedback kèm ảnh** sang MongoDB, tuyệt đối không đưa đơn hàng và thanh toán sang.
+
+---
+
+## 3. Kiến trúc
+
+```
+React Native app
+      │ HTTPS / REST (JSON)
+   Nginx (load balancer, SSL)
+      │
+   Spring Cloud Gateway (route, JWT, rate limit)
+      │
+ ┌────┴──────────┬────────────────┬───────────────┐
+ Auth service  Product service  Order service  Payment service
+      │              │               │               │
+      └──────── Kafka (event bus) ─────┴───────────────┘
+ MySQL (schema riêng mỗi service) · Redis · Elasticsearch
+ Prometheus + Grafana giám sát · k6 bắn tải · GitHub Actions CI/CD
+```
+
+### Trách nhiệm service
+
+| Service | Cổng | Trách nhiệm | Schema |
+|---|---|---|---|
+| gateway | 8080 | Định tuyến, xác thực JWT, rate limit | – |
+| auth-service | 8081 | Đăng ký/đăng nhập, cấp JWT, hồ sơ, địa chỉ | `auth_db` |
+| product-service | 8082 | Danh mục, sản phẩm, biến thể, review, đồng bộ sang Elasticsearch | `product_db` |
+| order-service | 8083 | Giỏ hàng, voucher, tính tiền, tạo đơn, trạng thái đơn | `order_db` |
+| payment-service | 8084 | Thanh toán giả lập, lưu giao dịch | `payment_db` |
+
+### Quy tắc kiến trúc
+1. **Service không được đọc bảng/schema của service khác.** Cần dữ liệu thì gọi REST hoặc nhận event Kafka.
+2. Giao tiếp **đồng bộ** (REST/OpenFeign) cho truy vấn cần trả lời ngay; **bất đồng bộ** (Kafka) cho việc xử lý sau đặt hàng.
+3. **MySQL là nguồn sự thật.** Redis và Elasticsearch chỉ là bản sao phục vụ tốc độ; mất đi có thể dựng lại.
+4. Mọi lời gọi giữa service có **timeout + retry + circuit breaker** (Resilience4j).
+5. **Lộ trình tách service:** bắt đầu bằng modular monolith (một app Spring Boot, chia package `auth`, `product`, `order`, `payment` theo đúng ranh giới trên), khi luồng chính chạy ổn mới tách thành 4 service. Ranh giới package phải giống hệt ranh giới service để tách không phải viết lại.
+
+### Kafka topic
+| Topic | Producer | Consumer | Ý nghĩa |
+|---|---|---|---|
+| `order.created` | order | payment, product | Đơn mới, chờ thanh toán |
+| `payment.completed` | payment | order | Thanh toán thành công |
+| `payment.failed` | payment | order, product | Thất bại, hoàn lại tồn kho |
+| `product.updated` | product | (indexer) | Đồng bộ sang Elasticsearch |
+
+**Saga tối thiểu:** `PENDING_PAYMENT → PAID` hoặc `→ CANCELLED` (kèm hoàn kho khi `payment.failed`). Consumer phải **idempotent** (xử lý trùng event không gây sai).
+
+---
+
+## 4. Quy tắc nghiệp vụ
+
+1. **Công thức tiền:**
+   `Subtotal = Σ(giá × số lượng)`
+   `Discount = giảm giá từ voucher (nếu hợp lệ)`
+   `Tax = 10% × (Subtotal − Discount)`
+   `Total = Subtotal − Discount + Tax + Fees`
+   Ví dụ từ thiết kế: 2.800 + 280 thuế + 0 phí = **3.080**.
+2. Tiền lưu bằng `DECIMAL(12,2)`, **không dùng float/double**. Đơn vị USD, định dạng hiển thị thống nhất `$2,800.00`.
+3. Tồn kho **không được âm.** Trừ kho nguyên tử bằng Redis (`DECR`/Lua) trước khi tạo đơn; hết hàng thì từ chối ngay.
+4. Voucher: có mã, loại (phần trăm/cố định), hạn dùng, giới hạn lượt dùng, đơn tối thiểu; mỗi đơn dùng tối đa 1 voucher.
+5. Đơn hàng có vòng đời: `PENDING_PAYMENT → PAID → SHIPPING → DELIVERED`, hoặc `CANCELLED`.
+6. Chỉ người đã mua và đơn `DELIVERED` mới được review sản phẩm đó (mỗi đơn mỗi sản phẩm một review).
+7. Thanh toán chỉ **giả lập** (mock hoặc PayPal Sandbox/Stripe Test Mode). Tuyệt đối không lưu số thẻ thật; chỉ lưu 4 số cuối và loại thẻ.
+
+---
+
+## 5. Cấu trúc repo (monorepo)
+
+```
+ecommerce/
+├─ mobile-app/            # React Native (Expo, TypeScript)
+├─ services/
+│  ├─ gateway/
+│  ├─ auth-service/
+│  ├─ product-service/
+│  ├─ order-service/
+│  └─ payment-service/    # (giai đoạn đầu: gộp trong 1 app, chia package)
+├─ infra/
+│  ├─ docker-compose.yml  # mysql, redis, kafka, elasticsearch, nginx, prometheus, grafana
+│  ├─ nginx/  prometheus/  grafana/
+├─ load-test/             # script k6
+├─ docs/                  # SRS, SDS, UML, ERD, test report, hướng dẫn
+├─ .github/workflows/     # CI/CD
+└─ README.md              # hướng dẫn chạy nhanh
+```
+
+---
+
+## 6. Quy ước code
+
+### Chung
+- Đặt tên **tiếng Anh**; comment/tài liệu có thể tiếng Việt.
+- Mỗi hàm/lớp một trách nhiệm; không copy-paste logic; không để code chết, `console.log`/`System.out` rác.
+- Không commit secret (mật khẩu, JWT secret, API key). Dùng biến môi trường và file `.env.example`.
+
+### Backend (Java / Spring Boot)
+- Phân tầng bắt buộc: `controller → service → repository`; controller **không** chứa nghiệp vụ, **không** trả entity trực tiếp (dùng DTO).
+- Package theo tính năng: `com.team.ecommerce.<module>.{controller,service,repository,entity,dto,config}`.
+- Chuẩn đặt tên: lớp `PascalCase`, hàm/biến `camelCase`, hằng `UPPER_SNAKE_CASE`.
+- Dùng Bean Validation (`@Valid`), xử lý lỗi tập trung bằng `@RestControllerAdvice`.
+- Công cụ chuẩn hóa: Checkstyle hoặc Spotless (Google Java Style), chạy trong CI.
+- Migration CSDL bằng **Flyway**; không sửa schema bằng tay, không dùng `ddl-auto=update` ngoài môi trường dev.
+
+### Mobile (React Native / TypeScript)
+- `strict: true` trong tsconfig; **không dùng `any`** trừ khi có lý do ghi chú.
+- Cấu trúc theo tính năng: `src/features/{auth,home,product,cart,checkout,review}/{screens,components,hooks,api}`.
+- Component hàm + hooks; file component `PascalCase.tsx`, hook `useXxx.ts`.
+- Mọi gọi API đi qua một lớp `api/` dùng Axios + React Query; không gọi API thẳng trong component.
+- Danh sách dài dùng `FlatList` + phân trang; ảnh tối ưu và lazy load.
+- Công cụ: ESLint + Prettier, chạy trong CI.
+- Địa chỉ API qua biến cấu hình: emulator Android dùng `10.0.2.2`, máy thật dùng IP LAN hoặc domain VPS.
+
+### Quy ước API
+- REST, JSON, tiền tố `/api/v1`. Danh từ số nhiều: `/products`, `/orders`.
+- Mã trạng thái đúng nghĩa: 200, 201, 204, 400, 401, 403, 404, 409, 429, 500.
+- **Mọi danh sách phải phân trang** (`page`, `size`, `sort`); không bao giờ trả toàn bộ bảng.
+- Định dạng lỗi thống nhất: `{ "timestamp", "status", "code", "message", "path" }`.
+- Xác thực: header `Authorization: Bearer <JWT>`; access token ngắn hạn + refresh token.
+- Tài liệu hóa bằng Swagger UI; mỗi endpoint có ví dụ request/response.
+
+### Quy ước CSDL
+- Bảng `snake_case` số nhiều (`order_items`); khóa chính `BIGINT AUTO_INCREMENT`; mọi bảng có `created_at`, `updated_at` (UTC).
+- Khóa ngoại và **index** cho các cột lọc/sắp xếp (category, price, rating, user_id, status).
+- Thuộc tính sản phẩm linh hoạt lưu cột `JSON`.
+- Xóa mềm (`deleted_at`) cho sản phẩm và tài khoản.
+
+---
+
+## 7. Quy trình làm việc (Git và quản lý công việc)
+
+- Nhánh: `main` (ổn định, luôn chạy được), `develop`, nhánh tính năng `feature/<module>-<mô-tả>`, sửa lỗi `fix/<mô-tả>`.
+- **Không push thẳng vào `main`.** Mọi thay đổi qua Pull Request, cần CI xanh và ít nhất 1 người review.
+- Commit theo Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`.
+- Mỗi tính năng/lỗi là một GitHub Issue; lỗi phát hiện ở giai đoạn Maintenance ghi bằng Issue gắn nhãn `bug` hoặc `improvement` (dùng cho báo cáo).
+
+---
+
+## 8. Kiểm thử
+
+| Loại | Phạm vi | Công cụ | Yêu cầu |
+|---|---|---|---|
+| Unit test | Service, hàm tính tiền, validate, voucher | JUnit 5 + Mockito; Jest | Phủ logic nghiệp vụ chính (mục tiêu ≥ 60% ở lớp service) |
+| Integration test | Controller + DB + Redis/Kafka thật | MockMvc + **Testcontainers** | Mỗi luồng chính có ít nhất 1 test |
+| API test | Toàn bộ endpoint | Postman collection (xuất file nộp kèm) | |
+| UI test (tùy chọn) | Luồng mua hàng trên app | Maestro hoặc Detox | |
+| **Load test** | Xem SP, tìm kiếm, đặt hàng | **k6** | Có số liệu **trước/sau Redis**, xem mục 9 |
+
+- Test case thiết kế theo bảng: ID, mô tả, điều kiện, bước, dữ liệu, kết quả mong đợi, kết quả thực tế, Pass/Fail.
+- Báo cáo test lưu trong `docs/test-report` kèm ảnh chụp kết quả.
+- **Test phải chạy tự động trong CI**; test đỏ thì không được merge.
+
+---
+
+## 9. Mục tiêu hiệu năng (kiểm bằng k6)
+
+| Chỉ số | Mục tiêu |
+|---|---|
+| Xem danh sách/chi tiết SP (có cache) | p95 < 200 ms |
+| Tìm kiếm + lọc (Elasticsearch) | p95 < 300 ms |
+| Đặt hàng | p95 < 800 ms |
+| Tỷ lệ lỗi | < 1% |
+| Tải thử | 1.000 → 5.000 người dùng ảo (trên máy/VPS của nhóm) |
+
+Báo cáo phải có bảng so sánh: **không cache vs có Redis**, **1 instance vs nhiều instance sau Nginx**, kèm biểu đồ Grafana. Nói rõ giới hạn phần cứng và phân tích cách mở rộng lên quy mô lớn (replica MySQL, Redis cluster, Kubernetes, thêm node).
+
+Kỹ thuật bắt buộc: index DB, phân trang, connection pool (HikariCP), Java 21 virtual threads, cache-aside với TTL, rate limit, chống bán vượt tồn kho.
+
+---
+
+## 10. Bảo mật
+
+- Mật khẩu băm bằng **BCrypt**, không lưu rõ.
+- JWT có hạn; kiểm tra quyền theo vai trò (Buyer/Admin) ở cả Gateway và service.
+- Validate mọi input ở backend; dùng truy vấn tham số hóa (JPA) để chống SQL injection.
+- Cấu hình CORS đúng; chỉ mở cổng 80/443 ra ngoài VPS, các cổng DB/Redis/Kafka chỉ trong mạng Docker.
+- HTTPS bằng Let's Encrypt khi có domain.
+- Secret lưu trong GitHub Secrets và `.env` trên VPS, không đưa vào repo.
+
+---
+
+## 11. Triển khai và CI/CD
+
+**Môi trường:** `local` (Docker Compose trên máy), `staging/demo` (VPS).
+
+**Pipeline GitHub Actions:**
+1. Mỗi PR: lint → build → unit test → integration test.
+2. Merge vào `main`: build Docker image → đẩy lên GitHub Container Registry.
+3. Deploy: SSH vào VPS, `docker compose pull && docker compose up -d`, kiểm tra health endpoint.
+4. Rollback: chạy lại image tag trước đó.
+
+**Hướng dẫn cài đặt (nộp kèm):** yêu cầu hệ thống, cách clone, tạo `.env`, `docker compose up`, cách chạy app (Expo Go hoặc build APK), tài khoản demo, dữ liệu mẫu (seed).
+
+---
+
+## 12. Ánh xạ sản phẩm theo SDLC
+
+| Giai đoạn | Sản phẩm bắt buộc |
+|---|---|
+| Requirement | SRS: người dùng giả định, use case, actor, yêu cầu chức năng/phi chức năng |
+| Design | SDS: kiến trúc, UML (Use Case, Class, Sequence, ERD), thiết kế API và Kafka event |
+| Implementation | Source code theo module, tuân thủ coding standard, README |
+| Testing | Test case, kết quả Unit/Integration test, báo cáo k6 |
+| Deployment | Hệ thống chạy trên VPS/giả lập, hướng dẫn cài đặt |
+| Maintenance | Danh sách lỗi đã ghi nhận, đề xuất cải tiến (Issue) |
+| Báo cáo | Slide nhóm, demo trực tiếp |
+
+---
+
+## 13. Lộ trình và cổng kiểm soát
+
+| Giai đoạn | Nội dung | Điều kiện qua cổng |
+|---|---|---|
+| 0 | SRS, use case, ERD, thiết kế API, chốt repo/CI cơ bản | Tài liệu được cả nhóm duyệt |
+| 1 | Backend lõi (modular monolith + MySQL) + app chạy luồng chính | Mua hàng end-to-end chạy được |
+| 2 | Redis (cache, giỏ hàng, tồn kho) | Có số liệu k6 trước/sau |
+| 3 | Docker Compose + Nginx nhiều instance | Chạy 1 lệnh lên cả hệ thống |
+| 4 | Kafka cho đặt hàng/thanh toán + Saga cơ bản | Đơn tự chuyển trạng thái đúng |
+| 5 | Elasticsearch cho search/filter | Tìm kiếm và lọc đạt mục tiêu p95 |
+| 6 | Tách microservice + Gateway, Prometheus/Grafana | Dashboard chạy, service độc lập |
+| 7 | CI/CD đầy đủ + lên VPS + báo cáo + slide | Demo trên VPS ổn định |
+
+**Quy tắc cổng:** chưa qua cổng trước thì không bắt đầu cổng sau. `main` luôn ở trạng thái demo được. Nếu hết thời gian, **dừng ở cổng gần nhất đã xong** và nộp, không nộp bản đang làm dở.
+
+### Phương án lùi (fallback)
+- Hết thời gian → bỏ bước 6 (giữ modular monolith, vẫn trình bày ranh giới service trong SDS).
+- VPS yếu (< 8 GB RAM) → bỏ Zipkin; nếu vẫn chật thì thay Elasticsearch bằng full-text index của MySQL.
+- Kafka quá nặng → thay bằng RabbitMQ, giữ nguyên các event và Saga.
+
+---
+
+## 14. Định nghĩa "Hoàn thành" (Definition of Done)
+
+Một tính năng chỉ được coi là xong khi: (1) code đã qua review và merge, (2) có unit/integration test và CI xanh, (3) API có trong Swagger, (4) cập nhật tài liệu liên quan (SRS/SDS/README), (5) chạy được trên môi trường demo.
