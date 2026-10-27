@@ -16,15 +16,14 @@ import { Typography, Button, Badge } from '../components/ui';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useProcessPayment, PaymentRequest } from '../hooks/useCart';
 import { formatVND } from '../utils/formatters';
-import { orderStorage } from '../utils/orderStorage';
 
 export default function PaymentScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'Payment'>>();
 
-  const orderId = route.params?.orderId || 1001;
-  const totalAmount = route.params?.total || 60.48;
-  const orderNumber = route.params?.orderNumber || `#EC${orderId}`;
+  const orderId = route.params?.orderId;
+  const totalAmount = route.params?.total ?? 0;
+  const orderNumber = route.params?.orderNumber ?? (orderId ? `#EC${orderId}` : '');
 
   const processPaymentMutation = useProcessPayment();
 
@@ -47,6 +46,10 @@ export default function PaymentScreen() {
 
   const handlePay = () => {
     setErrorMessage('');
+    if (!orderId) {
+      setErrorMessage('Không tìm thấy đơn hàng cần thanh toán. Hãy quay lại giỏ hàng và tạo đơn trước.');
+      return;
+    }
 
     if (method === 'PAYPAL') {
       if (!paypalEmail.includes('@')) {
@@ -76,13 +79,12 @@ export default function PaymentScreen() {
     };
 
     processPaymentMutation.mutate(payload, {
-      onSuccess: async (paymentResp) => {
-        await orderStorage.updateOrderStatus(orderId, 'WAITING_CONFIRMATION');
+      onSuccess: (paymentResp) => {
         navigation.navigate('Success', {
           orderId,
-          amount: paymentResp.amount || totalAmount,
+          amount: paymentResp.amount,
           paymentMethod: method,
-          cardLastFour: paymentResp.cardLastFour || cardNumber.replace(/\s+/g, '').slice(-4),
+          cardLastFour: paymentResp.cardLastFour,
           transactionId: paymentResp.transactionId,
         });
       },

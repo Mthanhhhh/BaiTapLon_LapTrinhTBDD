@@ -80,8 +80,10 @@ public class CartService {
             }
             CartItem newItem = CartItem.builder()
                     .cart(cart)
+                    .shopId(product.getShopId())
                     .productId(product.getId())
                     .variantId(request.getVariantId())
+                    .addedPrice(variant != null ? variant.getPrice() : product.getPrice())
                     .quantity(request.getQuantity())
                     .build();
             cartItemRepository.save(newItem);

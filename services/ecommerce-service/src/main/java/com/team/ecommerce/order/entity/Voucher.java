@@ -18,34 +18,35 @@ public class Voucher extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String code;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Convert(converter = VoucherTypeConverter.class)
+    @Column(name = "discount_type", nullable = false)
     private VoucherType type;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "discount_value", nullable = false, precision = 12, scale = 2)
     private BigDecimal value;
 
     @Column(name = "min_order_amount", precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal minOrderAmount = BigDecimal.ZERO;
 
-    @Column(name = "max_discount", precision = 12, scale = 2)
+    @Column(name = "max_discount_amount", precision = 12, scale = 2)
     private BigDecimal maxDiscount;
 
-    @Column(name = "usage_limit")
+    @Column(name = "total_quantity")
     private Integer usageLimit;
 
-    @Column(name = "used_count")
+    @Column(name = "used_quantity")
     @Builder.Default
     private int usedCount = 0;
 
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "starts_at", nullable = false)
     private LocalDateTime startDate;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "ends_at", nullable = false)
     private LocalDateTime endDate;
 
-    @Column(name = "is_active")
+    @Convert(converter = VoucherActiveStatusConverter.class)
+    @Column(name = "status", nullable = false)
     @Builder.Default
     private boolean isActive = true;
 

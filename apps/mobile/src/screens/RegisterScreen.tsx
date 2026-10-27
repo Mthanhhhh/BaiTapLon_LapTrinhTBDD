@@ -45,7 +45,6 @@ export default function RegisterScreen() {
       }
       
       await register(payload);
-      navigation.navigate('Main');
     } catch (err: any) {
       const appErr = err as AppError;
       if (appErr.fieldErrors) {

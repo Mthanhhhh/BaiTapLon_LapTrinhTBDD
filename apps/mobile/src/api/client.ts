@@ -1,7 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { Platform } from 'react-native';
 import { tokenStorage } from '../utils/tokenStorage';
 
-const baseURL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+const apiOrigin = (process.env.EXPO_PUBLIC_API_URL || (
+  Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080'
+)).replace(/\/+$/, '');
+const baseURL = apiOrigin;
 
 export const apiClient = axios.create({
   baseURL,
@@ -54,9 +58,7 @@ const processQueue = (error: any, token: string | null = null) => {
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await tokenStorage.getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    config.headers.Authorization = token ? `Bearer ${token}` : undefined;
     if (__DEV__) {
       const fullUrl = axios.getUri(config);
       console.log(`[API Request] ${config.method?.toUpperCase()} ${fullUrl}`);
@@ -95,8 +97,6 @@ apiClient.interceptors.response.use(
         const newRefreshToken = response.data.data.refreshToken;
         
         await tokenStorage.setTokens(newAccessToken, newRefreshToken);
-        apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-        
         processQueue(null, newAccessToken);
         
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

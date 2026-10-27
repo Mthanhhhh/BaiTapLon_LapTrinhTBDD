@@ -1,26 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../api/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
+import { apiClient } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { orderStorage } from '../utils/orderStorage';
 
 export type OrderStatus =
-  | 'PENDING_PAYMENT'      // Chờ thanh toán
-  | 'WAITING_CONFIRMATION' // Chờ xác nhận
-  | 'WAITING_PICKUP'       // Chờ lấy hàng
-  | 'SHIPPING'             // Chờ giao hàng (Đang giao)
-  | 'DELIVERED'            // Đã giao (Hoàn thành)
-  | 'RETURNED'             // Trả hàng / Hoàn tiền
-  | 'CANCELLED'            // Đã hủy
-  | 'PAID';                // Đang chuẩn bị
+  | 'PENDING_PAYMENT'
+  | 'WAITING_CONFIRMATION'
+  | 'WAITING_PICKUP'
+  | 'SHIPPING'
+  | 'DELIVERED'
+  | 'RETURNED'
+  | 'CANCELLED'
+  | 'PAID';
 
 export interface CartItemResponse {
   id: number;
   productId: number;
   productName: string;
-  productImage: string;
-  variantId?: number;
-  variantName?: string;
+  productImage: string | null;
+  variantId?: number | null;
+  variantName?: string | null;
   price: number;
   quantity: number;
   subtotal: number;
@@ -48,10 +47,10 @@ export interface AddressResponse {
 export interface OrderItemResponse {
   id: number;
   productId: number;
-  variantId?: number;
+  variantId?: number | null;
   productName: string;
-  productImage?: string;
-  variantName?: string;
+  productImage?: string | null;
+  variantName?: string | null;
   price: number;
   quantity: number;
   subtotal: number;
@@ -59,6 +58,7 @@ export interface OrderItemResponse {
 
 export interface OrderResponse {
   id: number;
+  orderNo?: string;
   userId: number;
   status: OrderStatus;
   items: OrderItemResponse[];
@@ -73,9 +73,11 @@ export interface OrderResponse {
   shippingPhone: string;
   shippingStreet: string;
   shippingCity: string;
+  shippingDistrict?: string;
   shippingCountry: string;
   note?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PaymentRequest {
@@ -101,54 +103,23 @@ export interface PaymentResponse {
   createdAt?: string;
 }
 
-// 1. Hook lấy giỏ hàng
+const cartKey = (userId?: number) => ['cart', userId] as const;
+const addressKey = (userId?: number) => ['addresses', userId] as const;
+
 export const useCart = () => {
   const { user } = useContext(AuthContext);
 
-  return useQuery({
-    queryKey: ['cart', user?.id || 'demo'],
-    queryFn: async (): Promise<CartResponse> => {
-      try {
-        const { data } = await apiClient.get('/api/v1/cart');
-        return data.data;
-      } catch (err) {
-        // Fallback demo cart nếu backend chưa có item hoặc offline
-        return {
-          id: 1,
-          items: [
-            {
-              id: 101,
-              productId: 1,
-              productName: 'Tai nghe chụp tai Bass Pro không dây',
-              productImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
-              variantId: 1,
-              variantName: 'Đen / Tiêu chuẩn',
-              price: 590000,
-              quantity: 1,
-              subtotal: 590000,
-            },
-            {
-              id: 102,
-              productId: 20,
-              productName: 'Đèn học LED 3 màu cảm ứng thông minh',
-              productImage: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500&q=80',
-              variantId: 20,
-              variantName: 'Trắng / 3 Chế độ sáng',
-              price: 228034,
-              quantity: 1,
-              subtotal: 228034,
-            },
-          ],
-          totalItems: 2,
-          totalAmount: 818034,
-        };
-      }
+  return useQuery<CartResponse>({
+    queryKey: cartKey(user?.id),
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await apiClient.get('/api/v1/cart');
+      return data.data as CartResponse;
     },
-    staleTime: 1000 * 15,
+    staleTime: 15_000,
   });
 };
 
-// 2. Thêm vào giỏ hàng
 export const useAddToCart = () => {
   const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
@@ -156,15 +127,12 @@ export const useAddToCart = () => {
   return useMutation({
     mutationFn: async (payload: { productId: number; variantId?: number; quantity: number }) => {
       const { data } = await apiClient.post('/api/v1/cart/items', payload);
-      return data.data;
+      return data.data as CartResponse;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart', user?.id || 'demo'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cartKey(user?.id) }),
   });
 };
 
-// 3. Cập nhật số lượng item trong giỏ
 export const useUpdateCartItem = () => {
   const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
@@ -172,15 +140,12 @@ export const useUpdateCartItem = () => {
   return useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: number; quantity: number }) => {
       const { data } = await apiClient.put(`/api/v1/cart/items/${itemId}`, { quantity });
-      return data.data;
+      return data.data as CartResponse;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart', user?.id || 'demo'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cartKey(user?.id) }),
   });
 };
 
-// 4. Xóa một item khỏi giỏ
 export const useRemoveCartItem = () => {
   const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
@@ -188,15 +153,12 @@ export const useRemoveCartItem = () => {
   return useMutation({
     mutationFn: async (itemId: number) => {
       const { data } = await apiClient.delete(`/api/v1/cart/items/${itemId}`);
-      return data.data;
+      return data.data as CartResponse;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart', user?.id || 'demo'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cartKey(user?.id) }),
   });
 };
 
-// 5. Xóa sạch giỏ hàng
 export const useClearCart = () => {
   const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
@@ -206,50 +168,23 @@ export const useClearCart = () => {
       const { data } = await apiClient.delete('/api/v1/cart');
       return data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart', user?.id || 'demo'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cartKey(user?.id) }),
   });
 };
 
-// 6. Hook lấy danh sách địa chỉ nhận hàng
 export const useAddresses = () => {
-  return useQuery({
-    queryKey: ['addresses'],
-    queryFn: async (): Promise<AddressResponse[]> => {
-      try {
-        const { data } = await apiClient.get('/api/v1/addresses');
-        if (data.data && data.data.length > 0) {
-          return data.data;
-        }
-      } catch (err) {
-        // demo fallback
-      }
-      return [
-        {
-          id: 1,
-          fullName: 'Nguyen Van A',
-          phone: '0901234567',
-          street: '123 Nguyen Hue Street, District 1',
-          city: 'Ho Chi Minh City',
-          country: 'Vietnam',
-          isDefault: true,
-        },
-        {
-          id: 2,
-          fullName: 'Nguyen Van A (Office)',
-          phone: '0901234567',
-          street: '456 Le Duan Boulevard, District 1',
-          city: 'Ho Chi Minh City',
-          country: 'Vietnam',
-          isDefault: false,
-        },
-      ];
+  const { user } = useContext(AuthContext);
+
+  return useQuery<AddressResponse[]>({
+    queryKey: addressKey(user?.id),
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await apiClient.get('/api/v1/addresses');
+      return (data.data ?? []) as AddressResponse[];
     },
   });
 };
 
-// 7. Tạo đơn hàng thực tế
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   const { user } = useContext(AuthContext);
@@ -260,114 +195,26 @@ export const useCreateOrder = () => {
       voucherCode?: string;
       note?: string;
       paymentMethod: string;
-    }): Promise<OrderResponse> => {
-      // Lấy danh sách sản phẩm thực từ giỏ hàng hiện tại
-      const cartData: CartResponse | undefined = queryClient.getQueryData(['cart', user?.id || 'demo']);
-      const currentItems: OrderItemResponse[] = (cartData?.items || []).map((ci) => ({
-        id: ci.id,
-        productId: ci.productId,
-        variantId: ci.variantId,
-        productName: ci.productName,
-        productImage: ci.productImage,
-        variantName: ci.variantName,
-        price: ci.price,
-        quantity: ci.quantity,
-        subtotal: ci.subtotal,
-      }));
-
-      const subtotal = currentItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
-      const discount = payload.voucherCode === 'WELCOME10'
-        ? subtotal * 0.1
-        : payload.voucherCode === 'SUMMER15'
-        ? subtotal * 0.15
-        : payload.voucherCode === 'FLAT20'
-        ? Math.min(subtotal, 20000)
-        : 0;
-      const taxable = Math.max(0, subtotal - discount);
-      const tax = taxable * 0.1;
-      const total = taxable + tax;
-
-      const isCod = payload.paymentMethod === 'COD';
-      const initialStatus: OrderStatus = isCod ? 'WAITING_CONFIRMATION' : 'PENDING_PAYMENT';
-
-      let createdOrder: OrderResponse;
-      try {
-        const { data } = await apiClient.post('/api/v1/orders', payload);
-        createdOrder = data.data;
-        if (!createdOrder.items || createdOrder.items.length === 0) {
-          createdOrder.items = currentItems;
-        }
-        createdOrder.paymentMethod = payload.paymentMethod;
-      } catch (err: any) {
-        createdOrder = {
-          id: Math.floor(1000 + Math.random() * 9000),
-          userId: user?.id || 1,
-          status: initialStatus,
-          items: currentItems,
-          subtotal,
-          discount,
-          tax,
-          fees: 0,
-          total,
-          paymentMethod: payload.paymentMethod,
-          voucherCode: payload.voucherCode,
-          shippingName: 'Nguyễn Văn An',
-          shippingPhone: '0901234567',
-          shippingStreet: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1',
-          shippingCity: 'TP. Hồ Chí Minh',
-          shippingCountry: 'Việt Nam',
-          note: payload.note,
-          createdAt: new Date().toISOString(),
-        };
-      }
-
-      // Lưu trữ đơn hàng thực tế vào local store để truy xuất tức thời và bền vững
-      await orderStorage.addOrder(createdOrder);
-
-      return createdOrder;
+    }) => {
+      const { data } = await apiClient.post('/api/v1/orders', payload);
+      return data.data as OrderResponse;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart', user?.id || 'demo'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: cartKey(user?.id) });
+      queryClient.invalidateQueries({ queryKey: ['orders', user?.id] });
     },
   });
 };
 
-// 8. Xử lý thanh toán (Payment -> COMPLETED / FAILED)
 export const useProcessPayment = () => {
   const queryClient = useQueryClient();
+  const { user } = useContext(AuthContext);
 
   return useMutation({
-    mutationFn: async (payload: PaymentRequest): Promise<PaymentResponse> => {
-      // Backend mock: nếu cardNumber kết thúc bằng 0000 -> Báo lỗi thất bại
-      if (payload.cardNumber && payload.cardNumber.replace(/\s+/g, '').endsWith('0000')) {
-        throw new Error('Payment failed (mocked). Card ending in 0000 was declined.');
-      }
-
-      try {
-        const { data } = await apiClient.post('/api/v1/payments', payload);
-        return data.data;
-      } catch (err: any) {
-        if (err.message && err.message.includes('Payment failed')) {
-          throw err;
-        }
-        // Fallback demo response nếu backend offline
-        const cleanCard = payload.cardNumber ? payload.cardNumber.replace(/\s+/g, '') : '1234';
-        return {
-          id: Math.floor(5000 + Math.random() * 5000),
-          orderId: payload.orderId,
-          method: payload.method,
-          status: 'COMPLETED',
-          amount: 60.48,
-          cardLastFour: cleanCard.slice(-4),
-          cardType: payload.method,
-          transactionId: 'TXN-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-          paidAt: new Date().toISOString(),
-        };
-      }
+    mutationFn: async (payload: PaymentRequest) => {
+      const { data } = await apiClient.post('/api/v1/payments', payload);
+      return data.data as PaymentResponse;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders', user?.id] }),
   });
 };

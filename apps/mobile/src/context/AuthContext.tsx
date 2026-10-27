@@ -40,29 +40,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
 
   const loadUser = async () => {
-    try {
-      setLoading(true);
-      const token = await tokenStorage.getAccessToken();
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      
-      const response = await apiClient.get('/api/v1/auth/me');
-      setUser(response.data.data);
-    } catch (error) {
-      console.log('Failed to load user', error);
+    const token = await tokenStorage.getAccessToken();
+    if (!token) {
       setUser(null);
-    } finally {
-      setLoading(false);
+      return null;
+    }
+
+    try {
+      const response = await apiClient.get('/api/v1/auth/me');
+      const currentUser = response.data.data as User;
+      setUser(currentUser);
+      return currentUser;
+    } catch (error) {
+      await tokenStorage.clearTokens();
+      setUser(null);
+      throw error;
     }
   };
 
   useEffect(() => {
-    loadUser();
+    loadUser()
+      .catch((error) => console.warn('Could not restore the saved session', error))
+      .finally(() => setLoading(false));
 
     const handleLogoutEvent = () => {
       setUser(null);
+      queryClient.clear();
     };
 
     if (typeof window !== 'undefined') {
@@ -82,7 +85,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await tokenStorage.setRememberMe(data.rememberMe);
     }
     await tokenStorage.setTokens(accessToken, refreshToken);
-    await loadUser();
+    try {
+      await loadUser();
+    } catch (error) {
+      await tokenStorage.clearTokens();
+      throw error;
+    }
   };
 
   const socialLogin = async (data: { provider: string; email?: string; fullName?: string; avatarUrl?: string; token?: string }) => {
@@ -107,7 +115,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await apiClient.post('/api/v1/auth/register', data);
     const { accessToken, refreshToken } = response.data.data;
     await tokenStorage.setTokens(accessToken, refreshToken);
-    await loadUser();
+    try {
+      await loadUser();
+    } catch (error) {
+      await tokenStorage.clearTokens();
+      throw error;
+    }
   };
 
   const logout = async () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -33,53 +33,23 @@ export default function CheckoutScreen() {
   const removeCartItemMutation = useRemoveCartItem();
   const createOrderMutation = useCreateOrder();
 
-  const [selectedAddressId, setSelectedAddressId] = useState<number>(1);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'COD' | 'VISA' | 'MAESTRO' | 'PAYPAL'>('COD');
-  const [voucherInput, setVoucherInput] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discount: number } | null>(null);
-  const [voucherError, setVoucherError] = useState('');
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'VISA' | 'MAESTRO' | 'PAYPAL'>('VISA');
   const [orderNote, setOrderNote] = useState('');
 
-  // Lấy địa chỉ đang chọn hoặc mặc định
-  const currentAddress = addresses?.find((a) => a.id === selectedAddressId) || addresses?.[0];
+  useEffect(() => {
+    if (selectedAddressId == null && addresses?.length) {
+      setSelectedAddressId(addresses.find((address) => address.isDefault)?.id ?? addresses[0].id);
+    }
+  }, [addresses, selectedAddressId]);
+
+  const currentAddress = addresses?.find((a) => a.id === selectedAddressId) ?? addresses?.find((a) => a.isDefault) ?? addresses?.[0];
 
   // Tính toán tổng tiền
   const subtotal = cart?.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-  const discountAmount = appliedVoucher ? appliedVoucher.discount : 0;
-  const taxableAmount = Math.max(0, subtotal - discountAmount);
-  const tax = taxableAmount * 0.1; // 10% tax
+  const tax = subtotal * 0.1; // Estimated; the server order response is authoritative.
   const shippingFee = 0; // Miễn phí vận chuyển
-  const total = taxableAmount + tax + shippingFee;
-
-  const handleApplyVoucher = () => {
-    const code = voucherInput.trim().toUpperCase();
-    if (!code) {
-      setVoucherError('Vui lòng nhập mã giảm giá');
-      return;
-    }
-
-    if (code === 'WELCOME10') {
-      const discount = subtotal * 0.1;
-      setAppliedVoucher({ code: 'WELCOME10', discount });
-      setVoucherError('');
-    } else if (code === 'FLAT20') {
-      const discount = 20000;
-      setAppliedVoucher({ code: 'FLAT20', discount: Math.min(subtotal, discount) });
-      setVoucherError('');
-    } else if (code === 'SUMMER15') {
-      const discount = subtotal * 0.15;
-      setAppliedVoucher({ code: 'SUMMER15', discount });
-      setVoucherError('');
-    } else {
-      setVoucherError('Mã không hợp lệ. Hãy thử: WELCOME10, FLAT20 hoặc SUMMER15');
-    }
-  };
-
-  const handleRemoveVoucher = () => {
-    setAppliedVoucher(null);
-    setVoucherInput('');
-    setVoucherError('');
-  };
+  const total = subtotal + tax + shippingFee;
 
   const handleQuantityChange = (itemId: number, currentQty: number, delta: number) => {
     const newQty = currentQty + delta;
@@ -89,6 +59,10 @@ export default function CheckoutScreen() {
         { text: 'Xóa ngay', style: 'destructive', onPress: () => removeCartItemMutation.mutate(itemId) },
       ]);
     } else {
+      if (newQty > 99) {
+        Alert.alert('Vượt giới hạn', 'Mỗi sản phẩm chỉ được đặt tối đa 99 sản phẩm.');
+        return;
+      }
       updateCartItemMutation.mutate({ itemId, quantity: newQty });
     }
   };
@@ -98,30 +72,24 @@ export default function CheckoutScreen() {
       Alert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm vào giỏ hàng trước khi đặt hàng.');
       return;
     }
+    if (!currentAddress) {
+      Alert.alert('Thiếu địa chỉ nhận hàng', 'Hãy thêm địa chỉ giao hàng trong mục Tài khoản trước khi đặt hàng.');
+      return;
+    }
 
     createOrderMutation.mutate(
       {
-        addressId: currentAddress?.id || 1,
-        voucherCode: appliedVoucher?.code,
+        addressId: currentAddress.id,
         note: orderNote.trim(),
         paymentMethod: selectedPaymentMethod,
       },
       {
         onSuccess: (order) => {
-          if (selectedPaymentMethod === 'COD') {
-            navigation.navigate('Success', {
-              orderId: order.id,
-              amount: order.total || total,
-              paymentMethod: 'COD',
-              transactionId: `COD-${order.id}`,
-            });
-          } else {
-            navigation.navigate('Payment', {
-              orderId: order.id,
-              total: order.total || total,
-              orderNumber: `#EC${order.id}`,
-            });
-          }
+          navigation.navigate('Payment', {
+            orderId: order.id,
+            total: order.total,
+            orderNumber: order.orderNo ? `#${order.orderNo}` : `#EC${order.id}`,
+          });
         },
         onError: (err: any) => {
           Alert.alert('Lỗi đặt hàng', err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
@@ -246,57 +214,6 @@ export default function CheckoutScreen() {
           )}
         </View>
 
-        {/* Section 3: Voucher Code */}
-        <View style={styles.card}>
-          <Typography variant="md" weight="bold" style={{ marginBottom: spacing.sm }}>
-            Mã giảm giá & Khuyến mãi
-          </Typography>
-          <View style={styles.voucherInputRow}>
-            <TextInput
-              placeholder="VD: WELCOME10, FLAT20, SUMMER15"
-              placeholderTextColor={COLORS.muted}
-              value={voucherInput}
-              onChangeText={(text) => {
-                setVoucherInput(text);
-                setVoucherError('');
-              }}
-              style={styles.voucherInput}
-              autoCapitalize="characters"
-            />
-            <Button
-              title="Áp dụng"
-              variant="primary"
-              size="sm"
-              onPress={handleApplyVoucher}
-              style={{ minWidth: 80 }}
-            />
-          </View>
-
-          {voucherError ? (
-            <Typography variant="xs" color="danger" style={{ marginTop: 4 }}>
-              {voucherError}
-            </Typography>
-          ) : null}
-
-          {appliedVoucher ? (
-            <View style={styles.appliedVoucherRow}>
-              <View style={styles.voucherTag}>
-                <Ionicons name="pricetag" size={14} color={COLORS.primaryDeep} />
-                <Typography variant="xs" weight="bold" color="primaryDeep" style={{ marginLeft: 4 }}>
-                  {appliedVoucher.code} (-{formatVND(appliedVoucher.discount)})
-                </Typography>
-              </View>
-              <TouchableOpacity onPress={handleRemoveVoucher} activeOpacity={0.7}>
-                <Ionicons name="close-circle" size={18} color={COLORS.danger} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <Typography variant="xs" color="muted" style={{ marginTop: spacing.xs }}>
-              Gợi ý: Dùng mã WELCOME10 (giảm 10%) hoặc SUMMER15 (giảm 15%).
-            </Typography>
-          )}
-        </View>
-
         {/* Section 4: Payment Method */}
         <View style={styles.card}>
           <Typography variant="md" weight="bold" style={{ marginBottom: spacing.sm }}>
@@ -304,7 +221,6 @@ export default function CheckoutScreen() {
           </Typography>
           {(
             [
-              { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', icon: 'cash-outline' },
               { id: 'VISA', label: 'Thẻ Quốc Tế Visa', icon: 'card-outline' },
               { id: 'MAESTRO', label: 'Thẻ Ghi Nợ Maestro', icon: 'card-outline' },
               { id: 'PAYPAL', label: 'Cổng Ví Điện Tử PayPal', icon: 'logo-paypal' },
@@ -371,17 +287,6 @@ export default function CheckoutScreen() {
             </Typography>
           </View>
 
-          {appliedVoucher ? (
-            <View style={styles.summaryRow}>
-              <Typography variant="sm" color="primaryDeep">
-                Giảm giá Voucher ({appliedVoucher.code})
-              </Typography>
-              <Typography variant="sm" weight="semiBold" color="primaryDeep">
-                -{formatVND(appliedVoucher.discount)}
-              </Typography>
-            </View>
-          ) : null}
-
           <View style={styles.summaryRow}>
             <Typography variant="sm" color="inkSoft">
               Thuế VAT (10%)
@@ -417,7 +322,7 @@ export default function CheckoutScreen() {
       <View style={styles.bottomBar}>
         <View>
           <Typography variant="xs" color="muted">
-            Tổng thanh toán
+            Tạm tính
           </Typography>
           <Typography variant="lg" weight="bold" color="primaryDeep">
             {formatVND(total)}
@@ -536,37 +441,6 @@ const styles = StyleSheet.create({
   emptyCartBox: {
     alignItems: 'center',
     paddingVertical: spacing.lg,
-  },
-  voucherInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  voucherInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    color: COLORS.ink,
-    marginRight: spacing.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  appliedVoucherRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    backgroundColor: COLORS.primarySoft,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-  },
-  voucherTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   paymentMethodOption: {
     flexDirection: 'row',

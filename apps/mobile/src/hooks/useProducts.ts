@@ -96,7 +96,7 @@ export const usePopular = () => {
   return useQuery<ProductListResponse[]>({
     queryKey: ['popular'],
     queryFn: async () => {
-      // Backend: /api/v1/products?sort=viewCount,desc (sorted by views as requested by B.1 & G.5)
+      // Backend: /products?sort=viewCount,desc (API client already includes /api/v1)
       const { data } = await apiClient.get('/api/v1/products', {
         params: { size: 10, sort: withStableSort(SORT_OPTIONS.POPULAR) },
       });

@@ -44,12 +44,21 @@ public class PaymentService {
         }
 
         Payment payment = existingPayment.orElseGet(() -> Payment.builder()
+                .paymentNo("PAY" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6).toUpperCase(java.util.Locale.ROOT))
                 .orderId(order.getId())
+                .orderNo(order.getOrderNo())
+                .userId(userId)
                 .method(request.getMethod())
+                .methodType(request.getMethod() == PaymentMethod.PAYPAL ? "PAYPAL" : "CARD")
+                .provider("MOCK")
+                .idempotencyKey(UUID.randomUUID().toString())
                 .status(PaymentStatus.PENDING)
                 .amount(order.getTotal())
                 .build());
 
+        payment.setMethod(request.getMethod());
+        payment.setMethodType(request.getMethod() == PaymentMethod.PAYPAL ? "PAYPAL" : "CARD");
+        payment.setProvider("MOCK");
         payment.setTransactionId(UUID.randomUUID().toString());
 
         if (request.getMethod() == PaymentMethod.VISA || request.getMethod() == PaymentMethod.MAESTRO) {
@@ -80,7 +89,6 @@ public class PaymentService {
                 throw new BadRequestException("Payment failed (mocked)");
             }
             payment.setCardLastFour(request.getCardNumber().substring(request.getCardNumber().length() - 4));
-            payment.setCardType(request.getMethod().name());
         }
 
         payment.setStatus(PaymentStatus.COMPLETED);
@@ -92,7 +100,9 @@ public class PaymentService {
         return PaymentResponse.from(payment);
     }
 
-    public PaymentResponse getPaymentByOrderId(Long orderId) {
+    public PaymentResponse getPaymentByOrderId(Long userId, Long orderId) {
+        // Verify that the requested order belongs to the authenticated user before exposing payment details.
+        orderService.getOrderById(userId, orderId);
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", "orderId", orderId));
         return PaymentResponse.from(payment);

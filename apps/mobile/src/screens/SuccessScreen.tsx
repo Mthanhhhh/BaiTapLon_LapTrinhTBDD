@@ -17,11 +17,11 @@ export default function SuccessScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'Success'>>();
 
-  const orderId = route.params?.orderId || 1001;
-  const amount = route.params?.amount || 60.48;
-  const paymentMethod = route.params?.paymentMethod || 'VISA';
-  const cardLastFour = route.params?.cardLastFour || '1234';
-  const transactionId = route.params?.transactionId || 'TXN-8F92A1';
+  const orderId = route.params?.orderId;
+  const amount = route.params?.amount ?? 0;
+  const paymentMethod = route.params?.paymentMethod;
+  const cardLastFour = route.params?.cardLastFour;
+  const transactionId = route.params?.transactionId;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -37,7 +37,7 @@ export default function SuccessScreen() {
 
         {/* Title */}
         <Typography variant="xxl" weight="bold" align="center" style={{ marginTop: spacing.md }}>
-          Thanh toán thành công!
+          {paymentMethod === 'COD' ? 'Đặt hàng thành công!' : 'Thanh toán thành công!'}
         </Typography>
         <Typography variant="sm" color="inkSoft" align="center" style={{ marginTop: spacing.xs, marginHorizontal: spacing.lg }}>
           Đơn hàng của bạn đã được xác nhận và gửi tới người bán.
@@ -51,11 +51,11 @@ export default function SuccessScreen() {
                 Mã đơn hàng
               </Typography>
               <Typography variant="md" weight="bold" color="primaryDeep">
-                #EC{orderId}
+                {orderId ? `#EC${orderId}` : '—'}
               </Typography>
             </View>
             <Badge
-              label={paymentMethod === 'COD' ? 'ĐÃ ĐẶT HÀNG (COD)' : 'ĐÃ THANH TOÁN'}
+              label={paymentMethod === 'COD' ? 'ĐÃ ĐẶT HÀNG (COD)' : paymentMethod ? 'ĐÃ THANH TOÁN' : 'ĐÃ ĐẶT HÀNG'}
               variant="success"
             />
           </View>
@@ -69,18 +69,16 @@ export default function SuccessScreen() {
             <Typography variant="sm" weight="semiBold">
               {paymentMethod === 'COD'
                 ? 'Thanh toán khi nhận hàng (Tiền mặt)'
-                : `${paymentMethod} ${paymentMethod !== 'PAYPAL' ? `•••• ${cardLastFour}` : ''}`}
+                : paymentMethod ? `${paymentMethod} ${paymentMethod !== 'PAYPAL' && cardLastFour ? `•••• ${cardLastFour}` : ''}` : '—'}
             </Typography>
           </View>
 
-          <View style={styles.receiptRow}>
-            <Typography variant="sm" color="inkSoft">
-              Mã giao dịch
-            </Typography>
-            <Typography variant="xs" color="muted" weight="semiBold">
-              {transactionId}
-            </Typography>
-          </View>
+          {transactionId ? (
+            <View style={styles.receiptRow}>
+              <Typography variant="sm" color="inkSoft">Mã giao dịch</Typography>
+              <Typography variant="xs" color="muted" weight="semiBold">{transactionId}</Typography>
+            </View>
+          ) : null}
 
           <View style={styles.receiptRow}>
             <Typography variant="sm" color="inkSoft">

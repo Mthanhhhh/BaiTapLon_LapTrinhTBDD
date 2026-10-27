@@ -1,5 +1,6 @@
 package com.team.ecommerce.order.controller;
 
+import com.team.ecommerce.auth.service.AuthService;
 import com.team.ecommerce.order.dto.CreateOrderRequest;
 import com.team.ecommerce.order.dto.OrderResponse;
 import com.team.ecommerce.order.service.OrderService;
@@ -16,25 +17,25 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
-    private final Long MOCK_USER_ID = 1L; // To be replaced with actual auth principal
+    private final AuthService authService;
 
     @PostMapping
     public ApiResponse<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        return ApiResponse.success("Order created successfully", orderService.createOrder(MOCK_USER_ID, request));
+        return ApiResponse.success("Order created successfully", orderService.createOrder(authService.getCurrentUserId(), request));
     }
 
     @GetMapping
     public ApiResponse<PageResponse<OrderResponse>> getOrders(Pageable pageable) {
-        return ApiResponse.success(orderService.getOrders(MOCK_USER_ID, pageable));
+        return ApiResponse.success(orderService.getOrders(authService.getCurrentUserId(), pageable));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<OrderResponse> getOrderById(@PathVariable Long id) {
-        return ApiResponse.success(orderService.getOrderById(MOCK_USER_ID, id));
+        return ApiResponse.success(orderService.getOrderById(authService.getCurrentUserId(), id));
     }
 
     @PostMapping("/{id}/cancel")
     public ApiResponse<OrderResponse> cancelOrder(@PathVariable Long id) {
-        return ApiResponse.success("Order cancelled", orderService.cancelOrder(MOCK_USER_ID, id));
+        return ApiResponse.success("Order cancelled", orderService.cancelOrder(authService.getCurrentUserId(), id));
     }
 }

@@ -15,5 +15,6 @@ public class AddressInternalDTO {
     private String phone;
     private String street;
     private String city;
+    private String state;
     private String country;
 }

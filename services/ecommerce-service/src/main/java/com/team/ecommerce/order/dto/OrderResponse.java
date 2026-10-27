@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class OrderResponse {
     private Long id;
+    private String orderNo;
     private Long userId;
     private OrderStatus status;
     private List<OrderItemResponse> items;
@@ -31,6 +32,7 @@ public class OrderResponse {
     private String shippingPhone;
     private String shippingStreet;
     private String shippingCity;
+    private String shippingDistrict;
     private String shippingCountry;
     private String note;
     private LocalDateTime createdAt;
@@ -43,6 +45,7 @@ public class OrderResponse {
 
         return OrderResponse.builder()
                 .id(order.getId())
+                .orderNo(order.getOrderNo())
                 .userId(order.getUserId())
                 .status(order.getStatus())
                 .items(itemResponses)
@@ -56,6 +59,7 @@ public class OrderResponse {
                 .shippingPhone(order.getShippingPhone())
                 .shippingStreet(order.getShippingStreet())
                 .shippingCity(order.getShippingCity())
+                .shippingDistrict(order.getShippingDistrict())
                 .shippingCountry(order.getShippingCountry())
                 .note(order.getNote())
                 .createdAt(order.getCreatedAt())

@@ -16,6 +16,12 @@ import java.util.List;
 @Builder
 public class Order extends BaseEntity {
 
+    @Column(name = "order_no", nullable = false, unique = true, length = 32)
+    private String orderNo;
+
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 64)
+    private String idempotencyKey;
+
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
@@ -24,39 +30,49 @@ public class Order extends BaseEntity {
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_PAYMENT;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "subtotal_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
 
-    @Column(precision = 12, scale = 2)
+    @Column(name = "discount_amount", precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal discount = BigDecimal.ZERO;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "tax_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal tax;
 
-    @Column(precision = 12, scale = 2)
+    @Column(name = "service_fee", precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal fees = BigDecimal.ZERO;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
+
+    @Column(name = "payment_status", nullable = false)
+    @Builder.Default
+    private String paymentStatus = "UNPAID";
+
+    @Column(name = "payment_method_type")
+    private String paymentMethodType;
 
     @Column(name = "voucher_id")
     private Long voucherId;
 
-    @Column(name = "shipping_name")
+    @Column(name = "recipient_name", nullable = false)
     private String shippingName;
 
-    @Column(name = "shipping_phone")
+    @Column(name = "recipient_phone", nullable = false)
     private String shippingPhone;
 
-    @Column(name = "shipping_street")
+    @Column(name = "ship_address_line", nullable = false)
     private String shippingStreet;
 
-    @Column(name = "shipping_city")
+    @Column(name = "ship_province", nullable = false)
     private String shippingCity;
 
-    @Column(name = "shipping_country")
+    @Column(name = "ship_district", nullable = false)
+    private String shippingDistrict;
+
+    @Column(name = "ship_country", nullable = false, length = 2)
     private String shippingCountry;
 
     private String note;

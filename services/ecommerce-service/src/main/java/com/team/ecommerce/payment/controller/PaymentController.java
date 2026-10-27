@@ -1,5 +1,6 @@
 package com.team.ecommerce.payment.controller;
 
+import com.team.ecommerce.auth.service.AuthService;
 import com.team.ecommerce.payment.dto.PaymentRequest;
 import com.team.ecommerce.payment.dto.PaymentResponse;
 import com.team.ecommerce.payment.service.PaymentService;
@@ -14,15 +15,15 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final Long MOCK_USER_ID = 1L; // To be replaced with actual auth principal
+    private final AuthService authService;
 
     @PostMapping
     public ApiResponse<PaymentResponse> processPayment(@Valid @RequestBody PaymentRequest request) {
-        return ApiResponse.success("Payment processed successfully", paymentService.processPayment(MOCK_USER_ID, request));
+        return ApiResponse.success("Payment processed successfully", paymentService.processPayment(authService.getCurrentUserId(), request));
     }
 
     @GetMapping("/order/{orderId}")
     public ApiResponse<PaymentResponse> getPaymentByOrderId(@PathVariable Long orderId) {
-        return ApiResponse.success(paymentService.getPaymentByOrderId(orderId));
+        return ApiResponse.success(paymentService.getPaymentByOrderId(authService.getCurrentUserId(), orderId));
     }
 }

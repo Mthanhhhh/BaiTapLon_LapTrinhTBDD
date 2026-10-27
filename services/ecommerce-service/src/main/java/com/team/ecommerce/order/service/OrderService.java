@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Locale;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -86,6 +88,7 @@ public class OrderService {
 
             OrderItem orderItem = OrderItem.builder()
                     .productId(product.getId())
+                    .shopId(product.getShopId())
                     .variantId(cartItem.getVariantId())
                     .productName(product.getName())
                     .productImage(product.getThumbnailUrl())
@@ -113,6 +116,8 @@ public class OrderService {
         BigDecimal total = subtotal.subtract(discount).add(tax).add(fees);
 
         Order order = Order.builder()
+                .orderNo("EC" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6).toUpperCase(Locale.ROOT))
+                .idempotencyKey(UUID.randomUUID().toString())
                 .userId(userId)
                 .status(OrderStatus.PENDING_PAYMENT)
                 .subtotal(subtotal)
@@ -125,7 +130,9 @@ public class OrderService {
                 .shippingPhone(address.getPhone())
                 .shippingStreet(address.getStreet())
                 .shippingCity(address.getCity())
-                .shippingCountry(address.getCountry())
+                .shippingDistrict(address.getState() == null || address.getState().isBlank() ? address.getCity() : address.getState())
+                .shippingCountry(toCountryCode(address.getCountry()))
+                .paymentMethodType("PAYPAL".equalsIgnoreCase(request.getPaymentMethod()) ? "PAYPAL" : "CARD")
                 .note(request.getNote())
                 .build();
 
@@ -224,6 +231,9 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         order.setStatus(status);
+        if (status == OrderStatus.PAID) {
+            order.setPaymentStatus("PAID");
+        }
         order = orderRepository.save(order);
         
         String voucherCode = null;
@@ -234,5 +244,13 @@ public class OrderService {
             }
         }
         return OrderResponse.from(order, voucherCode);
+    }
+
+    private String toCountryCode(String country) {
+        if (country == null || country.isBlank()) return "VN";
+        String normalized = country.trim().toUpperCase(Locale.ROOT);
+        if (normalized.length() == 2) return normalized;
+        if (normalized.equals("UNITED STATES") || normalized.equals("UNITED STATES OF AMERICA")) return "US";
+        return "VN";
     }
 }

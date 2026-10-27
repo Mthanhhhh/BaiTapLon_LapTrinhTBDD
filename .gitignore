@@ -19,6 +19,7 @@ Thumbs.db
 target/
 *.class
 hs_err_pid*
+/.m2-cache/
 
 # Maven di kem trong thu muc infra (nang, khong can dua len)
 infra/apache-maven-*/

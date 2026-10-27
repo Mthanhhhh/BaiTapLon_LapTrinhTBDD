@@ -15,28 +15,49 @@ import java.time.LocalDateTime;
 @Builder
 public class Payment extends BaseEntity {
 
+    @Column(name = "payment_no", nullable = false, unique = true, length = 32)
+    private String paymentNo;
+
     @Column(name = "order_id", nullable = false)
     private Long orderId;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "method_brand")
     private PaymentMethod method;
 
-    @Enumerated(EnumType.STRING)
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(name = "order_no", nullable = false)
+    private String orderNo;
+
+    @Column(name = "method_type", nullable = false)
+    private String methodType;
+
+    @Column(name = "provider", nullable = false)
+    private String provider;
+
+    @Column(name = "idempotency_key", nullable = false, unique = true)
+    private String idempotencyKey;
+
+    @Convert(converter = PaymentStatusConverter.class)
     @Builder.Default
+    @Column(nullable = false)
     private PaymentStatus status = PaymentStatus.PENDING;
 
     @Column(precision = 12, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "card_last_four")
+    @Column(name = "method_last4")
     private String cardLastFour;
 
-    @Column(name = "card_type")
-    private String cardType;
-
-    @Column(name = "transaction_id", unique = true)
+    @Column(name = "provider_txn_id", unique = true)
     private String transactionId;
 
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
+
+    public String getCardType() {
+        return method == null ? null : method.name();
+    }
 }

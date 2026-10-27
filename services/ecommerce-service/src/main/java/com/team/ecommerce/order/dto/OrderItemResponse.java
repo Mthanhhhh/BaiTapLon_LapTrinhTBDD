@@ -33,7 +33,9 @@ public class OrderItemResponse {
                 .variantName(item.getVariantName())
                 .price(item.getPrice())
                 .quantity(item.getQuantity())
-                .subtotal(item.getSubtotal())
+                .subtotal(item.getSubtotal() != null
+                        ? item.getSubtotal()
+                        : item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .build();
     }
 }

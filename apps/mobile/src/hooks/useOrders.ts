@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { OrderResponse, OrderStatus } from './useCart';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { orderStorage } from '../utils/orderStorage';
 
 export interface PageResponse<T> {
@@ -36,42 +38,16 @@ export interface ReviewResponse {
 
 // Hook lấy danh sách đơn hàng thực tế
 export const useOrders = (page: number = 0, size: number = 20) => {
+  const { user } = useContext(AuthContext);
+
   return useQuery({
-    queryKey: ['orders', page, size],
+    queryKey: ['orders', user?.id, page, size],
+    enabled: !!user,
     queryFn: async (): Promise<PageResponse<OrderResponse>> => {
-      // 1. Lấy toàn bộ đơn hàng thực đã lưu trữ
-      const storedOrders = await orderStorage.getOrders();
-
-      // 2. Cố gắng lấy thêm đơn hàng từ API backend
-      let remoteOrders: OrderResponse[] = [];
-      try {
-        const res = await apiClient.get<any>(`/api/v1/orders?page=${page}&size=${size}&sort=createdAt,desc`);
-        if (res.data?.data?.content) {
-          remoteOrders = res.data.data.content;
-        }
-      } catch (err) {
-        // Backend offline hoặc không có mạng, sử dụng storedOrders
-      }
-
-      // 3. Hợp nhất đơn hàng: ưu tiên storedOrders nếu cùng ID (vì đã cập nhật trạng thái mới nhất)
-      const combinedMap = new Map<number, OrderResponse>();
-      remoteOrders.forEach((o) => combinedMap.set(o.id, o));
-      storedOrders.forEach((o) => combinedMap.set(o.id, o));
-
-      const merged = Array.from(combinedMap.values()).sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
+      const res = await apiClient.get<any>('/api/v1/orders', {
+        params: { page, size, sort: 'createdAt,desc' },
       });
-
-      return {
-        content: merged,
-        pageNo: 0,
-        pageSize: size,
-        totalElements: merged.length,
-        totalPages: 1,
-        last: true,
-      };
+      return res.data.data as PageResponse<OrderResponse>;
     },
   });
 };
@@ -81,13 +57,8 @@ export const useConfirmOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: number): Promise<OrderResponse> => {
-      try {
-        await apiClient.post(`/api/v1/orders/${orderId}/confirm`);
-      } catch (e) {
-        // ignore
-      }
-      const updated = await orderStorage.updateOrderStatus(orderId, 'WAITING_PICKUP');
-      return updated!;
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/confirm`);
+      return data.data as OrderResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -100,13 +71,8 @@ export const useShipOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: number): Promise<OrderResponse> => {
-      try {
-        await apiClient.post(`/api/v1/orders/${orderId}/ship`);
-      } catch (e) {
-        // ignore
-      }
-      const updated = await orderStorage.updateOrderStatus(orderId, 'SHIPPING');
-      return updated!;
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/ship`);
+      return data.data as OrderResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -119,13 +85,8 @@ export const useReceiveOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: number): Promise<OrderResponse> => {
-      try {
-        await apiClient.post(`/api/v1/orders/${orderId}/receive`);
-      } catch (e) {
-        // ignore
-      }
-      const updated = await orderStorage.updateOrderStatus(orderId, 'DELIVERED');
-      return updated!;
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/receive`);
+      return data.data as OrderResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -138,13 +99,8 @@ export const useReturnOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: number): Promise<OrderResponse> => {
-      try {
-        await apiClient.post(`/api/v1/orders/${orderId}/return`);
-      } catch (e) {
-        // ignore
-      }
-      const updated = await orderStorage.updateOrderStatus(orderId, 'RETURNED');
-      return updated!;
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/return`);
+      return data.data as OrderResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -157,13 +113,8 @@ export const useCancelOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: number): Promise<OrderResponse> => {
-      try {
-        await apiClient.post(`/api/v1/orders/${orderId}/cancel`);
-      } catch (e) {
-        // ignore
-      }
-      const updated = await orderStorage.updateOrderStatus(orderId, 'CANCELLED');
-      return updated!;
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/cancel`);
+      return data.data as OrderResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });

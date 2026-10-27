@@ -42,8 +42,8 @@ public class AddressService {
                 .phone(request.getPhone())
                 .street(request.getStreet())
                 .city(request.getCity())
-                .state(request.getState())
-                .country(request.getCountry())
+                .state(request.getState() == null || request.getState().isBlank() ? request.getCity() : request.getState())
+                .country(toCountryCode(request.getCountry()))
                 .zipCode(request.getZipCode())
                 .isDefault(request.isDefault())
                 .build();
@@ -64,8 +64,8 @@ public class AddressService {
         address.setPhone(request.getPhone());
         address.setStreet(request.getStreet());
         address.setCity(request.getCity());
-        address.setState(request.getState());
-        address.setCountry(request.getCountry());
+        address.setState(request.getState() == null || request.getState().isBlank() ? request.getCity() : request.getState());
+        address.setCountry(toCountryCode(request.getCountry()));
         address.setZipCode(request.getZipCode());
         address.setDefault(request.isDefault());
 
@@ -88,5 +88,14 @@ public class AddressService {
         
         address = addressRepository.save(address);
         return AddressResponse.from(address);
+    }
+
+    private String toCountryCode(String country) {
+        if (country == null || country.isBlank()) return "VN";
+        String normalized = country.trim().toUpperCase(java.util.Locale.ROOT);
+        if (normalized.length() == 2) return normalized;
+        if (normalized.equals("VIETNAM") || normalized.equals("VIỆT NAM")) return "VN";
+        if (normalized.equals("UNITED STATES") || normalized.equals("UNITED STATES OF AMERICA")) return "US";
+        return "VN";
     }
 }

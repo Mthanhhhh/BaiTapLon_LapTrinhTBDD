@@ -80,6 +80,7 @@ public class ProductInternalService {
                 product.getVariants().stream().mapToInt(ProductVariant::getStock).sum() : 0;
         return ProductInternalDTO.builder()
                 .id(product.getId())
+                .shopId(product.getShopId())
                 .name(product.getName())
                 .price(product.getMinPrice())
                 .thumbnailUrl(product.getThumbnailUrl())
