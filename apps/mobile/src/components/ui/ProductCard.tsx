@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { COLORS, radius, spacing, shadows } from '../../theme';
 import { Typography } from './Typography';
 import { Badge } from './Badge';
 import { Ionicons } from '@expo/vector-icons';
+import { RemoteImage } from './RemoteImage';
+import { formatVND, formatSoldVi, calculateShippingTime } from '../../utils/formatters';
 
 export interface ProductCardProps {
   id: number;
@@ -13,10 +15,14 @@ export interface ProductCardProps {
   thumbnailUrl?: string | null;
   rating?: number;
   soldCount?: number;
+  shopName?: string;
+  shopLocation?: string;
+  isShopOwner?: boolean;
+  isCheapest?: boolean;
   onPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
-
-import { RemoteImage } from './RemoteImage';
 
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   name,
@@ -25,15 +31,19 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   thumbnailUrl,
   rating,
   soldCount,
+  shopLocation = 'TP. Hồ Chí Minh',
+  isShopOwner = false,
+  isCheapest = false,
   onPress,
+  onEdit,
+  onDelete,
 }) => {
-  const formatPrice = (value: number) => {
-    return `$${value.toFixed(2)}`;
-  };
+  const discountPercent =
+    originalPrice && originalPrice > price
+      ? Math.round((1 - price / originalPrice) * 100)
+      : 0;
 
-  const discountPercent = originalPrice && originalPrice > price
-    ? Math.round((1 - price / originalPrice) * 100)
-    : 0;
+  const { timeText, isExpress } = calculateShippingTime(shopLocation);
 
   return (
     <TouchableOpacity
@@ -41,6 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       activeOpacity={0.9}
       onPress={onPress}
     >
+      {/* Product Image Box */}
       <View style={styles.imageContainer}>
         <RemoteImage
           sourceUrl={thumbnailUrl}
@@ -48,6 +59,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           style={styles.image}
           resizeMode="cover"
         />
+
+        {/* Freeship Badge Top-Right */}
+        <View style={styles.freeshipBadge}>
+          <Typography variant="xs" weight="bold" style={styles.freeshipText}>
+            Freeship 0Đ
+          </Typography>
+        </View>
+
+        {/* Discount Badge Top-Left */}
         {discountPercent > 0 && (
           <Badge
             label={`-${discountPercent}%`}
@@ -55,37 +75,103 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             style={styles.discountBadge}
           />
         )}
+
+        {/* Seller Quick Action Overlay */}
+        {isShopOwner && (
+          <View style={styles.sellerActionOverlay}>
+            <TouchableOpacity
+              style={[styles.sellerBtn, { backgroundColor: COLORS.primarySoft }]}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onEdit?.();
+              }}
+            >
+              <Ionicons name="create-outline" size={14} color={COLORS.primaryDeep} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.sellerBtn, { backgroundColor: COLORS.dangerSoft, marginLeft: 4 }]}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onDelete?.();
+              }}
+            >
+              <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
+
+      {/* Card Content Body */}
       <View style={styles.content}>
+        {/* Name with 2 lines max */}
         <Typography variant="sm" weight="medium" numberOfLines={2} style={styles.title}>
           {name}
         </Typography>
-        
+
+        {/* Promotional Tags */}
+        {isCheapest && (
+          <View style={styles.promoTagRow}>
+            <View style={styles.cheapestBadge}>
+              <Ionicons name="thumbs-up" size={10} color="#E53E3E" style={{ marginRight: 2 }} />
+              <Typography variant="xs" weight="bold" style={styles.cheapestText}>
+                Rẻ Vô Địch
+              </Typography>
+            </View>
+          </View>
+        )}
+
+        {/* Price Row: VNĐ formatted */}
         <View style={styles.priceContainer}>
-          <Typography variant="md" weight="bold" color="primaryDeep">
-            {formatPrice(price)}
+          <Typography variant="md" weight="bold" style={styles.priceText}>
+            {formatVND(price)}
           </Typography>
           {originalPrice && originalPrice > price && (
             <Typography variant="xs" color="muted" style={styles.originalPrice}>
-              {formatPrice(originalPrice)}
+              {formatVND(originalPrice)}
             </Typography>
           )}
         </View>
 
-        <View style={styles.footer}>
-          {rating !== undefined && (
+        {/* Rating and Sold count in Vietnamese */}
+        <View style={styles.ratingSoldRow}>
+          {rating !== undefined && rating > 0 && (
             <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={12} color={COLORS.star} />
-              <Typography variant="xs" color="inkSoft" style={styles.ratingText}>
+              <Ionicons name="star" size={11} color={COLORS.star} />
+              <Typography variant="xs" weight="bold" color="ink" style={styles.ratingText}>
                 {rating.toFixed(1)}
               </Typography>
             </View>
           )}
-          {soldCount !== undefined && (
-            <Typography variant="xs" color="muted">
-              {soldCount} sold
+          <Typography variant="xs" color="muted" numberOfLines={1} style={{ flex: 1, textAlign: 'right' }}>
+            {formatSoldVi(soldCount)}
+          </Typography>
+        </View>
+
+        {/* Delivery Time & Shop Location Row */}
+        <View style={styles.shippingRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons
+              name="car-outline"
+              size={12}
+              color={isExpress ? '#2F855A' : COLORS.inkSoft}
+              style={{ marginRight: 3 }}
+            />
+            <Typography
+              variant="xs"
+              style={[styles.shippingText, isExpress && { color: '#2F855A', fontWeight: '600' }]}
+              numberOfLines={1}
+            >
+              {timeText}
             </Typography>
-          )}
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="location-outline" size={11} color={COLORS.muted} style={{ marginRight: 2 }} />
+            <Typography variant="xs" color="muted" style={styles.locationText} numberOfLines={1}>
+              {shopLocation}
+            </Typography>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -95,59 +181,125 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     overflow: 'hidden',
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   imageContainer: {
+    position: 'relative',
     width: '100%',
     aspectRatio: 1,
     backgroundColor: COLORS.surfaceAlt,
-    position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
   },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+  freeshipBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#00B4D8',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  freeshipText: {
+    color: '#FFFFFF',
+    fontSize: 9,
   },
   discountBadge: {
     position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
+    top: 6,
+    left: 6,
+  },
+  sellerActionOverlay: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection: 'row',
+  },
+  sellerBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   content: {
     padding: spacing.sm,
   },
   title: {
-    marginBottom: spacing.xs,
-    minHeight: 40, // To keep grid aligned if title is 1 or 2 lines
+    minHeight: 36,
+    lineHeight: 18,
+    marginBottom: 4,
+    color: COLORS.ink,
+  },
+  promoTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  cheapestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    borderWidth: 0.8,
+    borderColor: '#FEB2B2',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 2,
+  },
+  cheapestText: {
+    color: '#E53E3E',
+    fontSize: 9,
   },
   priceContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
+  priceText: {
+    color: COLORS.primaryDeep,
+    fontSize: 15,
   },
   originalPrice: {
+    marginLeft: 6,
     textDecorationLine: 'line-through',
-    marginLeft: spacing.xs,
+    fontSize: 11,
   },
-  footer: {
+  ratingSoldRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 6,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   ratingText: {
-    marginLeft: 2,
+    marginLeft: 3,
+    fontSize: 11,
+  },
+  shippingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  shippingText: {
+    fontSize: 10,
+    color: COLORS.inkSoft,
+  },
+  locationText: {
+    fontSize: 10,
   },
 });
-

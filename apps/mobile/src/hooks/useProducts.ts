@@ -12,7 +12,11 @@ export interface ProductListResponse {
   ratingCount: number;
   soldCount: number;
   stock: number;
+  categoryId?: number;
   categoryName: string;
+  shopId?: number;
+  shopName?: string;
+  shopLocation?: string;
 }
 
 export interface ProductVariantResponse {
@@ -31,6 +35,9 @@ export interface ProductResponse {
   originalPrice?: number;
   categoryId: number;
   categoryName: string;
+  shopId?: number;
+  shopName?: string;
+  shopLocation?: string;
   thumbnailUrl: string | null;
   images: string[];
   stock: number;

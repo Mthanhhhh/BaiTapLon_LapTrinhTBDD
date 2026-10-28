@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.util.stream.Collectors;
 
@@ -41,6 +42,7 @@ public class ProductInternalService {
     }
 
     @Transactional(value = "productTransactionManager", propagation = Propagation.REQUIRES_NEW)
+    @CacheEvict(value = "products", key = "'id:' + #productId")
     public void deductStock(Long productId, Long variantId, int quantity) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
@@ -62,6 +64,7 @@ public class ProductInternalService {
     }
 
     @Transactional(value = "productTransactionManager", propagation = Propagation.REQUIRES_NEW)
+    @CacheEvict(value = "products", key = "'id:' + #productId")
     public void restoreStock(Long productId, Long variantId, int quantity) {
         if (variantId != null) {
             ProductVariant variant = productVariantRepository.findById(variantId).orElse(null);

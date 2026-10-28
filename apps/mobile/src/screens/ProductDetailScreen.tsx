@@ -33,6 +33,8 @@ import {
 import { useAddToCart, useCart } from '../hooks/useCart';
 import { AuthContext } from '../context/AuthContext';
 import { useContentWidth } from '../hooks/useContentWidth';
+import { searchHistory } from '../utils/searchHistory';
+import { formatVND, formatSoldVi, calculateShippingTime } from '../utils/formatters';
 
 const STANDARD_SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PREFERRED_COLOR_ORDER = ['Red', 'Orange', 'Blue'];
@@ -107,6 +109,12 @@ export default function ProductDetailScreen() {
 
   // Related products query (using categoryId from loaded product)
   const categoryId = product?.categoryId;
+
+  useEffect(() => {
+    if (categoryId) {
+      searchHistory.recordViewedCategory(categoryId);
+    }
+  }, [categoryId]);
   const { data: relatedData } = useProductsInfinite(categoryId ? { categoryId } : {});
   const relatedProducts = useMemo(() => {
     if (!relatedData || !product) return [];
@@ -117,6 +125,7 @@ export default function ProductDetailScreen() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVariantSheetVisible, setIsVariantSheetVisible] = useState(route.params?.sheet === 'true');
+  const [isBuyNowFlow, setIsBuyNowFlow] = useState(false);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -226,19 +235,9 @@ export default function ProductDetailScreen() {
     }
   }).current;
 
-  const handleOpenVariantSheet = () => {
-    setIsVariantSheetVisible(true);
-  };
-
   const currentStock = activeVariant ? activeVariant.stock : (product?.stock ?? 0);
 
-  const confirmAddToCart = () => {
-    if (!user) {
-      setIsVariantSheetVisible(false);
-      navigation.navigate('Login');
-      return;
-    }
-
+  const executeAddToCart = (isBuyNow: boolean) => {
     if (!product) return;
 
     addToCart(
@@ -250,9 +249,30 @@ export default function ProductDetailScreen() {
       {
         onSuccess: () => {
           setIsVariantSheetVisible(false);
+          if (isBuyNow) {
+            navigation.navigate('Checkout');
+          }
         },
       }
     );
+  };
+
+  const handleAddToCartClick = () => {
+    setIsBuyNowFlow(false);
+    if (variants.length > 1 && !isSingleDefault) {
+      setIsVariantSheetVisible(true);
+    } else {
+      executeAddToCart(false);
+    }
+  };
+
+  const handleBuyNowClick = () => {
+    setIsBuyNowFlow(true);
+    if (variants.length > 1 && !isSingleDefault) {
+      setIsVariantSheetVisible(true);
+    } else {
+      executeAddToCart(true);
+    }
   };
 
   // State 1: Skeleton Loading
@@ -299,7 +319,7 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const formatPrice = (val: number) => `$${val.toFixed(2)}`;
+  const formatPrice = (val: number) => formatVND(val);
   const description = product.description || 'No description available.';
   const isLongDesc = description.length > 160;
   const displayedDesc = isLongDesc && !isDescExpanded ? `${description.slice(0, 160)}...` : description;
@@ -400,18 +420,46 @@ export default function ProductDetailScreen() {
                 {product.rating ? Number(product.rating).toFixed(1) : '0.0'}
               </Typography>
               <Typography variant="sm" color="muted" style={{ marginLeft: 4 }}>
-                ({product.ratingCount || 0} reviews)
+                ({product.ratingCount || 0} đánh giá)
               </Typography>
             </View>
             <View style={styles.statsDivider} />
             <Typography variant="sm" color="muted">
-              {product.soldCount || 0} sold
+              {formatSoldVi(product.soldCount)}
             </Typography>
             <View style={styles.statsDivider} />
             <Typography variant="sm" color="muted">
-              Stock: {product.stock || 0}
+              Kho: {product.stock || 0}
             </Typography>
           </View>
+
+          {/* Shipping Time Estimate */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+            <Ionicons name="car-outline" size={15} color="#2F855A" style={{ marginRight: 6 }} />
+            <Typography variant="xs" color="inkSoft">
+              Vận chuyển: <Typography variant="xs" weight="bold" style={{ color: '#2F855A' }}>{calculateShippingTime(product.shopLocation).timeText}</Typography> (từ {product.shopLocation || 'TP. Hồ Chí Minh'})
+            </Typography>
+          </View>
+        </View>
+
+        {/* Section: Shop Information */}
+        <View style={styles.shopInfoSection}>
+          <View style={styles.shopAvatarCircle}>
+            <Ionicons name="storefront" size={22} color={COLORS.primaryDeep} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Typography variant="sm" weight="bold" color="ink">
+              {product.shopName || 'TechZone Official'}
+            </Typography>
+            <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
+              📍 {product.shopLocation || 'TP. Hồ Chí Minh'} • ⭐ 4.8★ (Shop Yêu Thích)
+            </Typography>
+          </View>
+          <TouchableOpacity style={styles.viewShopButton} activeOpacity={0.7}>
+            <Typography variant="xs" weight="bold" style={{ color: COLORS.primaryDeep }}>
+              Xem Shop
+            </Typography>
+          </TouchableOpacity>
         </View>
 
         {/* Section: Variant Trigger Row */}
@@ -420,14 +468,17 @@ export default function ProductDetailScreen() {
             testID="variant-sheet-trigger"
             style={styles.sectionRow}
             activeOpacity={0.7}
-            onPress={handleOpenVariantSheet}
+            onPress={() => {
+              setIsBuyNowFlow(false);
+              setIsVariantSheetVisible(true);
+            }}
           >
             <View>
               <Typography variant="sm" weight="bold" style={{ marginBottom: 2 }}>
-                Select Variant
+                Chọn phân loại hàng
               </Typography>
               <Typography variant="sm" color="inkSoft">
-                {activeVariant ? activeVariant.name : 'Choose options, quantity'}
+                {activeVariant ? activeVariant.name : 'Chọn màu sắc, kích cỡ, số lượng'}
               </Typography>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
@@ -437,7 +488,7 @@ export default function ProductDetailScreen() {
         {/* Section: Description */}
         <View style={styles.section}>
           <Typography variant="md" weight="bold" style={{ marginBottom: spacing.xs }}>
-            Description
+            Mô tả sản phẩm
           </Typography>
           <Typography variant="sm" color="inkSoft" style={styles.descText}>
             {displayedDesc}
@@ -449,7 +500,7 @@ export default function ProductDetailScreen() {
               activeOpacity={0.7}
             >
               <Typography variant="sm" weight="semiBold" color="primaryDeep">
-                {isDescExpanded ? 'See less' : 'See more'}
+                {isDescExpanded ? 'Thu gọn' : 'Xem thêm'}
               </Typography>
             </TouchableOpacity>
           )}
@@ -459,11 +510,11 @@ export default function ProductDetailScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Typography variant="md" weight="bold">
-              Product Reviews ({product.ratingCount || 0})
+              Đánh giá từ khách hàng ({product.ratingCount || 0})
             </Typography>
             <TouchableOpacity activeOpacity={0.7} style={styles.seeAllBtn}>
               <Typography variant="sm" color="primaryDeep" weight="semiBold">
-                See all
+                Xem tất cả
               </Typography>
               <Ionicons name="chevron-forward" size={16} color={COLORS.primaryDeep} />
             </TouchableOpacity>
@@ -555,7 +606,7 @@ export default function ProductDetailScreen() {
             })
           ) : (
             <Typography variant="sm" color="muted" style={{ marginVertical: spacing.sm }}>
-              No reviews yet.
+              Chưa có đánh giá nào cho sản phẩm này.
             </Typography>
           )}
         </View>
@@ -564,7 +615,7 @@ export default function ProductDetailScreen() {
         {relatedProducts.length > 0 && (
           <View style={styles.relatedSection}>
             <Typography variant="md" weight="bold" style={styles.relatedTitle}>
-              You May Also Like
+              Có thể bạn cũng thích
             </Typography>
             <View style={styles.relatedGrid}>
               {relatedProducts.map((p: ProductListResponse) => (
@@ -605,26 +656,19 @@ export default function ProductDetailScreen() {
           </TouchableOpacity>
 
           <Button
-            title={currentStock <= 0 ? 'Out of stock' : 'Add to Cart'}
+            title={currentStock <= 0 ? 'Hết hàng' : 'Thêm vào giỏ'}
             variant="soft"
             disabled={currentStock <= 0}
             style={[styles.bottomActionBtn, { marginRight: spacing.sm }]}
-            onPress={handleOpenVariantSheet}
+            onPress={handleAddToCartClick}
           />
 
           <Button
-            title={currentStock <= 0 ? 'Out of stock' : 'Buy Now'}
+            title={currentStock <= 0 ? 'Hết hàng' : 'Mua ngay'}
             variant="primary"
             disabled={currentStock <= 0}
             style={styles.bottomActionBtn}
-            onPress={() => {
-              if (variants.length > 1 && !isSingleDefault) {
-                handleOpenVariantSheet();
-              } else {
-                confirmAddToCart();
-                navigation.navigate('Checkout');
-              }
-            }}
+            onPress={handleBuyNowClick}
           />
         </View>
       </SafeAreaView>
@@ -651,7 +695,7 @@ export default function ProductDetailScreen() {
                   {formatPrice(currentPrice)}
                 </Typography>
                 <Typography variant="sm" color="muted">
-                  Stock: {currentStock}
+                  Kho còn: {currentStock}
                 </Typography>
               </View>
               <TouchableOpacity
@@ -669,7 +713,7 @@ export default function ProductDetailScreen() {
                 {/* Color Row with Color Dots */}
                 <View style={styles.sheetOptionGroup}>
                   <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                    Color: {selectedColor}
+                    Màu sắc: {selectedColor}
                   </Typography>
                   <View style={styles.badgeRow}>
                     {colors.map((c) => {
@@ -683,7 +727,7 @@ export default function ProductDetailScreen() {
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <View style={[styles.colorDot, { backgroundColor: getColorDot(c) }]} />
-                            <Typography variant="sm" weight={isActive ? 'bold' : 'normal'} color={isActive ? 'primaryDeep' : 'ink'}>
+                            <Typography variant="sm" weight={isActive ? 'bold' : 'regular'} color={isActive ? 'primaryDeep' : 'ink'}>
                               {c}
                             </Typography>
                           </View>
@@ -696,7 +740,7 @@ export default function ProductDetailScreen() {
                 {/* Size Row in standard order XS, S, M, L, XL, XXL */}
                 <View style={styles.sheetOptionGroup}>
                   <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                    Size: {selectedSize}
+                    Kích cỡ: {selectedSize}
                   </Typography>
                   <View style={styles.badgeRow}>
                     {sizes.map((s) => {
@@ -716,7 +760,7 @@ export default function ProductDetailScreen() {
                         >
                           <Typography
                             variant="sm"
-                            weight={isActive ? 'bold' : 'normal'}
+                            weight={isActive ? 'bold' : 'regular'}
                             color={isOutOfStock ? 'muted' : isActive ? 'primaryDeep' : 'ink'}
                           >
                             {s}
@@ -731,7 +775,7 @@ export default function ProductDetailScreen() {
               /* Single Variant Row */
               <View style={styles.sheetOptionGroup}>
                 <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                  Variant
+                  Phân loại hàng
                 </Typography>
                 <View style={styles.badgeRow}>
                   {variants.map((v) => {
@@ -750,7 +794,7 @@ export default function ProductDetailScreen() {
                       >
                         <Typography
                           variant="sm"
-                          weight={isActive ? 'bold' : 'normal'}
+                          weight={isActive ? 'bold' : 'regular'}
                           color={isOutOfStock ? 'muted' : isActive ? 'primaryDeep' : 'ink'}
                         >
                           {v.name}
@@ -765,7 +809,7 @@ export default function ProductDetailScreen() {
             {/* Quantity Selector */}
             <View style={styles.quantityRow}>
               <Typography variant="sm" weight="bold">
-                Quantity
+                Số lượng
               </Typography>
               <View style={styles.quantityBox}>
                 <TouchableOpacity
@@ -791,12 +835,20 @@ export default function ProductDetailScreen() {
             {/* Confirm Button */}
             <View style={styles.sheetFooter}>
               <Button
-                title={isAdding ? 'Adding...' : currentStock <= 0 ? 'Out of stock' : 'Confirm'}
+                title={
+                  isAdding
+                    ? 'Đang xử lý...'
+                    : currentStock <= 0
+                    ? 'Hết hàng'
+                    : isBuyNowFlow
+                    ? 'Mua ngay'
+                    : 'Thêm vào giỏ'
+                }
                 variant="primary"
                 fullWidth
-                size="L"
+                size="lg"
                 disabled={isAdding || currentStock <= 0}
-                onPress={confirmAddToCart}
+                onPress={() => executeAddToCart(isBuyNowFlow)}
               />
             </View>
           </View>
@@ -905,6 +957,30 @@ const styles = StyleSheet.create({
     height: 12,
     backgroundColor: COLORS.border,
     marginHorizontal: spacing.sm,
+  },
+  shopInfoSection: {
+    backgroundColor: COLORS.surface,
+    padding: spacing.md,
+    marginBottom: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  shopAvatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewShopButton: {
+    borderWidth: 1,
+    borderColor: COLORS.primaryDeep,
+    borderRadius: radius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   sectionRow: {
     backgroundColor: COLORS.surface,

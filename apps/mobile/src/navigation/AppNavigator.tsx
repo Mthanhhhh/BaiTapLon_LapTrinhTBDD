@@ -25,8 +25,8 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList> | undefined;
   ProductDetail: { productId: number | string };
   Checkout: undefined;
-  Payment: undefined;
-  Success: undefined;
+  Payment: { orderId: number; total: number; orderNumber?: string } | undefined;
+  Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;
   Filter: undefined;
   Login: undefined;
   Register: undefined;

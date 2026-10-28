@@ -1,0 +1,63 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        # Route 1: Auth APIs
+        - id: auth-route
+          uri: http://${AUTH_SERVICE_HOST:localhost}:8083
+          predicates:
+            - Path=/api/v1/auth/**, /api/v1/addresses/**
+
+        # Route 2: Product & Category APIs
+        - id: product-route
+          uri: http://${PRODUCT_SERVICE_HOST:localhost}:8084
+          predicates:
+            - Path=/api/v1/products/**, /api/v1/categories/**
+
+        # Route 3: Cart, Order & Voucher APIs
+        - id: order-route
+          uri: http://${ORDER_SERVICE_HOST:localhost}:8085
+          predicates:
+            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/vouchers/**
+
+        # Route 4: Payment APIs
+        - id: payment-route
+          uri: http://${PAYMENT_SERVICE_HOST:localhost}:8086
+          predicates:
+            - Path=/api/v1/payments/**
+
+        # Route 5: Swagger Documentation
+        - id: docs-route
+          uri: http://${PRODUCT_SERVICE_HOST:localhost}:8084
+          predicates:
+            - Path=/swagger-ui/**, /api-docs/**
+
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_LAST
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+

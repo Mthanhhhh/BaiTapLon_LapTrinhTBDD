@@ -9,6 +9,9 @@ import com.team.ecommerce.payment.entity.Payment;
 import com.team.ecommerce.payment.entity.PaymentMethod;
 import com.team.ecommerce.payment.entity.PaymentStatus;
 import com.team.ecommerce.payment.repository.PaymentRepository;
+import com.team.ecommerce.shared.event.EventPublisher;
+import com.team.ecommerce.shared.event.OrderCreatedEvent;
+import com.team.ecommerce.shared.event.PaymentFailedEvent;
 import com.team.ecommerce.shared.exception.BadRequestException;
 import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderService orderService;
+    private final EventPublisher eventPublisher;
 
     public PaymentResponse processPayment(Long userId, PaymentRequest request) {
         OrderResponse order = orderService.getOrderById(userId, request.getOrderId());
@@ -55,6 +59,24 @@ public class PaymentService {
             if (request.getCardNumber().endsWith("0000")) {
                 payment.setStatus(PaymentStatus.FAILED);
                 paymentRepository.save(payment);
+
+                // Saga Pattern: Publish PaymentFailedEvent to trigger stock compensation via Kafka
+                var items = order.getItems() != null ? order.getItems().stream()
+                        .map(item -> OrderCreatedEvent.OrderItemEvent.builder()
+                                .productId(item.getProductId())
+                                .variantId(item.getVariantId())
+                                .quantity(item.getQuantity())
+                                .build())
+                        .toList() : null;
+
+                eventPublisher.publishPaymentFailed(PaymentFailedEvent.builder()
+                        .orderId(order.getId())
+                        .paymentId(payment.getId())
+                        .amount(order.getTotal())
+                        .reason("Card ending in 0000 simulates decline")
+                        .items(items)
+                        .build());
+
                 throw new BadRequestException("Payment failed (mocked)");
             }
             payment.setCardLastFour(request.getCardNumber().substring(request.getCardNumber().length() - 4));

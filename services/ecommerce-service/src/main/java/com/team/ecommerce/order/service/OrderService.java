@@ -15,6 +15,8 @@ import com.team.ecommerce.product.internal.ProductInternalDTO;
 import com.team.ecommerce.product.internal.ProductInternalService;
 import com.team.ecommerce.product.internal.VariantInternalDTO;
 import com.team.ecommerce.shared.dto.PageResponse;
+import com.team.ecommerce.shared.event.EventPublisher;
+import com.team.ecommerce.shared.event.OrderCreatedEvent;
 import com.team.ecommerce.shared.exception.BadRequestException;
 import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class OrderService {
     private final VoucherService voucherService;
     private final ProductInternalService productInternalService;
     private final AuthInternalService authInternalService;
+    private final EventPublisher eventPublisher;
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
         Cart cart = cartRepository.findByUserId(userId)
@@ -139,6 +143,23 @@ public class OrderService {
         }
 
         cartItemRepository.deleteByCartId(cart.getId());
+
+        // Publish OrderCreatedEvent to Kafka
+        List<OrderCreatedEvent.OrderItemEvent> eventItems = orderItems.stream()
+                .map(oi -> OrderCreatedEvent.OrderItemEvent.builder()
+                        .productId(oi.getProductId())
+                        .variantId(oi.getVariantId())
+                        .quantity(oi.getQuantity())
+                        .build())
+                .collect(Collectors.toList());
+
+        eventPublisher.publishOrderCreated(OrderCreatedEvent.builder()
+                .orderId(order.getId())
+                .userId(userId)
+                .totalAmount(order.getTotal())
+                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod().toString() : "VISA")
+                .items(eventItems)
+                .build());
 
         return OrderResponse.from(order, appliedVoucherCode);
     }

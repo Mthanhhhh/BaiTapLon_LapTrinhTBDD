@@ -66,11 +66,11 @@ export default function TabNavigator() {
         ],
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Orders" component={OrdersScreen} />
-      <Tab.Screen name="Account" component={AccountScreen} />
-      {__DEV__ && <Tab.Screen name="Showcase" component={DesignShowcaseScreen} />}
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Trang chủ' }} />
+      <Tab.Screen name="Search" component={SearchScreen} options={{ tabBarLabel: 'Tìm kiếm' }} />
+      <Tab.Screen name="Orders" component={OrdersScreen} options={{ tabBarLabel: 'Đơn hàng' }} />
+      <Tab.Screen name="Account" component={AccountScreen} options={{ tabBarLabel: 'Tài khoản' }} />
+      {__DEV__ && <Tab.Screen name="Showcase" component={DesignShowcaseScreen} options={{ tabBarLabel: 'Khám phá' }} />}
     </Tab.Navigator>
   );
 }

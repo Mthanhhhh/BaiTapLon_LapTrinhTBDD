@@ -23,9 +23,9 @@ export default function RegisterScreen() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!email.includes('@')) newErrors.email = 'Invalid email address.';
-    if (password.length < 6) newErrors.password = 'Password must be at least 6 characters.';
-    if (!fullName.trim()) newErrors.fullName = 'Full name is required.';
+    if (!email.includes('@')) newErrors.email = 'Email không hợp lệ.';
+    if (password.length < 6) newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự.';
+    if (!fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ và tên.';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -51,7 +51,7 @@ export default function RegisterScreen() {
       if (appErr.fieldErrors) {
         setErrors(appErr.fieldErrors);
       } else {
-        Alert.alert('Registration Failed', appErr.message || 'An error occurred.');
+        Alert.alert('Đăng ký thất bại', appErr.message || 'Có lỗi xảy ra, vui lòng thử lại.');
       }
     } finally {
       setIsLoading(false);
@@ -68,15 +68,15 @@ export default function RegisterScreen() {
           <ScrollView contentContainerStyle={styles.scroll}>
             <View style={styles.card}>
               <Typography variant="xxl" weight="bold" color="ink" style={styles.title}>
-                Create Account
+                Tạo Tài Khoản
               </Typography>
               <Typography variant="md" color="inkSoft" style={styles.subtitle}>
-                Join us to start shopping
+                Đăng ký để bắt đầu mua sắm cùng E-Shop
               </Typography>
 
               <Input
-                label="Full Name"
-                placeholder="Enter your full name"
+                label="Họ và tên"
+                placeholder="Nhập họ và tên đầy đủ"
                 value={fullName}
                 onChangeText={(text) => {
                   setFullName(text);
@@ -89,8 +89,8 @@ export default function RegisterScreen() {
               />
 
               <Input
-                label="Email"
-                placeholder="Enter your email"
+                label="Địa chỉ Email"
+                placeholder="Nhập địa chỉ email"
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -105,8 +105,8 @@ export default function RegisterScreen() {
               />
 
               <Input
-                label="Phone (Optional)"
-                placeholder="Enter your phone number"
+                label="Số điện thoại (Không bắt buộc)"
+                placeholder="Nhập số điện thoại nhận hàng"
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -116,8 +116,8 @@ export default function RegisterScreen() {
               />
 
               <Input
-                label="Password"
-                placeholder="Create a password"
+                label="Mật khẩu"
+                placeholder="Tạo mật khẩu (từ 6 ký tự)"
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -133,7 +133,7 @@ export default function RegisterScreen() {
               />
 
               <Button
-                title="Register"
+                title="Đăng Ký"
                 fullWidth
                 loading={isLoading}
                 onPress={handleRegister}
@@ -142,7 +142,7 @@ export default function RegisterScreen() {
 
               <View style={styles.footer}>
                 <Typography variant="sm" color="inkSoft">
-                  Already have an account?{' '}
+                  Đã có tài khoản?{' '}
                 </Typography>
                 <Typography 
                   variant="sm" 
@@ -150,7 +150,7 @@ export default function RegisterScreen() {
                   color="primaryDeep"
                   onPress={() => navigation.navigate('Login')}
                 >
-                  Log In
+                  Đăng nhập ngay
                 </Typography>
               </View>
             </View>

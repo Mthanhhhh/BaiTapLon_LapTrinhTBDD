@@ -31,7 +31,7 @@ export const RequireLoginView: React.FC<RequireLoginViewProps> = ({ title, descr
             </Typography>
             
             <Button
-              title="Log In or Register"
+              title="Đăng Nhập hoặc Đăng Ký"
               fullWidth
               onPress={() => navigation.navigate('Login')}
               style={styles.button}

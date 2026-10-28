@@ -14,6 +14,8 @@ import com.team.ecommerce.shared.dto.PageResponse;
 import com.team.ecommerce.shared.exception.BadRequestException;
 import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -60,6 +62,7 @@ public class ProductService {
     }
 
     @Transactional(value = "productTransactionManager", readOnly = true)
+    @Cacheable(value = "products", key = "'id:' + #id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));

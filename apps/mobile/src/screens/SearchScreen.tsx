@@ -7,6 +7,7 @@ import { Typography, ProductCard, ProductListItem, Button } from '../components/
 import { useProductsInfinite } from '../hooks/useProducts';
 import { SORT_OPTIONS } from '../constants/sort';
 import { STRINGS } from '../constants/strings';
+import { searchHistory } from '../utils/searchHistory';
 
 export default function SearchScreen() {
   const route = useRoute<any>();
@@ -21,6 +22,7 @@ export default function SearchScreen() {
   const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [categoryName, setCategoryName] = useState(initialCategoryName);
+  const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   
   const [sort, setSort] = useState(initialSort); 
   const [minPrice, setMinPrice] = useState<string>('');
@@ -29,6 +31,32 @@ export default function SearchScreen() {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadRecentKeywords = async () => {
+    const list = await searchHistory.getKeywords();
+    setRecentKeywords(list);
+  };
+
+  useEffect(() => {
+    loadRecentKeywords();
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const handler = () => loadRecentKeywords();
+      window.addEventListener('searchHistory:updated', handler);
+      return () => window.removeEventListener('searchHistory:updated', handler);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (debouncedKeyword.trim().length >= 2) {
+      searchHistory.recordKeyword(debouncedKeyword.trim());
+    }
+  }, [debouncedKeyword]);
+
+  useEffect(() => {
+    if (categoryId) {
+      searchHistory.recordViewedCategory(categoryId);
+    }
+  }, [categoryId]);
   
   useEffect(() => {
     if (route.params?.keyword !== undefined) {
@@ -128,11 +156,52 @@ export default function SearchScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Lịch sử tìm kiếm gần đây */}
+      {recentKeywords.length > 0 && !keyword && (
+        <View style={styles.historyContainer}>
+          <View style={styles.historyHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={14} color={COLORS.inkSoft} style={{ marginRight: 4 }} />
+              <Typography variant="xs" weight="semiBold" color="inkSoft">Tìm kiếm gần đây</Typography>
+            </View>
+            <TouchableOpacity onPress={async () => {
+              await searchHistory.clearKeywords();
+              setRecentKeywords([]);
+            }}>
+              <Typography variant="xs" color="muted">Xóa tất cả</Typography>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.historyList}>
+            {recentKeywords.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.historyChip}
+                onPress={() => {
+                  setKeyword(item);
+                  setDebouncedKeyword(item);
+                }}
+              >
+                <Typography variant="xs" color="ink">{item}</Typography>
+                <TouchableOpacity
+                  onPress={async () => {
+                    const updated = await searchHistory.removeKeyword(item);
+                    setRecentKeywords(updated);
+                  }}
+                  style={{ marginLeft: 6 }}
+                >
+                  <Ionicons name="close-circle" size={14} color={COLORS.muted} />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {categoryId && (
         <View style={styles.categoryTagContainer}>
           <View style={styles.categoryTag}>
             <Typography variant="xs" color="primaryDeep">
-              In Category: {categoryName || 'Unknown'}
+              Danh mục: {categoryName || 'Tất cả'}
             </Typography>
             <TouchableOpacity onPress={() => {
               setCategoryId(null);
@@ -148,11 +217,11 @@ export default function SearchScreen() {
       <View style={styles.sortBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortOptions}>
           <TouchableOpacity onPress={() => handleSortChange(SORT_OPTIONS.BEST_SALES)} style={styles.sortBtn}>
-            <Typography variant="sm" weight="medium" color={sort === SORT_OPTIONS.BEST_SALES ? 'primaryDeep' : 'ink'}>Best Sales</Typography>
+            <Typography variant="sm" weight="medium" color={sort === SORT_OPTIONS.BEST_SALES ? 'primaryDeep' : 'ink'}>Bán chạy</Typography>
             {sort === SORT_OPTIONS.BEST_SALES && <View style={styles.activeSortIndicator} />}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleSortChange(SORT_OPTIONS.POPULAR)} style={styles.sortBtn}>
-            <Typography variant="sm" weight="medium" color={sort === SORT_OPTIONS.POPULAR ? 'primaryDeep' : 'ink'}>Popular</Typography>
+            <Typography variant="sm" weight="medium" color={sort === SORT_OPTIONS.POPULAR ? 'primaryDeep' : 'ink'}>Phổ biến</Typography>
             {sort === SORT_OPTIONS.POPULAR && <View style={styles.activeSortIndicator} />}
           </TouchableOpacity>
           <TouchableOpacity 
@@ -160,7 +229,7 @@ export default function SearchScreen() {
             style={styles.sortBtn}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Typography variant="sm" weight="medium" color={sort.startsWith('minPrice') ? 'primaryDeep' : 'ink'}>Price</Typography>
+              <Typography variant="sm" weight="medium" color={sort.startsWith('minPrice') ? 'primaryDeep' : 'ink'}>Giá cả</Typography>
               <Ionicons 
                 name={sort === SORT_OPTIONS.PRICE_ASC ? 'caret-up' : sort === SORT_OPTIONS.PRICE_DESC ? 'caret-down' : 'swap-vertical'} 
                 size={14} 
@@ -171,7 +240,7 @@ export default function SearchScreen() {
             {sort.startsWith('minPrice') && <View style={styles.activeSortIndicator} />}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleSortChange(SORT_OPTIONS.RATING)} style={styles.sortBtn}>
-            <Typography variant="sm" weight="medium" color={sort === SORT_OPTIONS.RATING ? 'primaryDeep' : 'ink'}>Rating</Typography>
+            <Typography variant="sm" weight="medium" color={sort === SORT_OPTIONS.RATING ? 'primaryDeep' : 'ink'}>Đánh giá</Typography>
             {sort === SORT_OPTIONS.RATING && <View style={styles.activeSortIndicator} />}
           </TouchableOpacity>
         </ScrollView>
@@ -188,7 +257,7 @@ export default function SearchScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="search-outline" size={64} color={COLORS.muted} />
           <Typography variant="md" color="muted" style={{ marginTop: spacing.md }}>
-            No products found
+            Không tìm thấy sản phẩm nào
           </Typography>
         </View>
       ) : (
@@ -213,18 +282,18 @@ export default function SearchScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.bottomSheet}>
             <View style={styles.sheetHeader}>
-              <Typography variant="lg" weight="bold">Filter</Typography>
+              <Typography variant="lg" weight="bold">Bộ lọc tìm kiếm</Typography>
               <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.ink} />
               </TouchableOpacity>
             </View>
             
             <View style={styles.sheetContent}>
-              <Typography variant="md" weight="medium" style={{ marginBottom: spacing.sm }}>Price Range</Typography>
+              <Typography variant="md" weight="medium" style={{ marginBottom: spacing.sm }}>Khoảng giá</Typography>
               <View style={styles.priceInputs}>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Min"
+                  placeholder="Thấp nhất"
                   keyboardType="numeric"
                   value={minPrice}
                   onChangeText={setMinPrice}
@@ -232,7 +301,7 @@ export default function SearchScreen() {
                 <View style={styles.priceSeparator} />
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Max"
+                  placeholder="Cao nhất"
                   keyboardType="numeric"
                   value={maxPrice}
                   onChangeText={setMaxPrice}
@@ -242,7 +311,7 @@ export default function SearchScreen() {
 
             <View style={styles.sheetFooter}>
               <Button
-                title="Reset"
+                title="Thiết lập lại"
                 variant="outline"
                 style={{ flex: 1, marginRight: spacing.sm }}
                 onPress={() => {
@@ -251,7 +320,7 @@ export default function SearchScreen() {
                 }}
               />
               <Button
-                title="Apply"
+                title="Áp dụng"
                 variant="primary"
                 style={{ flex: 1 }}
                 onPress={() => {
@@ -312,6 +381,36 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
     alignSelf: 'flex-start',
+  },
+  historyContainer: {
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  historyList: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: 2,
+  },
+  historyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceAlt,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: 6,
   },
   sortBar: {
     flexDirection: 'row',

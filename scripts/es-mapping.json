@@ -1,0 +1,14 @@
+{
+  "mappings": {
+    "properties": {
+      "id": { "type": "keyword" },
+      "name": { "type": "text", "analyzer": "standard" },
+      "description": { "type": "text" },
+      "categoryName": { "type": "keyword" },
+      "price": { "type": "double" },
+      "rating": { "type": "double" },
+      "soldCount": { "type": "integer" }
+    }
+  }
+}
+

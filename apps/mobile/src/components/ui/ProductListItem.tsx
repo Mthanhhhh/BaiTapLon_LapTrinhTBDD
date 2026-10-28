@@ -6,6 +6,7 @@ import { Badge } from './Badge';
 import { Ionicons } from '@expo/vector-icons';
 import { ProductCardProps } from './ProductCard';
 import { RemoteImage } from './RemoteImage';
+import { formatVND, formatSoldVi } from '../../utils/formatters';
 
 export const ProductListItem: React.FC<ProductCardProps> = React.memo(({
   id,
@@ -17,7 +18,7 @@ export const ProductListItem: React.FC<ProductCardProps> = React.memo(({
   soldCount,
   onPress,
 }) => {
-  const formatPrice = (value: number) => `$${value.toFixed(2)}`;
+  const formatPrice = (value: number) => formatVND(value);
 
   const discountPercent = originalPrice && originalPrice > price
     ? Math.round((1 - price / originalPrice) * 100)
@@ -71,7 +72,7 @@ export const ProductListItem: React.FC<ProductCardProps> = React.memo(({
           )}
           {soldCount !== undefined && (
             <Typography variant="sm" color="muted">
-              {soldCount} sold
+              {formatSoldVi(soldCount)}
             </Typography>
           )}
         </View>

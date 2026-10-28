@@ -7,6 +7,8 @@ import com.team.ecommerce.product.repository.CategoryRepository;
 import com.team.ecommerce.shared.exception.BadRequestException;
 import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "'root'")
     public List<CategoryResponse> getRootCategories() {
         return categoryRepository.findByParentIdIsNullOrderByDisplayOrder().stream()
                 .map(CategoryResponse::from)
@@ -27,6 +30,7 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "'sub:' + #parentId")
     public List<CategoryResponse> getSubCategories(Long parentId) {
         return categoryRepository.findByParentIdOrderByDisplayOrder(parentId).stream()
                 .map(CategoryResponse::from)
@@ -34,12 +38,14 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "'id:' + #id")
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
         return CategoryResponse.from(category);
     }
 
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse createCategory(CreateCategoryRequest request) {
         if (categoryRepository.existsBySlug(request.getSlug())) {
             throw new BadRequestException("Category slug already exists");
@@ -61,6 +67,7 @@ public class CategoryService {
         return CategoryResponse.from(categoryRepository.save(category));
     }
 
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse updateCategory(Long id, CreateCategoryRequest request) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
@@ -86,6 +93,7 @@ public class CategoryService {
         return CategoryResponse.from(categoryRepository.save(category));
     }
 
+    @CacheEvict(value = "categories", allEntries = true)
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
