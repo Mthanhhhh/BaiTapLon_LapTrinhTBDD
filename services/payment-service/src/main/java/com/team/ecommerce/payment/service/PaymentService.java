@@ -92,7 +92,8 @@ public class PaymentService {
         return PaymentResponse.from(payment);
     }
 
-    public PaymentResponse getPaymentByOrderId(Long orderId) {
+    public PaymentResponse getPaymentByOrderId(Long userId, Long orderId) {
+        orderService.getOrderById(userId, orderId);
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", "orderId", orderId));
         return PaymentResponse.from(payment);

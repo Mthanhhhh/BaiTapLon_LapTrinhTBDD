@@ -9,6 +9,7 @@ import com.team.ecommerce.shared.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,26 +18,25 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
-    private final Long MOCK_USER_ID = 1L; // To be replaced with actual auth principal
 
     @PostMapping
-    public ApiResponse<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        return ApiResponse.success("Order created successfully", orderService.createOrder(MOCK_USER_ID, request));
+    public ApiResponse<OrderResponse> createOrder(@AuthenticationPrincipal Long userId, @Valid @RequestBody CreateOrderRequest request) {
+        return ApiResponse.success("Order created successfully", orderService.createOrder(userId, request));
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<OrderResponse>> getOrders(Pageable pageable) {
-        return ApiResponse.success(orderService.getOrders(MOCK_USER_ID, pageable));
+    public ApiResponse<PageResponse<OrderResponse>> getOrders(@AuthenticationPrincipal Long userId, Pageable pageable) {
+        return ApiResponse.success(orderService.getOrders(userId, pageable));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<OrderResponse> getOrderById(@PathVariable Long id) {
-        return ApiResponse.success(orderService.getOrderById(MOCK_USER_ID, id));
+    public ApiResponse<OrderResponse> getOrderById(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success(orderService.getOrderById(userId, id));
     }
 
     @PostMapping("/{id}/cancel")
-    public ApiResponse<OrderResponse> cancelOrder(@PathVariable Long id) {
-        return ApiResponse.success("Order cancelled", orderService.cancelOrder(MOCK_USER_ID, id));
+    public ApiResponse<OrderResponse> cancelOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success("Order cancelled", orderService.cancelOrder(userId, id));
     }
 
     @PutMapping("/{id}/status")

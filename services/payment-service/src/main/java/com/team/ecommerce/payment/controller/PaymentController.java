@@ -6,6 +6,7 @@ import com.team.ecommerce.payment.service.PaymentService;
 import com.team.ecommerce.shared.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,15 +15,14 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final Long MOCK_USER_ID = 1L; // To be replaced with actual auth principal
 
     @PostMapping
-    public ApiResponse<PaymentResponse> processPayment(@Valid @RequestBody PaymentRequest request) {
-        return ApiResponse.success("Payment processed successfully", paymentService.processPayment(MOCK_USER_ID, request));
+    public ApiResponse<PaymentResponse> processPayment(@AuthenticationPrincipal Long userId, @Valid @RequestBody PaymentRequest request) {
+        return ApiResponse.success("Payment processed successfully", paymentService.processPayment(userId, request));
     }
 
     @GetMapping("/order/{orderId}")
-    public ApiResponse<PaymentResponse> getPaymentByOrderId(@PathVariable Long orderId) {
-        return ApiResponse.success(paymentService.getPaymentByOrderId(orderId));
+    public ApiResponse<PaymentResponse> getPaymentByOrderId(@AuthenticationPrincipal Long userId, @PathVariable Long orderId) {
+        return ApiResponse.success(paymentService.getPaymentByOrderId(userId, orderId));
     }
 }
