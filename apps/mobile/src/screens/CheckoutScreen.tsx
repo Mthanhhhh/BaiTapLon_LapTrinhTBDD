@@ -116,7 +116,7 @@ export default function CheckoutScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color={COLORS.ink} />
         </TouchableOpacity>
-        <Typography variant="lg" weight="bold">
+        <Typography variant="lg" weight="bold" role="heading" aria-level={1}>
           Thanh toán đơn hàng
         </Typography>
         <View style={{ width: 40 }} />
@@ -345,7 +345,7 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: 'transparent',
   },
   centerContainer: {
     flex: 1,

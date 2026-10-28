@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { NavigationContainer, NavigatorScreenParams, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, NavigatorScreenParams, LinkingOptions, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TabNavigator from './TabNavigator';
 import CheckoutScreen from '../screens/CheckoutScreen';
@@ -69,7 +69,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer linking={linking} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent', card: COLORS.surface, text: COLORS.ink, border: COLORS.border, primary: COLORS.primaryDeep } }}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />

@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-10-28T19:56:43.358Z",
+  "api": "http://localhost:8080",
+  "productCount": 20,
+  "detailImageCount": 22,
+  "bestSales": 10,
+  "popular": 10,
+  "search": 3,
+  "passed": true
+}

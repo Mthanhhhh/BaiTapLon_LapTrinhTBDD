@@ -66,7 +66,7 @@ export default function RegisterScreen() {
         <SafeAreaView style={styles.container}>
           <ScrollView contentContainerStyle={styles.scroll}>
             <View style={styles.card}>
-              <Typography variant="xxl" weight="bold" color="ink" style={styles.title}>
+              <Typography variant="xxl" weight="bold" color="ink" role="heading" aria-level={1} style={styles.title}>
                 Tạo Tài Khoản
               </Typography>
               <Typography variant="md" color="inkSoft" style={styles.subtitle}>

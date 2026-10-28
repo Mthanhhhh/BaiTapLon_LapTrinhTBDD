@@ -33,6 +33,7 @@ export const Typography: React.FC<TypographyProps> = ({
           lineHeight: typography.lineHeight[variant],
           color: textColor,
           textAlign: align,
+          fontVariant: ['tabular-nums'],
         },
         style,
       ]}

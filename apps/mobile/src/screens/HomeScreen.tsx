@@ -22,10 +22,11 @@ import {
   Typography,
   AuroraBackground,
   ProductCard,
+  RemoteImage,
   Skeleton,
   Button,
 } from '../components/ui';
-import { COLORS, spacing, radius } from '../theme';
+import { COLORS, spacing, radius, shadows } from '../theme';
 import {
   useCategories,
   useProductsInfinite,
@@ -36,7 +37,8 @@ import { useCart } from '../hooks/useCart';
 import { STRINGS } from '../constants/strings';
 import { searchHistory } from '../utils/searchHistory';
 import { apiClient } from '../api/client';
-import { formatVND } from '../utils/formatters';
+import { formatVND, formatSoldVi } from '../utils/formatters';
+import { SORT_OPTIONS } from '../constants/sort';
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
 
@@ -404,36 +406,55 @@ export default function HomeScreen() {
 
   const renderHeader = () => {
     const hasSearchHistory = searchKeywords.length > 0;
+    const featuredProduct = [...allProducts].sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))[0];
 
     return (
       <View style={styles.headerContainer}>
         {/* Top Aurora Pastel Header with Shopee Search Pill, Cart & Seller Switch */}
-        <AuroraBackground variant="header" headerHeight={200} palette="candy">
+        <View style={styles.masthead}>
           <SafeAreaView style={styles.headerSafeArea}>
+            <View style={styles.brandRow}>
+              <View style={styles.wordmark}>
+                <Ionicons name="bag-handle-outline" size={24} color={COLORS.primaryDeep} />
+                <Typography variant="xl" weight="bold" style={styles.brandName}>{STRINGS.APP_NAME}</Typography>
+              </View>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={STRINGS.SELLER_CHANNEL} onPress={handleToggleShopMode} style={styles.sellerLink}>
+                <Typography variant="xs" color="inkSoft">{isShopMode ? 'Về mua sắm' : STRINGS.SELLER_CHANNEL}</Typography>
+                <Ionicons name="arrow-up-right-box-outline" size={15} color={COLORS.inkSoft} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.titleBlock}>
+              <Typography variant="xxl" weight="bold" role="heading" aria-level={1} style={styles.pageTitle}>{STRINGS.HOME_TITLE}</Typography>
+              <Typography variant="sm" color="inkSoft">{STRINGS.HOME_SUBTITLE}</Typography>
+            </View>
             {/* Top Bar Row */}
             <View style={styles.headerRow}>
               {/* Search Pill */}
               <TouchableOpacity
                 style={styles.searchPill}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={STRINGS.SEARCH_PLACEHOLDER}
                 onPress={() => navigation.navigate('Main', { screen: 'Search' })}
               >
                 <Ionicons name="search" size={18} color={COLORS.muted} style={{ marginRight: 6 }} />
                 <Typography variant="sm" color="inkSoft" numberOfLines={1} style={{ flex: 1 }}>
-                  {hasSearchHistory ? `🔍 ${searchKeywords[0]}` : 'Hapas Túi Xách Nữ'}
+                  {hasSearchHistory ? searchKeywords[0] : STRINGS.SEARCH_PLACEHOLDER}
                 </Typography>
-                <Ionicons name="camera-outline" size={20} color={COLORS.inkSoft} />
+                <Ionicons name="arrow-forward" size={18} color={COLORS.inkSoft} />
               </TouchableOpacity>
 
               {/* Cart Icon */}
               <TouchableOpacity
                 style={styles.headerActionBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Giỏ hàng"
                 activeOpacity={0.8}
                 onPress={() => navigation.navigate('Checkout')}
               >
                 <Ionicons name="cart-outline" size={23} color={COLORS.ink} />
                 <View style={styles.badgeCount}>
-                  <Typography variant="xs" color="surface" weight="bold" style={{ fontSize: 9 }}>
+                  <Typography variant="xs" color="surface" weight="bold" style={{ fontSize: 11 }}>
                     {(cartData?.totalItems ?? 2) > 99 ? '99+' : (cartData?.totalItems ?? 2)}
                   </Typography>
                 </View>
@@ -442,6 +463,8 @@ export default function HomeScreen() {
               {/* Notification / Message Icon */}
               <TouchableOpacity
                 style={styles.headerActionBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Thông báo"
                 activeOpacity={0.8}
                 onPress={() => {
                   if (Platform.OS === 'web') alert('Bạn có 1 thông báo mới từ E-Shop!');
@@ -450,7 +473,7 @@ export default function HomeScreen() {
               >
                 <Ionicons name="chatbubble-ellipses-outline" size={21} color={COLORS.ink} />
                 <View style={[styles.badgeCount, { backgroundColor: COLORS.primaryDeep }]}>
-                  <Typography variant="xs" color="surface" weight="bold" style={{ fontSize: 9 }}>
+                  <Typography variant="xs" color="surface" weight="bold" style={{ fontSize: 11 }}>
                     1
                   </Typography>
                 </View>
@@ -458,7 +481,7 @@ export default function HomeScreen() {
             </View>
 
             {/* Seller Mode Toggle Banner */}
-            <View style={styles.sellerToggleBar}>
+            {isShopMode && <View style={styles.sellerToggleBar}>
               <TouchableOpacity
                 style={[styles.sellerModePill, isShopMode && styles.sellerModePillActive]}
                 activeOpacity={0.8}
@@ -475,7 +498,7 @@ export default function HomeScreen() {
                   weight="bold"
                   style={{ color: isShopMode ? '#FFFFFF' : COLORS.primaryDeep }}
                 >
-                  {isShopMode ? `Đang quản lý: ${currentShop.name}` : '🏪 Kênh Người Bán (Shop)'}
+                  {isShopMode ? `Đang quản lý: ${currentShop.name}` : STRINGS.SELLER_CHANNEL}
                 </Typography>
               </TouchableOpacity>
 
@@ -489,14 +512,46 @@ export default function HomeScreen() {
                   </Typography>
                 </TouchableOpacity>
               )}
-            </View>
+            </View>}
           </SafeAreaView>
-        </AuroraBackground>
+        </View>
+
+        {!isShopMode && featuredProduct && (
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${STRINGS.VIEW_PRODUCT}: ${featuredProduct.name}`} activeOpacity={0.85} style={styles.featuredProduct}
+            onPress={() => navigation.navigate('ProductDetail', { productId: featuredProduct.id })}>
+            <View style={styles.featuredCopy}>
+              <View style={styles.featuredProof}>
+                <Ionicons name="trending-up-outline" size={15} color={COLORS.primaryDeep} />
+                <Typography variant="xs" weight="semiBold" color="primaryDeep">{STRINGS.FEATURED_DEAL}</Typography>
+              </View>
+              <Typography variant="md" weight="semiBold" numberOfLines={2} style={styles.featuredName}>{featuredProduct.name}</Typography>
+              <Typography variant="xl" weight="bold" color="deal">{formatVND(featuredProduct.price)}</Typography>
+              <Typography variant="xs" color="inkSoft" style={{ marginTop: 3 }}>{formatSoldVi(featuredProduct.soldCount)}</Typography>
+              <View style={styles.featuredAction}>
+                <Typography variant="xs" weight="semiBold" color="primaryDeep">{STRINGS.VIEW_PRODUCT}</Typography>
+                <Ionicons name="arrow-forward" size={16} color={COLORS.primaryDeep} />
+              </View>
+            </View>
+            <RemoteImage sourceUrl={featuredProduct.thumbnailUrl} name={featuredProduct.name} style={styles.featuredImage} />
+            {featuredProduct.originalPrice && featuredProduct.originalPrice > featuredProduct.price ? (
+              <View style={styles.featuredDiscount}>
+                <Typography variant="xs" weight="bold" color="surface">Giảm {Math.round((1 - featuredProduct.price / featuredProduct.originalPrice) * 100)}%</Typography>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        )}
 
         {/* Danh mục ngành hàng thật từ cơ sở dữ liệu */}
         <View style={styles.categorySection}>
+          <View style={styles.sectionTitleRow}>
+            <Typography variant="md" weight="semiBold" role="heading" aria-level={2}>{STRINGS.CATEGORIES}</Typography>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Main', { screen: 'Search' })}>
+              <Typography variant="xs" color="inkSoft">{STRINGS.SEE_ALL} →</Typography>
+            </TouchableOpacity>
+          </View>
           <ScrollView
             horizontal
+            style={{ marginHorizontal: spacing.md }}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryGridScroll}
           >
@@ -504,17 +559,19 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={cat.id}
                 style={styles.categoryPillItem}
+                accessibilityRole="button"
+                accessibilityLabel={cat.viName}
                 activeOpacity={0.8}
                 onPress={() => {
                   searchHistory.recordViewedCategory(cat.id);
                   navigation.navigate('Main', {
                     screen: 'Search',
-                    params: { categoryId: cat.id, query: cat.viName },
+                    params: { categoryId: cat.id, keyword: '', query: cat.viName, categoryName: cat.viName },
                   } as any);
                 }}
               >
                 <View style={[styles.categoryCircleIcon, { backgroundColor: cat.color }]}>
-                  <Ionicons name={cat.icon as any} size={20} color={COLORS.ink} />
+                  <Ionicons name={cat.icon as keyof typeof Ionicons.glyphMap} size={25} color={COLORS.primaryDeep} />
                 </View>
                 <Typography variant="xs" align="center" weight="medium" style={styles.categoryLabelText}>
                   {cat.viName}
@@ -530,10 +587,10 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View>
                 <Typography variant="sm" weight="bold" style={{ color: COLORS.primaryDeep }}>
-                  🏪 {currentShop.name} ({currentShop.location})
+                  {currentShop.name} ({currentShop.location})
                 </Typography>
                 <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-                  Vị trí kho: {currentShop.location} • Đánh giá: {currentShop.rating}★
+                  Vị trí kho: {currentShop.location} • Đánh giá: {currentShop.rating}/5
                 </Typography>
               </View>
               <TouchableOpacity style={styles.addProductBtn} onPress={handleOpenCreateModal}>
@@ -546,30 +603,33 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Tabs Lướt Feed Dọc: GỢI Ý HÔM NAY - TOP BÁN CHẠY */}
+        <View style={styles.catalogTitleRow}>
+          <Typography variant="xl" weight="bold" role="heading" aria-level={2}>{STRINGS.YOUR_SELECTION}</Typography>
+          <Typography variant="xs" color="inkSoft">{productsPage?.pages[0]?.totalElements ?? allProducts.length} sản phẩm</Typography>
+        </View>
         <View style={styles.verticalFeedHeader}>
           <TouchableOpacity style={[styles.feedTab, styles.feedTabActive]}>
-            <Typography variant="sm" weight="bold" style={styles.feedTabTextActive}>
-              {hasSearchHistory ? 'GỢI Ý TÌM KIẾM' : 'GỢI Ý HÔM NAY'}
+            <Typography variant="xs" weight="bold" style={styles.feedTabTextActive}>
+              {hasSearchHistory ? STRINGS.HOME_SEARCH_RECOMMENDED : STRINGS.HOME_RECOMMENDED}
             </Typography>
             <View style={styles.feedTabLine} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.feedTab}
-            onPress={() => navigation.navigate('Main', { screen: 'Search' })}
+            onPress={() => navigation.navigate('Main', { screen: 'Search', params: { sort: SORT_OPTIONS.BEST_SALES } })}
           >
             <Typography variant="sm" weight="medium" color="muted">
-              TOP BÁN CHẠY
+              Bán chạy
             </Typography>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.feedTab}
-            onPress={() => navigation.navigate('Main', { screen: 'Search' })}
+            onPress={() => navigation.navigate('Main', { screen: 'Search', params: { sort: SORT_OPTIONS.BANNER_DISCOUNT } })}
           >
             <Typography variant="sm" weight="medium" color="muted">
-              FREESHIP XTRA
+              {STRINGS.PRICE_HIGHLIGHTS}
             </Typography>
           </TouchableOpacity>
         </View>
@@ -700,7 +760,7 @@ export default function HomeScreen() {
                     }
                   >
                     <Typography variant="xs" color="primaryDeep">
-                      💡 Đèn học LED
+                      Đèn học LED
                     </Typography>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -712,7 +772,7 @@ export default function HomeScreen() {
                     }
                   >
                     <Typography variant="xs" color="primaryDeep">
-                      👜 Túi xách nữ
+                      Túi xách nữ
                     </Typography>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -724,7 +784,7 @@ export default function HomeScreen() {
                     }
                   >
                     <Typography variant="xs" color="primaryDeep">
-                      🎧 Tai nghe Bass
+                      Tai nghe Bass
                     </Typography>
                   </TouchableOpacity>
                 </ScrollView>
@@ -786,8 +846,24 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5FA',
+    backgroundColor: 'transparent',
   },
+  masthead: { backgroundColor: 'transparent', paddingBottom: 16 },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 8 },
+  wordmark: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandName: { letterSpacing: -0.8 },
+  sellerLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36 },
+  titleBlock: { paddingHorizontal: spacing.md, marginBottom: 14, gap: 5 },
+  pageTitle: { letterSpacing: -0.8, lineHeight: 32 },
+  featuredProduct: { margin: spacing.md, marginBottom: 10, flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: radius.lg, borderWidth: 1.25, borderColor: COLORS.border, overflow: 'hidden', ...shadows.md },
+  featuredCopy: { flex: 1, padding: 12, justifyContent: 'center' },
+  featuredName: { marginTop: 4, marginBottom: 4, lineHeight: 22 },
+  featuredAction: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  featuredImage: { width: '40%', minHeight: 168 },
+  featuredProof: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
+  featuredDiscount: { position: 'absolute', right: 10, top: 10, backgroundColor: COLORS.deal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, marginBottom: 8 },
+  catalogTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: spacing.md, paddingTop: 12, paddingBottom: 6 },
   headerContainer: {
     marginBottom: spacing.xs,
   },
@@ -805,15 +881,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    height: 40,
+    height: 46,
     borderRadius: radius.md,
     paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   headerActionBtn: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 46,
     borderRadius: radius.md,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
@@ -826,10 +902,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#E53E3E',
+    backgroundColor: COLORS.ink,
     borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 2,
@@ -867,28 +943,40 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     backgroundColor: COLORS.surface,
-    marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
+    marginHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.25,
+    borderColor: COLORS.border,
+    ...shadows.sm,
+    marginTop: 8,
+    paddingVertical: spacing.xs,
   },
   categoryGridScroll: {
-    paddingHorizontal: spacing.md,
-    gap: 14,
+    paddingHorizontal: 0,
+    gap: 10,
+    paddingRight: 32,
+    paddingVertical: 6,
   },
   categoryPillItem: {
     alignItems: 'center',
-    width: 64,
+    width: 68,
+    paddingVertical: 2,
   },
   categoryCircleIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 7,
+    ...shadows.sm,
   },
   categoryLabelText: {
-    fontSize: 10,
-    lineHeight: 13,
+    fontSize: 11,
+    lineHeight: 15,
+    minHeight: 30,
     color: COLORS.ink,
   },
   shopManagerCard: {
@@ -896,7 +984,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.lilac,
     marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: 0,
     padding: spacing.md,
     borderRadius: radius.md,
   },
@@ -911,15 +999,19 @@ const styles = StyleSheet.create({
   verticalFeedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    marginTop: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    marginHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: spacing.xs,
     paddingHorizontal: spacing.md,
-    height: 44,
+    height: 40,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   feedTab: {
-    marginRight: spacing.lg,
+    marginRight: spacing.md,
     height: '100%',
     justifyContent: 'center',
     position: 'relative',
@@ -938,7 +1030,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   listContent: {
-    paddingBottom: 110,
+    paddingBottom: 24,
   },
   columnWrapper: {
     justifyContent: 'space-between',

@@ -506,7 +506,7 @@ export default function OrdersScreen() {
       {/* Screen Header */}
       <View style={styles.header}>
         <View>
-          <Typography variant="xl" weight="bold" color="ink">
+          <Typography variant="xl" weight="bold" color="ink" role="heading" aria-level={1}>
             {isShopView ? 'Quản lý đơn hàng (Shop)' : 'Đơn hàng của tôi'}
           </Typography>
           <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
@@ -725,7 +725,7 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -816,9 +816,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     shadowColor: COLORS.ink,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 0,
   },
   cardHeader: {
     flexDirection: 'row',

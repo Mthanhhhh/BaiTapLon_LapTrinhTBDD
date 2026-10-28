@@ -134,6 +134,10 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.titleRow}>
+        <Typography variant="xxl" weight="bold" role="heading" aria-level={1}>{STRINGS.SEARCH_TITLE}</Typography>
+        <Typography variant="sm" color="inkSoft">{categoryName || 'Khám phá toàn bộ sản phẩm'}</Typography>
+      </View>
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color={COLORS.muted} style={styles.searchIcon} />
@@ -151,7 +155,7 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Bộ lọc sản phẩm" style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
           <Ionicons name="funnel-outline" size={24} color={COLORS.primaryDeep} />
         </TouchableOpacity>
       </View>
@@ -244,7 +248,7 @@ export default function SearchScreen() {
             {sort === SORT_OPTIONS.RATING && <View style={styles.activeSortIndicator} />}
           </TouchableOpacity>
         </ScrollView>
-        <TouchableOpacity style={styles.layoutToggle} onPress={() => setLayout(l => l === 'grid' ? 'list' : 'grid')}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={layout === 'grid' ? 'Xem dạng danh sách' : 'Xem dạng lưới'} style={styles.layoutToggle} onPress={() => setLayout(l => l === 'grid' ? 'list' : 'grid')}>
           <Ionicons name={layout === 'grid' ? 'list' : 'grid'} size={22} color={COLORS.ink} />
         </TouchableOpacity>
       </View>
@@ -336,9 +340,10 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
+  titleRow: { paddingHorizontal: spacing.md, paddingTop: 24, paddingBottom: 8, gap: 5, backgroundColor: COLORS.surface },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
     paddingTop: Platform.OS === 'android' ? 24 : 0,
   },
   header: {
@@ -354,7 +359,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceAlt,
     borderRadius: radius.md,
     paddingHorizontal: spacing.sm,
-    height: 40,
+    height: 46,
     marginRight: spacing.sm,
   },
   searchIcon: {
@@ -451,7 +456,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.md,
-    paddingBottom: 100, // Space for bottom tab bar
+    paddingBottom: 24,
   },
   row: {
     justifyContent: 'space-between',

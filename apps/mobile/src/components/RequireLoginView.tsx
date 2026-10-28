@@ -23,7 +23,7 @@ export const RequireLoginView: React.FC<RequireLoginViewProps> = ({ title, descr
             <View style={styles.iconContainer}>
               <Ionicons name="lock-closed-outline" size={48} color={COLORS.primaryDeep} />
             </View>
-            <Typography variant="xl" weight="bold" align="center" color="ink" style={styles.title}>
+            <Typography variant="xl" weight="bold" role="heading" aria-level={1} align="center" color="ink" style={styles.title}>
               {title}
             </Typography>
             <Typography variant="md" align="center" color="inkSoft" style={styles.description}>
@@ -61,15 +61,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: COLORS.ink,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 0,
   },
   iconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.primarySoft,
+    backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.lg,

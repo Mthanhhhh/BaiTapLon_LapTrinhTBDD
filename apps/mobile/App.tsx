@@ -7,6 +7,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { COLORS } from './src/theme/colors';
+import { WaveBackdrop } from './src/components/ui/WaveBackdrop';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,7 +36,8 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <View style={styles.appFrame}>
-            <AppNavigator />
+            <WaveBackdrop />
+            <View style={styles.appContent}><AppNavigator /></View>
           </View>
         </AuthProvider>
       </QueryClientProvider>
@@ -44,9 +46,10 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  appContent: { flex: 1, zIndex: 1 },
   webContainer: {
     flex: 1,
-    backgroundColor: '#EBE8F3',
+    backgroundColor: COLORS.surfaceAlt,
   },
   appFrame: {
     flex: 1,
@@ -58,7 +61,9 @@ const styles = StyleSheet.create({
     position: 'relative',
     ...(Platform.OS === 'web' && {
       minHeight: '100vh',
-      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.08)',
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: COLORS.border,
     } as any),
   },
 });

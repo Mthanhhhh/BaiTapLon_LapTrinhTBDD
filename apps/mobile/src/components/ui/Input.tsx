@@ -26,10 +26,10 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     style.innerHTML = `
       input:-webkit-autofill,
       input:-webkit-autofill:focus {
-        -webkit-box-shadow: 0 0 0 1000px #F1EEFB inset !important;
-        -webkit-text-fill-color: #2B2D42 !important;
-        caret-color: #2B2D42;
-        border-radius: 16px;
+        -webkit-box-shadow: 0 0 0 1000px ${COLORS.surface} inset !important;
+        -webkit-text-fill-color: ${COLORS.ink} !important;
+        caret-color: ${COLORS.ink};
+        border-radius: 8px;
         transition: background-color 9999s ease-in-out 0s;
       }
       .custom-input {

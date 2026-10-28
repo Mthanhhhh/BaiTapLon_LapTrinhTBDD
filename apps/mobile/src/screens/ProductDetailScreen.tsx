@@ -409,7 +409,7 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          <Typography variant="md" weight="semiBold" numberOfLines={2} style={styles.productName}>
+          <Typography variant="lg" weight="semiBold" role="heading" aria-level={1} numberOfLines={2} style={styles.productName}>
             {product.name}
           </Typography>
 
@@ -452,7 +452,7 @@ export default function ProductDetailScreen() {
               {product.shopName || 'TechZone Official'}
             </Typography>
             <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-              📍 {product.shopLocation || 'TP. Hồ Chí Minh'} • ⭐ 4.8★ (Shop Yêu Thích)
+              {product.shopLocation || 'TP. Hồ Chí Minh'} • 4.8/5 (Shop yêu thích)
             </Typography>
           </View>
           <TouchableOpacity style={styles.viewShopButton} activeOpacity={0.7}>
@@ -861,7 +861,7 @@ export default function ProductDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -942,7 +942,7 @@ const styles = StyleSheet.create({
   },
   productName: {
     marginBottom: spacing.sm,
-    lineHeight: 22,
+    lineHeight: 26,
   },
   statsRow: {
     flexDirection: 'row',

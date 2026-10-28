@@ -248,7 +248,7 @@ export default function LoginScreen() {
             <View style={styles.card}>
               {/* Header: Title and QR Switch with Tooltip */}
               <View style={styles.headerRow}>
-                <Typography variant="xxl" weight="bold" color="ink" style={styles.headerTitle}>
+                <Typography variant="xxl" weight="bold" color="ink" role="heading" aria-level={1} style={styles.headerTitle}>
                   {loginMode === 'password' ? 'Đăng nhập' : 'Đăng nhập với mã QR'}
                 </Typography>
 
@@ -713,9 +713,9 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     shadowColor: COLORS.ink,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0,
     shadowRadius: 18,
-    elevation: 5,
+    elevation: 0,
     borderWidth: 1,
     borderColor: COLORS.border,
   },

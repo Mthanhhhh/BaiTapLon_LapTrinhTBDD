@@ -6,6 +6,7 @@ import { Badge } from './Badge';
 import { Ionicons } from '@expo/vector-icons';
 import { RemoteImage } from './RemoteImage';
 import { formatVND, formatSoldVi, calculateShippingTime } from '../../utils/formatters';
+import { STRINGS } from '../../constants/strings';
 
 export interface ProductCardProps {
   id: number;
@@ -48,6 +49,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   return (
     <TouchableOpacity
       style={[styles.container, shadows.sm]}
+      accessibilityRole="button"
+      accessibilityLabel={`${name}, ${formatVND(price)}`}
       activeOpacity={0.9}
       onPress={onPress}
     >
@@ -61,19 +64,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         />
 
         {/* Freeship Badge Top-Right */}
-        <View style={styles.freeshipBadge}>
-          <Typography variant="xs" weight="bold" style={styles.freeshipText}>
-            Freeship 0Đ
-          </Typography>
-        </View>
 
         {/* Discount Badge Top-Left */}
         {discountPercent > 0 && (
-          <Badge
-            label={`-${discountPercent}%`}
-            variant="danger"
-            style={styles.discountBadge}
-          />
+          <View style={styles.discountBadge}>
+            <Typography variant="xs" weight="bold" color="surface">-{discountPercent}%</Typography>
+          </View>
         )}
 
         {/* Seller Quick Action Overlay */}
@@ -81,6 +77,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <View style={styles.sellerActionOverlay}>
             <TouchableOpacity
               style={[styles.sellerBtn, { backgroundColor: COLORS.primarySoft }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Sửa ${name}`}
               onPress={(e) => {
                 e.stopPropagation?.();
                 onEdit?.();
@@ -91,6 +89,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
             <TouchableOpacity
               style={[styles.sellerBtn, { backgroundColor: COLORS.dangerSoft, marginLeft: 4 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Xóa ${name}`}
               onPress={(e) => {
                 e.stopPropagation?.();
                 onDelete?.();
@@ -132,6 +132,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             </Typography>
           )}
         </View>
+        {originalPrice && originalPrice > price ? (
+          <Typography variant="xs" weight="medium" color="deal" numberOfLines={1} style={styles.savingText}>
+            {STRINGS.SAVING} {formatVND(originalPrice - price)}
+          </Typography>
+        ) : null}
 
         {/* Rating and Sold count in Vietnamese */}
         <View style={styles.ratingSoldRow}>
@@ -184,14 +189,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden',
     marginBottom: spacing.md,
-    borderWidth: 1,
+    borderWidth: 1.25,
     borderColor: COLORS.border,
+    padding: 6,
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
     aspectRatio: 1,
     backgroundColor: COLORS.surfaceAlt,
+    borderRadius: 11,
+    overflow: 'hidden',
   },
   image: {
     width: '100%',
@@ -213,7 +221,11 @@ const styles = StyleSheet.create({
   discountBadge: {
     position: 'absolute',
     top: 6,
-    left: 6,
+    right: 6,
+    backgroundColor: COLORS.deal,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
   sellerActionOverlay: {
     position: 'absolute',
@@ -231,12 +243,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   content: {
-    padding: spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
   title: {
-    minHeight: 36,
-    lineHeight: 18,
-    marginBottom: 4,
+    minHeight: 40,
+    lineHeight: 20,
+    marginBottom: 6,
     color: COLORS.ink,
   },
   promoTagRow: {
@@ -248,30 +261,31 @@ const styles = StyleSheet.create({
   cheapestBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF5F5',
-    borderWidth: 0.8,
-    borderColor: '#FEB2B2',
+    backgroundColor: COLORS.dangerSoft,
+    borderWidth: 0,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 2,
   },
   cheapestText: {
-    color: '#E53E3E',
-    fontSize: 9,
+    color: COLORS.danger,
+    fontSize: 11,
   },
   priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   priceText: {
-    color: COLORS.primaryDeep,
-    fontSize: 15,
+    color: COLORS.deal,
+    fontSize: 18,
+    lineHeight: 26,
   },
+  savingText: { fontSize: 11, lineHeight: 17, marginBottom: 6 },
   originalPrice: {
-    marginLeft: 6,
+    marginLeft: 0,
     textDecorationLine: 'line-through',
-    fontSize: 11,
+    fontSize: 12,
   },
   ratingSoldRow: {
     flexDirection: 'row',
@@ -285,7 +299,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     marginLeft: 3,
-    fontSize: 11,
+    fontSize: 12,
   },
   shippingRow: {
     flexDirection: 'row',
@@ -296,10 +310,10 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   shippingText: {
-    fontSize: 10,
+    fontSize: 11,
     color: COLORS.inkSoft,
   },
   locationText: {
-    fontSize: 10,
+    fontSize: 11,
   },
 });

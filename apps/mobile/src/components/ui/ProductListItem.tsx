@@ -85,6 +85,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.surface,
     borderRadius: radius.lg,
+    borderWidth: 1.25,
+    borderColor: COLORS.border,
     overflow: 'hidden',
     flexDirection: 'row',
     marginBottom: spacing.md,

@@ -19,6 +19,7 @@ import { Typography, Button, AuroraBackground } from '../components/ui';
 import { RequireLoginView } from '../components/RequireLoginView';
 import { COLORS, spacing, radius } from '../theme';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { STRINGS } from '../constants/strings';
 import {
   useUserProfile,
   useUpdateProfile,
@@ -150,6 +151,7 @@ export default function AccountScreen() {
     <View style={styles.container}>
       <AuroraBackground variant="header" headerHeight={260} palette="calm">
         <SafeAreaView style={styles.headerSafeArea}>
+          <Typography variant="xl" weight="bold" role="heading" aria-level={1} style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md }}>{STRINGS.ACCOUNT_TITLE}</Typography>
           <View style={styles.headerContent}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatarPlaceholder}>
@@ -509,7 +511,7 @@ const MenuItem = ({ icon, title, onPress, color = COLORS.ink, noBorder = false }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: 'transparent',
   },
   headerSafeArea: {
     flex: 1,
@@ -528,9 +530,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0,
     shadowRadius: 10,
-    elevation: 4,
+    elevation: 0,
   },
   avatarPlaceholder: {
     width: 76,
@@ -543,7 +545,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
-    marginTop: -24,
+    marginTop: 0,
   },
   menuCard: {
     backgroundColor: COLORS.surface,
@@ -551,9 +553,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 0,
     borderWidth: 1,
     borderColor: COLORS.border,
   },

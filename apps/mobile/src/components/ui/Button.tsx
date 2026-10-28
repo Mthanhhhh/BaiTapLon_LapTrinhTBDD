@@ -59,7 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
       case 'primary': return COLORS.surface;
       case 'soft': return COLORS.ink;
       case 'secondary': return COLORS.primaryDeep;
-      case 'outline': return COLORS.primary;
+      case 'outline': return COLORS.primaryDeep;
       case 'ghost': return COLORS.ink;
       default: return COLORS.surface;
     }
@@ -78,6 +78,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={title}
       disabled={disabled || loading}
       style={[
         styles.base,
@@ -111,7 +113,7 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 9999,
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -28,6 +28,9 @@ infra/apache-maven-*/
 node_modules/
 .expo/
 dist/
+dist-taste/
+.taste-skill/
+.tools/
 web-build/
 *.tsbuildinfo
 npm-debug.log*
