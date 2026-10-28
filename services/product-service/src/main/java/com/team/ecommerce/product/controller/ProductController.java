@@ -16,6 +16,14 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ProductController {
     private final ProductService productService;
+    private final com.team.ecommerce.product.service.ElasticsearchSyncService elasticsearchSyncService;
+
+    @PostMapping("/sync-elasticsearch")
+    public ApiResponse<String> syncElasticsearch() {
+        elasticsearchSyncService.ensureIndexExists();
+        elasticsearchSyncService.bulkSyncAllProducts();
+        return ApiResponse.success("Đồng bộ danh mục sản phẩm vào Elasticsearch thành công", "Synced successfully");
+    }
 
     @GetMapping
     public ApiResponse<PageResponse<ProductListResponse>> getProducts(Pageable pageable) {

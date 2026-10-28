@@ -14,5 +14,6 @@ public class SocialLoginRequest {
     private String fullName;
     private String avatarUrl;
     private String providerId;
+    private String token;
 }
 

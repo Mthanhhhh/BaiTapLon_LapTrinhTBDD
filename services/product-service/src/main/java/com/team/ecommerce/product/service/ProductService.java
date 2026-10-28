@@ -23,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -34,6 +36,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final ElasticsearchSyncService elasticsearchSyncService;
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Transactional(value = "productTransactionManager", readOnly = true)
@@ -72,6 +75,41 @@ public class ProductService {
 
     @Transactional(value = "productTransactionManager", readOnly = true)
     public PageResponse<ProductListResponse> searchProducts(ProductSearchRequest request, Pageable pageable) {
+        if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
+            Double minP = request.getMinPrice() != null ? request.getMinPrice().doubleValue() : null;
+            Double maxP = request.getMaxPrice() != null ? request.getMaxPrice().doubleValue() : null;
+            List<Long> esIds = elasticsearchSyncService.searchProductIds(request.getKeyword(), request.getCategoryId(), minP, maxP, 50);
+
+            if (!esIds.isEmpty()) {
+                List<Product> matched = productRepository.findAllById(esIds);
+                // Keep the relevance score order returned by Elasticsearch
+                Map<Long, Product> productMap = new HashMap<>();
+                for (Product p : matched) {
+                    if (p.getDeletedAt() == null && p.getStatus() == ProductStatus.ACTIVE) {
+                        productMap.put(p.getId(), p);
+                    }
+                }
+                List<ProductListResponse> sortedList = new ArrayList<>();
+                for (Long id : esIds) {
+                    Product p = productMap.get(id);
+                    if (p != null) {
+                        sortedList.add(ProductListResponse.from(p, getCategoryName(p.getCategoryId())));
+                    }
+                }
+                if (!sortedList.isEmpty()) {
+                    return PageResponse.<ProductListResponse>builder()
+                            .content(sortedList)
+                            .page(0)
+                            .size(sortedList.size())
+                            .totalElements((long) sortedList.size())
+                            .totalPages(1)
+                            .last(true)
+                            .build();
+                }
+            }
+        }
+
+        // Fallback to MySQL JPA Specification
         Page<Product> page = productRepository.findAll(
                 ProductSpecification.search(
                         request.getKeyword(),
@@ -143,6 +181,7 @@ public class ProductService {
         }
 
         Product savedProduct = productRepository.save(product);
+        elasticsearchSyncService.syncProduct(savedProduct);
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }
 
@@ -195,6 +234,7 @@ public class ProductService {
         }
 
         Product savedProduct = productRepository.save(product);
+        elasticsearchSyncService.syncProduct(savedProduct);
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }
 
@@ -203,6 +243,7 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         product.setDeletedAt(java.time.LocalDateTime.now());
         productRepository.save(product);
+        elasticsearchSyncService.deleteProduct(id);
     }
 
     public void updateStock(Long productId, Long variantId, int quantity) {

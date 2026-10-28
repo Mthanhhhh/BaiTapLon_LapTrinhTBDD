@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await loadUser();
   };
 
-  const socialLogin = async (data: { provider: string; email: string; fullName?: string; avatarUrl?: string }) => {
+  const socialLogin = async (data: { provider: string; email?: string; fullName?: string; avatarUrl?: string; token?: string }) => {
     const response = await apiClient.post('/api/v1/auth/social-login', data);
     const { accessToken, refreshToken } = response.data.data;
     await tokenStorage.setRememberMe(true);

@@ -45,6 +45,10 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/dev/**", "/actuator/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
+                .requestMatchers("/api/v1/products/sync-elasticsearch").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/products/**").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/api/v1/products/**").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
