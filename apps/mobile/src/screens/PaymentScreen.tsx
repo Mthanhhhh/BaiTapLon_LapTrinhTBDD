@@ -1,3 +1,9 @@
+import { appAlert } from '../utils/appAlert';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../api/client';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { OrderResponse } from '../hooks/useCart';
 import React, { useState } from 'react';
 import {
   View,
@@ -21,19 +27,26 @@ export default function PaymentScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'Payment'>>();
 
-  const orderId = route.params?.orderId;
-  const totalAmount = route.params?.total ?? 0;
+  const orderId = Number(route.params?.orderId);
+  const { user } = useContext(AuthContext);
+  const orderQuery = useQuery({queryKey:['orders',user?.id,'payment',orderId],enabled:!!user&&Number.isFinite(orderId)&&orderId>0,queryFn:async()=> (await apiClient.get(`/api/v1/orders/${orderId}`)).data.data as OrderResponse});
+  const totalAmount = orderQuery.data?.total ?? route.params?.total ?? 0;
   const orderNumber = route.params?.orderNumber ?? (orderId ? `#EC${orderId}` : '');
 
   const processPaymentMutation = useProcessPayment();
 
-  const [method, setMethod] = useState<'VISA' | 'MAESTRO' | 'PAYPAL'>('VISA');
-  const [cardNumber, setCardNumber] = useState('4111 1111 1111 1234');
-  const [cardHolder, setCardHolder] = useState('BUYER DEMO');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [cardCvv, setCardCvv] = useState('888');
-  const [paypalEmail, setPaypalEmail] = useState('buyer@ecommerce.local');
+  const [method, setMethod] = useState<'VISA' | 'MAESTRO' | 'PAYPAL'>(route.params?.method ?? 'VISA');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [paypalEmail, setPaypalEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const saved=orderQuery.data?.paymentMethod;
+    if(saved==='VISA'||saved==='MAESTRO'||saved==='PAYPAL')setMethod(saved);
+  },[orderQuery.data?.paymentMethod]);
 
   const formatCardNumber = (text: string) => {
     const cleaned = text.replace(/\D/g, '').substring(0, 16);
@@ -46,7 +59,7 @@ export default function PaymentScreen() {
 
   const handlePay = () => {
     setErrorMessage('');
-    if (!orderId) {
+    if (!orderId || !orderQuery.data || orderQuery.data.status !== 'PENDING_PAYMENT') {
       setErrorMessage('Không tìm thấy đơn hàng cần thanh toán. Hãy quay lại giỏ hàng và tạo đơn trước.');
       return;
     }
@@ -80,7 +93,7 @@ export default function PaymentScreen() {
 
     processPaymentMutation.mutate(payload, {
       onSuccess: (paymentResp) => {
-        navigation.navigate('Success', {
+        navigation.replace('Success', {
           orderId,
           amount: paymentResp.amount,
           paymentMethod: method,
@@ -91,16 +104,20 @@ export default function PaymentScreen() {
       onError: (err: any) => {
         const msg = err.message || 'Payment was declined by the bank.';
         setErrorMessage(msg);
-        Alert.alert('Payment Failed', msg);
+        appAlert.alert('Payment Failed', msg);
       },
     });
   };
 
+  if (orderQuery.isPending && user && orderId) return <SafeAreaView style={styles.container}><View style={{padding:24}}><Typography>Đang tải đơn hàng...</Typography></View></SafeAreaView>;
+  if (!user || !Number.isFinite(orderId) || orderId <= 0 || orderQuery.isError || (orderQuery.data && orderQuery.data.status !== 'PENDING_PAYMENT')) return <SafeAreaView style={styles.container}><View style={{padding:24,gap:16}}><Typography>Đơn không còn chờ thanh toán hoặc bạn chưa đăng nhập đúng tài khoản.</Typography><Button onPress={()=>navigation.navigate('Main',{screen:'Orders'})}>Về đơn hàng</Button></View></SafeAreaView>;
+
   return (
     <SafeAreaView style={styles.container}>
+      {(!user || !orderId || orderQuery.isError || (orderQuery.data && orderQuery.data.status !== 'PENDING_PAYMENT')) && <View style={{padding:16}}><Typography>Đơn không còn chờ thanh toán hoặc bạn chưa đăng nhập đúng tài khoản.</Typography><Button onPress={()=>navigation.navigate('Main',{screen:'Orders'})}>Về đơn hàng</Button></View>}
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Main', {screen:'Orders'})} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color={COLORS.ink} />
         </TouchableOpacity>
         <Typography variant="lg" weight="bold" role="heading" aria-level={1}>
@@ -110,6 +127,7 @@ export default function PaymentScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Typography variant="sm" color="inkSoft">Thanh toán trực tuyến đang ở chế độ thử nghiệm local, không trừ tiền thật. Dùng dữ liệu thẻ thử nghiệm.</Typography>
         {/* Order Summary Card */}
         <View style={styles.orderSummaryCard}>
           <View style={styles.summaryTopRow}>

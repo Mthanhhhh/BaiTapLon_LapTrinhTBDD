@@ -1,3 +1,4 @@
+import { appAlert } from '../utils/appAlert';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -34,7 +35,7 @@ export default function CheckoutScreen() {
   const createOrderMutation = useCreateOrder();
 
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'VISA' | 'MAESTRO' | 'PAYPAL'>('VISA');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'COD' | 'VISA' | 'MAESTRO' | 'PAYPAL'>('COD');
   const [orderNote, setOrderNote] = useState('');
 
   useEffect(() => {
@@ -54,13 +55,13 @@ export default function CheckoutScreen() {
   const handleQuantityChange = (itemId: number, currentQty: number, delta: number) => {
     const newQty = currentQty + delta;
     if (newQty <= 0) {
-      Alert.alert('Xóa sản phẩm', 'Bạn có chắc chắn muốn bỏ sản phẩm này khỏi giỏ hàng?', [
+      appAlert.alert('Xóa sản phẩm', 'Bạn có chắc chắn muốn bỏ sản phẩm này khỏi giỏ hàng?', [
         { text: 'Hủy', style: 'cancel' },
         { text: 'Xóa ngay', style: 'destructive', onPress: () => removeCartItemMutation.mutate(itemId) },
       ]);
     } else {
       if (newQty > 99) {
-        Alert.alert('Vượt giới hạn', 'Mỗi sản phẩm chỉ được đặt tối đa 99 sản phẩm.');
+        appAlert.alert('Vượt giới hạn', 'Mỗi sản phẩm chỉ được đặt tối đa 99 sản phẩm.');
         return;
       }
       updateCartItemMutation.mutate({ itemId, quantity: newQty });
@@ -69,11 +70,11 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = () => {
     if (!cart?.items || cart.items.length === 0) {
-      Alert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm vào giỏ hàng trước khi đặt hàng.');
+      appAlert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm vào giỏ hàng trước khi đặt hàng.');
       return;
     }
     if (!currentAddress) {
-      Alert.alert('Thiếu địa chỉ nhận hàng', 'Hãy thêm địa chỉ giao hàng trong mục Tài khoản trước khi đặt hàng.');
+      appAlert.alert('Thiếu địa chỉ nhận hàng', 'Hãy thêm địa chỉ giao hàng trong mục Tài khoản trước khi đặt hàng.');
       return;
     }
 
@@ -85,14 +86,19 @@ export default function CheckoutScreen() {
       },
       {
         onSuccess: (order) => {
-          navigation.navigate('Payment', {
+          if (selectedPaymentMethod === 'COD') {
+            navigation.replace('Success', { orderId: order.id, amount: order.total, paymentMethod: 'COD' });
+            return;
+          }
+          navigation.replace('Payment', {
+            method: selectedPaymentMethod,
             orderId: order.id,
             total: order.total,
             orderNumber: order.orderNo ? `#${order.orderNo}` : `#EC${order.id}`,
           });
         },
         onError: (err: any) => {
-          Alert.alert('Lỗi đặt hàng', err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+          appAlert.alert('Lỗi đặt hàng', err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
         },
       }
     );
@@ -113,7 +119,7 @@ export default function CheckoutScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Main', {screen:'Home'})} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color={COLORS.ink} />
         </TouchableOpacity>
         <Typography variant="lg" weight="bold" role="heading" aria-level={1}>
@@ -221,6 +227,7 @@ export default function CheckoutScreen() {
           </Typography>
           {(
             [
+              { id: 'COD', label: 'Thanh toán khi nhận hàng (COD)', icon: 'cash-outline' },
               { id: 'VISA', label: 'Thẻ Quốc Tế Visa', icon: 'card-outline' },
               { id: 'MAESTRO', label: 'Thẻ Ghi Nợ Maestro', icon: 'card-outline' },
               { id: 'PAYPAL', label: 'Cổng Ví Điện Tử PayPal', icon: 'logo-paypal' },

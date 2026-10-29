@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { appAlert } from '../utils/appAlert';
+import { useShop } from '../hooks/useShop';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,7 +15,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Typography, Button, Badge } from '../components/ui';
 import { COLORS, spacing, radius } from '../theme';
@@ -24,7 +26,6 @@ import {
   useReceiveOrder,
   useReturnOrder,
   useCancelOrder,
-  useAutoConfirmSetting,
   useSubmitReview,
   ReviewRequest,
 } from '../hooks/useOrders';
@@ -56,15 +57,18 @@ const TABS: { id: OrderTab; label: string }[] = [
 export default function OrdersScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState<OrderTab>('ALL');
-  const [isShopView, setIsShopView] = useState(false);
+  const route = useRoute();
+  useEffect(() => { if ((route.params as {shopMode?:boolean})?.shopMode) setIsShopView(true); }, [route.params]);
+  const [shopMode, setIsShopView] = useState(false);
+  const { data: shop } = useShop();
+  const isShopView = !!shop && shopMode;
 
-  const { data, isLoading, refetch } = useOrders();
+  const { data, isLoading, refetch } = useOrders(0, 100, isShopView);
   const confirmOrderMutation = useConfirmOrder();
   const shipOrderMutation = useShipOrder();
   const receiveOrderMutation = useReceiveOrder();
   const returnOrderMutation = useReturnOrder();
   const cancelOrderMutation = useCancelOrder();
-  const { autoConfirm, setAutoConfirm, isUpdating: isTogglingAuto } = useAutoConfirmSetting();
   const submitReviewMutation = useSubmitReview();
 
   // Review Modal State
@@ -108,7 +112,7 @@ export default function OrdersScreen() {
   };
 
   const handleCancelOrder = (orderId: number) => {
-    Alert.alert(
+    appAlert.alert(
       'Hủy đơn hàng',
       'Bạn có chắc chắn muốn hủy đơn hàng này không?',
       [
@@ -119,10 +123,10 @@ export default function OrdersScreen() {
           onPress: () => {
             cancelOrderMutation.mutate(orderId, {
               onSuccess: () => {
-                Alert.alert('Thành công', 'Đơn hàng của bạn đã được hủy.');
+                appAlert.alert('Thành công', 'Đơn hàng của bạn đã được hủy.');
               },
               onError: (err: any) => {
-                Alert.alert('Lỗi', err.response?.data?.message || 'Hủy đơn hàng thất bại.');
+                appAlert.alert('Lỗi', err.response?.data?.message || 'Hủy đơn hàng thất bại.');
               },
             });
           },
@@ -134,10 +138,10 @@ export default function OrdersScreen() {
   const handleConfirmOrder = (orderId: number) => {
     confirmOrderMutation.mutate(orderId, {
       onSuccess: () => {
-        Alert.alert('Thành công', 'Đã xác nhận đơn hàng! Đơn đã chuyển sang "Chờ lấy hàng".');
+        appAlert.alert('Thành công', 'Đã xác nhận đơn hàng! Đơn đã chuyển sang "Chờ lấy hàng".');
       },
       onError: (err: any) => {
-        Alert.alert('Lỗi', err.response?.data?.message || 'Không thể xác nhận đơn hàng.');
+        appAlert.alert('Lỗi', err.response?.data?.message || 'Không thể xác nhận đơn hàng.');
       },
     });
   };
@@ -145,16 +149,16 @@ export default function OrdersScreen() {
   const handleShipOrder = (orderId: number) => {
     shipOrderMutation.mutate(orderId, {
       onSuccess: () => {
-        Alert.alert('Thành công', 'Đã bàn giao đơn hàng cho đơn vị vận chuyển!');
+        appAlert.alert('Thành công', 'Đã bàn giao đơn hàng cho đơn vị vận chuyển!');
       },
       onError: (err: any) => {
-        Alert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật giao hàng.');
+        appAlert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật giao hàng.');
       },
     });
   };
 
   const handleReceiveOrder = (orderId: number) => {
-    Alert.alert(
+    appAlert.alert(
       'Xác nhận đã nhận hàng',
       'Bạn đã nhận được kiện hàng này nguyên vẹn và hài lòng với sản phẩm?',
       [
@@ -165,10 +169,10 @@ export default function OrdersScreen() {
           onPress: () => {
             receiveOrderMutation.mutate(orderId, {
               onSuccess: () => {
-                Alert.alert('Hoàn thành', 'Cảm ơn bạn đã mua sắm! Hãy để lại đánh giá cho Shop nhé.');
+                appAlert.alert('Hoàn thành', 'Cảm ơn bạn đã mua sắm! Hãy để lại đánh giá cho Shop nhé.');
               },
               onError: (err: any) => {
-                Alert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật trạng thái.');
+                appAlert.alert('Lỗi', err.response?.data?.message || 'Không thể cập nhật trạng thái.');
               },
             });
           },
@@ -178,7 +182,7 @@ export default function OrdersScreen() {
   };
 
   const handleReturnOrder = (orderId: number) => {
-    Alert.alert(
+    appAlert.alert(
       'Yêu cầu trả hàng / Hoàn tiền',
       'Bạn muốn yêu cầu trả hàng hoặc hoàn tiền cho đơn hàng này?',
       [
@@ -189,10 +193,10 @@ export default function OrdersScreen() {
           onPress: () => {
             returnOrderMutation.mutate(orderId, {
               onSuccess: () => {
-                Alert.alert('Đã gửi yêu cầu', 'Yêu cầu trả hàng của bạn đã được gửi tới Shop.');
+                appAlert.alert('Đã gửi yêu cầu', 'Yêu cầu trả hàng của bạn đã được gửi tới Shop.');
               },
               onError: (err: any) => {
-                Alert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi yêu cầu trả hàng.');
+                appAlert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi yêu cầu trả hàng.');
               },
             });
           },
@@ -228,10 +232,10 @@ export default function OrdersScreen() {
       {
         onSuccess: () => {
           setReviewModalVisible(false);
-          Alert.alert('Đánh giá thành công', 'Cảm ơn phản hồi thực tế của bạn!');
+          appAlert.alert('Đánh giá thành công', 'Cảm ơn phản hồi thực tế của bạn!');
         },
         onError: (err: any) => {
-          Alert.alert('Lỗi', err.response?.data?.message || 'Gửi đánh giá thất bại.');
+          appAlert.alert('Lỗi', err.response?.data?.message || 'Gửi đánh giá thất bại.');
         },
       }
     );
@@ -510,7 +514,7 @@ export default function OrdersScreen() {
             {isShopView ? 'Quản lý đơn hàng (Shop)' : 'Đơn hàng của tôi'}
           </Typography>
           <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-            {isShopView ? 'Kênh Người Bán - TechZone Official' : 'Theo dõi trạng thái đơn hàng thực tế'}
+            {isShopView ? shop?.name : 'Theo dõi trạng thái đơn hàng thực tế'}
           </Typography>
         </View>
 
@@ -518,6 +522,7 @@ export default function OrdersScreen() {
         <TouchableOpacity
           style={[styles.roleSwitchPill, isShopView && styles.roleSwitchPillActive]}
           activeOpacity={0.8}
+          disabled={!shop}
           onPress={() => setIsShopView(!isShopView)}
         >
           <Ionicons
@@ -535,33 +540,6 @@ export default function OrdersScreen() {
           </Typography>
         </TouchableOpacity>
       </View>
-
-      {/* SHOP AUTO-CONFIRM BAR (Hiện khi ở Kênh Shop) */}
-      {isShopView && (
-        <View style={styles.shopAutoConfirmBar}>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="flash" size={16} color={COLORS.primaryDeep} style={{ marginRight: 6 }} />
-              <Typography variant="sm" weight="bold" color="primaryDeep">
-                Tự động xác nhận đơn hàng
-              </Typography>
-            </View>
-            <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-              {autoConfirm
-                ? 'Đang bật: Đơn mới sẽ tự động duyệt sang "Chờ lấy hàng"'
-                : 'Đang tắt: Shop cần nhấn "Xác nhận đơn" thủ công'}
-            </Typography>
-          </View>
-          <TouchableOpacity
-            style={[styles.switchToggle, autoConfirm && styles.switchToggleActive]}
-            activeOpacity={0.8}
-            disabled={isTogglingAuto}
-            onPress={() => setAutoConfirm(!autoConfirm)}
-          >
-            <View style={[styles.switchThumb, autoConfirm && styles.switchThumbActive]} />
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Tabs Phân Loại Trạng Thái Đơn Hàng Chuẩn Shopee */}
       <View style={styles.tabContainer}>

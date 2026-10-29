@@ -1,3 +1,4 @@
+import { appAlert } from '../utils/appAlert';
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
@@ -50,7 +51,7 @@ export default function RegisterScreen() {
       if (appErr.fieldErrors) {
         setErrors(appErr.fieldErrors);
       } else {
-        Alert.alert('Đăng ký thất bại', appErr.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+        appAlert.alert('Đăng ký thất bại', appErr.message || 'Có lỗi xảy ra, vui lòng thử lại.');
       }
     } finally {
       setIsLoading(false);

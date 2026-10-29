@@ -18,6 +18,16 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
+    private final com.team.ecommerce.order.service.ShopAccessService shops;
+
+    @GetMapping("/shop/me")
+    public ApiResponse<java.util.Map<String,Object>> shop(@AuthenticationPrincipal Long userId) { return ApiResponse.success(shops.mine(userId)); }
+
+    @PostMapping("/shop/me")
+    public ApiResponse<java.util.Map<String,Object>> openShop(@AuthenticationPrincipal Long userId, @RequestBody java.util.Map<String,String> body) { return ApiResponse.success(shops.open(userId, body.get("name"))); }
+
+    @GetMapping("/shop/orders")
+    public ApiResponse<PageResponse<OrderResponse>> shopOrders(@AuthenticationPrincipal Long userId, Pageable pageable) { return ApiResponse.success(orderService.getShopOrders(userId, pageable)); }
 
     @PostMapping
     public ApiResponse<OrderResponse> createOrder(@AuthenticationPrincipal Long userId, @Valid @RequestBody CreateOrderRequest request) {
@@ -39,28 +49,23 @@ public class OrderController {
         return ApiResponse.success("Order cancelled", orderService.cancelOrder(userId, id));
     }
 
-    @PutMapping("/{id}/status")
-    public ApiResponse<OrderResponse> updateOrderStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
-        return ApiResponse.success("Order status updated", orderService.updateOrderStatus(id, status));
-    }
-
     @PostMapping("/{id}/confirm")
-    public ApiResponse<OrderResponse> confirmOrder(@PathVariable Long id) {
-        return ApiResponse.success("Order confirmed by shop", orderService.updateOrderStatus(id, OrderStatus.WAITING_PICKUP));
+    public ApiResponse<OrderResponse> confirmOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success("Order confirmed by shop", orderService.transition(userId, id, OrderStatus.WAITING_PICKUP));
     }
 
     @PostMapping("/{id}/ship")
-    public ApiResponse<OrderResponse> shipOrder(@PathVariable Long id) {
-        return ApiResponse.success("Order handed to shipping", orderService.updateOrderStatus(id, OrderStatus.SHIPPING));
+    public ApiResponse<OrderResponse> shipOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success("Order handed to shipping", orderService.transition(userId, id, OrderStatus.SHIPPING));
     }
 
     @PostMapping("/{id}/receive")
-    public ApiResponse<OrderResponse> receiveOrder(@PathVariable Long id) {
-        return ApiResponse.success("Order delivered successfully", orderService.updateOrderStatus(id, OrderStatus.DELIVERED));
+    public ApiResponse<OrderResponse> receiveOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success("Order delivered successfully", orderService.transition(userId, id, OrderStatus.DELIVERED));
     }
 
     @PostMapping("/{id}/return")
-    public ApiResponse<OrderResponse> returnOrder(@PathVariable Long id) {
-        return ApiResponse.success("Order return requested", orderService.updateOrderStatus(id, OrderStatus.RETURNED));
+    public ApiResponse<OrderResponse> returnOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success("Order return requested", orderService.transition(userId, id, OrderStatus.RETURNED));
     }
 }

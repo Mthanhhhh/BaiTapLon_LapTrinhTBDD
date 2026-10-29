@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final ShopAccessService shops;
     private final OrderItemRepository orderItemRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
@@ -54,6 +55,8 @@ public class OrderService {
         if (cartItems.isEmpty()) {
             throw new BadRequestException("Cart is empty");
         }
+
+        shops.requireSingleShop(cartItems);
 
         AddressInternalDTO address = authInternalService.getAddressByIdAndUserId(request.getAddressId(), userId);
 
@@ -118,6 +121,7 @@ public class OrderService {
 
         Order order = Order.builder()
                 .userId(userId)
+                .paymentMethod(request.getPaymentMethod())
                 .status(initialStatus)
                 .subtotal(subtotal)
                 .discount(discount)
@@ -222,6 +226,27 @@ public class OrderService {
         }
         
         return OrderResponse.from(order, voucherCode);
+    }
+
+    public PageResponse<OrderResponse> getShopOrders(Long userId, Pageable pageable) {
+        var orders = orderRepository.findAll().stream().filter(o -> !o.getItems().isEmpty() && o.getItems().stream().allMatch(item -> shops.ownsProduct(userId,item.getProductId()))).map(o -> OrderResponse.from(o,null)).toList();
+        int start = (int)Math.min(pageable.getOffset(),orders.size());
+        int end = Math.min(start+pageable.getPageSize(),orders.size());
+        return PageResponse.from(new org.springframework.data.domain.PageImpl<>(orders.subList(start,end),pageable,orders.size()));
+    }
+
+    public OrderResponse transition(Long userId, Long orderId, OrderStatus target) {
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order","id",orderId));
+        OrderStatus expected;
+        if (target == OrderStatus.WAITING_PICKUP || target == OrderStatus.SHIPPING) {
+            shops.requireOwner(userId,order.getItems());
+            expected = target == OrderStatus.WAITING_PICKUP ? OrderStatus.WAITING_CONFIRMATION : OrderStatus.WAITING_PICKUP;
+        } else {
+            if (!order.getUserId().equals(userId)) throw new org.springframework.security.access.AccessDeniedException("Order belongs to another buyer");
+            expected = target == OrderStatus.DELIVERED ? OrderStatus.SHIPPING : OrderStatus.DELIVERED;
+        }
+        if (order.getStatus()!=expected) throw new BadRequestException("Trạng thái đơn hàng không hợp lệ");
+        return updateOrderStatus(orderId,target);
     }
 
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {

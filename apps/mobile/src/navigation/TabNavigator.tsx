@@ -10,6 +10,7 @@ import OrdersScreen from '../screens/OrdersScreen';
 import AccountScreen from '../screens/AccountScreen';
 
 import SearchScreen from '../screens/SearchScreen';
+import { TabScene } from './TabScene';
 
 const Tab = createBottomTabNavigator();
 
@@ -17,6 +18,7 @@ export default function TabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="Home"
+      screenLayout={({ children, route }) => <TabScene name={route.name}>{children}</TabScene>}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';

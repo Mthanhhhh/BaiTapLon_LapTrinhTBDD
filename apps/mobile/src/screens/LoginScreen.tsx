@@ -1,3 +1,4 @@
+import { appAlert } from '../utils/appAlert';
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
   View,
@@ -148,7 +149,7 @@ export default function LoginScreen() {
       if (Platform.OS === 'web') {
         alert('Đã quét mã QR thành công!');
       } else {
-        Alert.alert('Thành công', 'Đã quét mã QR thành công!');
+        appAlert.alert('Thành công', 'Đã quét mã QR thành công!');
       }
       setTimeout(() => {
         navigation.navigate('Main');
@@ -157,7 +158,7 @@ export default function LoginScreen() {
       if (Platform.OS === 'web') {
         alert(e.message || 'Mô phỏng thất bại');
       } else {
-        Alert.alert('Lỗi', e.message || 'Mô phỏng thất bại');
+        appAlert.alert('Lỗi', e.message || 'Mô phỏng thất bại');
       }
     } finally {
       setQrLoading(false);
@@ -168,7 +169,7 @@ export default function LoginScreen() {
     if (!forgotIdentifier.trim()) {
       const msg = 'Vui lòng nhập Email hoặc Số điện thoại';
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Lỗi', msg);
+      else appAlert.alert('Lỗi', msg);
       return;
     }
     setForgotLoading(true);
@@ -184,7 +185,7 @@ export default function LoginScreen() {
     } catch (err: any) {
       const msg = err.message || 'Không tìm thấy tài khoản với thông tin này';
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Lỗi', msg);
+      else appAlert.alert('Lỗi', msg);
     } finally {
       setForgotLoading(false);
     }
@@ -194,13 +195,13 @@ export default function LoginScreen() {
     if (!otpCode.trim()) {
       const msg = 'Vui lòng nhập mã OTP';
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Lỗi', msg);
+      else appAlert.alert('Lỗi', msg);
       return;
     }
     if (!newPassword || newPassword.length < 6) {
       const msg = 'Mật khẩu mới phải có ít nhất 6 ký tự';
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Lỗi', msg);
+      else appAlert.alert('Lỗi', msg);
       return;
     }
     setForgotLoading(true);
@@ -214,7 +215,7 @@ export default function LoginScreen() {
       if (Platform.OS === 'web') {
         alert(successMsg);
       } else {
-        Alert.alert('Thành công', successMsg);
+        appAlert.alert('Thành công', successMsg);
       }
       setShowForgotModal(false);
       setIdentifier(forgotIdentifier.trim());
@@ -222,7 +223,7 @@ export default function LoginScreen() {
     } catch (err: any) {
       const msg = err.message || 'Đặt lại mật khẩu thất bại';
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Lỗi', msg);
+      else appAlert.alert('Lỗi', msg);
     } finally {
       setForgotLoading(false);
     }
@@ -233,7 +234,7 @@ export default function LoginScreen() {
     if (Platform.OS === 'web') {
       alert(info);
     } else {
-      Alert.alert('Duy trì đăng nhập', info);
+      appAlert.alert('Duy trì đăng nhập', info);
     }
   };
 
@@ -577,7 +578,7 @@ export default function LoginScreen() {
                         if (!customSocialEmail.trim()) {
                           const msg = 'Vui lòng nhập email';
                           if (Platform.OS === 'web') alert(msg);
-                          else Alert.alert('Thông báo', msg);
+                          else appAlert.alert('Thông báo', msg);
                           return;
                         }
                         executeSocialLogin(

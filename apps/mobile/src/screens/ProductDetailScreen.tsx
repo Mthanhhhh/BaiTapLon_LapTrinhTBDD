@@ -1,3 +1,4 @@
+import { appAlert } from '../utils/appAlert';
 import React, { useState, useRef, useMemo, useContext, useEffect } from 'react';
 import {
   View,
@@ -313,7 +314,7 @@ export default function ProductDetailScreen() {
           title="Quay lại"
           variant="outline"
           style={{ marginTop: spacing.sm, minWidth: 150 }}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Main', {screen:'Home'})}
         />
       </SafeAreaView>
     );
@@ -372,7 +373,7 @@ export default function ProductDetailScreen() {
             <TouchableOpacity
               style={styles.floatingBtn}
               activeOpacity={0.8}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Main', {screen:'Home'})}
             >
               <Ionicons name="arrow-back" size={22} color={COLORS.surface} />
             </TouchableOpacity>
@@ -449,13 +450,13 @@ export default function ProductDetailScreen() {
           </View>
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Typography variant="sm" weight="bold" color="ink">
-              {product.shopName || 'TechZone Official'}
+              {product.shopName || 'Cửa hàng'}
             </Typography>
             <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-              {product.shopLocation || 'TP. Hồ Chí Minh'} • 4.8/5 (Shop yêu thích)
+              {product.shopLocation || 'Xem thông tin và đánh giá shop'}
             </Typography>
           </View>
-          <TouchableOpacity style={styles.viewShopButton} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.viewShopButton} activeOpacity={0.7} disabled={!product.shopId} onPress={() => product.shopId && navigation.push('Shop', { shopId: product.shopId })}>
             <Typography variant="xs" weight="bold" style={{ color: COLORS.primaryDeep }}>
               Xem Shop
             </Typography>

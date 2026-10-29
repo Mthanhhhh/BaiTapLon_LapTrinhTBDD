@@ -50,6 +50,12 @@ public class PaymentService {
                 .amount(order.getTotal())
                 .build());
 
+        payment.setUserId(userId);
+        payment.setPaymentNo("PAY-"+order.getId());
+        payment.setOrderNo("ORD-"+order.getId());
+        payment.setIdempotencyKey("order-"+order.getId());
+        payment.setMethod(request.getMethod());
+        payment.setMethodType(request.getMethod() == PaymentMethod.PAYPAL ? "PAYPAL" : "CARD");
         payment.setTransactionId(UUID.randomUUID().toString());
 
         if (request.getMethod() == PaymentMethod.VISA || request.getMethod() == PaymentMethod.MAESTRO) {

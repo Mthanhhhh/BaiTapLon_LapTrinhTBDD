@@ -19,22 +19,29 @@ public class Payment extends BaseEntity {
     private Long orderId;
 
     @Enumerated(EnumType.STRING)
+    @Column(name="method_brand")
     private PaymentMethod method;
 
-    @Enumerated(EnumType.STRING)
+    @Column(name="payment_no") private String paymentNo;
+    @Column(name="order_no") private String orderNo;
+    @Column(name="user_id") private Long userId;
+    @Column(name="method_type") private String methodType;
+    @Column(name="idempotency_key") private String idempotencyKey;
+
+    @Convert(converter=PaymentStatusConverter.class)
     @Builder.Default
     private PaymentStatus status = PaymentStatus.PENDING;
 
     @Column(precision = 12, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "card_last_four")
+    @Column(name = "method_last4")
     private String cardLastFour;
 
-    @Column(name = "card_type")
+    @Transient
     private String cardType;
 
-    @Column(name = "transaction_id", unique = true)
+    @Column(name = "provider_txn_id", unique = true)
     private String transactionId;
 
     @Column(name = "paid_at")

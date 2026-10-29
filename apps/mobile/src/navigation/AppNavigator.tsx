@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { NavigationContainer, NavigatorScreenParams, LinkingOptions, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TabNavigator from './TabNavigator';
+import ShopScreen from '../screens/ShopScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import SuccessScreen from '../screens/SuccessScreen';
@@ -16,7 +17,7 @@ import { COLORS } from '../theme/colors';
 export type TabParamList = {
   Home: undefined;
   Search: { keyword?: string; categoryId?: number; categoryName?: string; sort?: string } | undefined;
-  Orders: undefined;
+  Orders: { shopMode?: boolean } | undefined;
   Account: undefined;
   Showcase?: undefined;
 };
@@ -24,8 +25,9 @@ export type TabParamList = {
 export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList> | undefined;
   ProductDetail: { productId: number | string };
+  Shop: { shopId: number | string };
   Checkout: undefined;
-  Payment: { orderId: number; total: number; orderNumber?: string } | undefined;
+  Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'MAESTRO' | 'PAYPAL' } | undefined;
   Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;
   Filter: undefined;
   Login: undefined;
@@ -47,8 +49,9 @@ const linking: LinkingOptions<RootStackParamList> = {
         },
       },
       ProductDetail: 'product/:productId',
+      Shop: 'shop/:shopId',
       Checkout: 'checkout',
-      Payment: 'payment',
+      Payment: 'payment/:orderId',
       Success: 'success',
       Filter: 'filter',
       Login: 'login',
@@ -73,6 +76,7 @@ export default function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+        <Stack.Screen name="Shop" component={ShopScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen name="Payment" component={PaymentScreen} />
         <Stack.Screen name="Success" component={SuccessScreen} />

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class OrderResponse {
     private Long id;
     private Long userId;
+    private String paymentMethod;
     private OrderStatus status;
     private List<OrderItemResponse> items;
     private BigDecimal subtotal;
@@ -44,6 +45,7 @@ public class OrderResponse {
         return OrderResponse.builder()
                 .id(order.getId())
                 .userId(order.getUserId())
+                .paymentMethod(order.getPaymentMethod())
                 .status(order.getStatus())
                 .items(itemResponses)
                 .subtotal(order.getSubtotal())

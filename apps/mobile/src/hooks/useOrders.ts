@@ -3,7 +3,7 @@ import { apiClient } from '../api/client';
 import { OrderResponse, OrderStatus } from './useCart';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { orderStorage } from '../utils/orderStorage';
+
 
 export interface PageResponse<T> {
   content: T[];
@@ -37,14 +37,14 @@ export interface ReviewResponse {
 }
 
 // Hook lấy danh sách đơn hàng thực tế
-export const useOrders = (page: number = 0, size: number = 20) => {
+export const useOrders = (page: number = 0, size: number = 20, shop: boolean = false) => {
   const { user } = useContext(AuthContext);
 
   return useQuery({
-    queryKey: ['orders', user?.id, page, size],
+    queryKey: ['orders', user?.id, shop, page, size],
     enabled: !!user,
     queryFn: async (): Promise<PageResponse<OrderResponse>> => {
-      const res = await apiClient.get<any>('/api/v1/orders', {
+      const res = await apiClient.get<any>(shop ? '/api/v1/orders/shop/orders' : '/api/v1/orders', {
         params: { page, size, sort: 'createdAt,desc' },
       });
       return res.data.data as PageResponse<OrderResponse>;
@@ -120,33 +120,6 @@ export const useCancelOrder = () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
-};
-
-// Hook Shop cấu hình Tự động xác nhận đơn hàng
-export const useAutoConfirmSetting = () => {
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ['shop_auto_confirm'],
-    queryFn: () => orderStorage.getAutoConfirm(),
-  });
-
-  const mutation = useMutation({
-    mutationFn: async (enabled: boolean) => {
-      await orderStorage.setAutoConfirm(enabled);
-      return enabled;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shop_auto_confirm'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-  });
-
-  return {
-    autoConfirm: !!query.data,
-    isLoading: query.isLoading,
-    setAutoConfirm: mutation.mutate,
-    isUpdating: mutation.isPending,
-  };
 };
 
 // Hook Đánh giá sản phẩm

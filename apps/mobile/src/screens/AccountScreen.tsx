@@ -1,3 +1,5 @@
+import { appAlert } from '../utils/appAlert';
+import { useShop, useOpenShop } from '../hooks/useShop';
 import React, { useContext, useState } from 'react';
 import {
   View,
@@ -32,6 +34,9 @@ import {
 export default function AccountScreen() {
   const { user, logout } = useContext(AuthContext);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const { data: shop } = useShop();
+  const openShop = useOpenShop();
 
   // Profile Query & Mutations
   const { data: profile } = useUserProfile();
@@ -84,7 +89,7 @@ export default function AccountScreen() {
         await doLogout();
       }
     } else {
-      Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
+      appAlert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
         { text: 'Hủy', style: 'cancel' },
         {
           text: 'Đăng xuất',
@@ -105,10 +110,10 @@ export default function AccountScreen() {
       {
         onSuccess: () => {
           setProfileModalVisible(false);
-          Alert.alert('Success', 'Profile updated successfully.');
+          appAlert.alert('Success', 'Profile updated successfully.');
         },
         onError: (err: any) => {
-          Alert.alert('Error', err.response?.data?.message || 'Failed to update profile.');
+          appAlert.alert('Error', err.response?.data?.message || 'Failed to update profile.');
         },
       }
     );
@@ -116,7 +121,7 @@ export default function AccountScreen() {
 
   const handleAddNewAddress = () => {
     if (!newFullName || !newPhone || !newStreet || !newCity) {
-      Alert.alert('Missing Fields', 'Please complete the recipient name, phone, street and city.');
+      appAlert.alert('Missing Fields', 'Please complete the recipient name, phone, street and city.');
       return;
     }
 
@@ -138,10 +143,10 @@ export default function AccountScreen() {
           setNewStreet('');
           setNewCity('');
           setNewZip('');
-          Alert.alert('Address Added', 'New delivery address has been saved.');
+          appAlert.alert('Address Added', 'New delivery address has been saved.');
         },
         onError: (err: any) => {
-          Alert.alert('Error', err.response?.data?.message || 'Failed to save address.');
+          appAlert.alert('Error', err.response?.data?.message || 'Failed to save address.');
         },
       }
     );
@@ -187,6 +192,11 @@ export default function AccountScreen() {
             title="Sổ địa chỉ nhận hàng"
             onPress={() => setAddressModalVisible(true)}
           />
+          <MenuItem icon="storefront-outline" title={shop ? `Quản lý shop: ${shop.name}` : 'Mở shop của tôi'}
+            onPress={() => {
+              if (shop) navigation.navigate('Shop', { shopId: shop.id });
+              else openShop.mutate(`${user.fullName} Shop`, { onError: (err: any) => appAlert.alert('Không thể mở shop', err.message) });
+            }} />
           <MenuItem
             icon="receipt-outline"
             title="Lịch sử đơn hàng"
@@ -195,12 +205,12 @@ export default function AccountScreen() {
           <MenuItem
             icon="card-outline"
             title="Phương thức thanh toán"
-            onPress={() => Alert.alert('Phương thức thanh toán', 'Quản lý thẻ ngân hàng và ví điện tử của bạn.')}
+            onPress={() => appAlert.alert('Phương thức thanh toán', 'Quản lý thẻ ngân hàng và ví điện tử của bạn.')}
           />
           <MenuItem
             icon="notifications-outline"
             title="Cài đặt thông báo"
-            onPress={() => Alert.alert('Thông báo', 'Tính năng nhận thông báo ưu đãi đang được bật.')}
+            onPress={() => appAlert.alert('Thông báo', 'Tính năng nhận thông báo ưu đãi đang được bật.')}
           />
           <MenuItem
             icon="log-out-outline"

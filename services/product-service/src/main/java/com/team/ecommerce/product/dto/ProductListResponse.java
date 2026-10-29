@@ -32,9 +32,9 @@ public class ProductListResponse {
         int totalStock = product.getVariants() != null ? 
                 product.getVariants().stream().mapToInt(v -> v.getStock()).sum() : 0;
         
-        Long sId = product.getShopId() != null ? product.getShopId() : 1L;
-        String sName = (sId == 1L) ? "TechZone Official" : (sId == 2L ? "Daily Mart" : "Shop #" + sId);
-        String sLoc = (sId == 2L) ? "Hà Nội" : "TP. Hồ Chí Minh";
+        Long sId = product.getShopId();
+        String sName = product.getShop() != null ? product.getShop().getName() : null;
+        String sLoc = product.getShop() != null ? product.getShop().getProvince() : null;
 
         return ProductListResponse.builder()
                 .id(product.getId())

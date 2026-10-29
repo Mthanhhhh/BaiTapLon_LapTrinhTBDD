@@ -19,6 +19,9 @@ public class Order extends BaseEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name="payment_method_type")
+    private String paymentMethod;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

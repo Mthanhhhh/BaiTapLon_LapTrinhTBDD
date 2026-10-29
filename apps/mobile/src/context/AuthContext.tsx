@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     await tokenStorage.setTokens(accessToken, refreshToken);
     try {
+      queryClient.clear();
       await loadUser();
     } catch (error) {
       await tokenStorage.clearTokens();
@@ -98,7 +99,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { accessToken, refreshToken } = response.data.data;
     await tokenStorage.setRememberMe(true);
     await tokenStorage.setTokens(accessToken, refreshToken);
-    await loadUser();
+    queryClient.clear();
+      await loadUser();
   };
 
   const forgotPassword = async (identifier: string) => {
@@ -116,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { accessToken, refreshToken } = response.data.data;
     await tokenStorage.setTokens(accessToken, refreshToken);
     try {
+      queryClient.clear();
       await loadUser();
     } catch (error) {
       await tokenStorage.clearTokens();

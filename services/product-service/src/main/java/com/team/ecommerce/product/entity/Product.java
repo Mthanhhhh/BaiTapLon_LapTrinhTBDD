@@ -23,6 +23,10 @@ public class Product extends BaseEntity {
     @Column(name = "shop_id", nullable = false)
     private Long shopId;
 
+    @ManyToOne
+    @JoinColumn(name="shop_id",insertable=false,updatable=false)
+    private Shop shop;
+
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
 

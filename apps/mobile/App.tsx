@@ -1,3 +1,4 @@
+import { WebFontFaces } from './src/components/ui/WebFontFaces';
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -26,7 +27,7 @@ export default function App() {
     'PlusJakartaSans-Bold': PlusJakartaSans_700Bold,
   });
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && Platform.OS !== 'web') {
     return null;
   }
 
@@ -36,6 +37,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <View style={styles.appFrame}>
+            <WebFontFaces />
             <WaveBackdrop />
             <View style={styles.appContent}><AppNavigator /></View>
           </View>

@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { AddressResponse } from './useCart';
 
 export interface UserProfile {
@@ -29,50 +31,11 @@ export interface AddressPayload {
   isDefault: boolean;
 }
 
-// Fallback mock addresses
-const MOCK_ADDRESSES: AddressResponse[] = [
-  {
-    id: 1,
-    fullName: 'Alex Johnson',
-    phone: '+1 555-0199',
-    street: '742 Evergreen Terrace',
-    city: 'Springfield',
-    state: 'OR',
-    country: 'United States',
-    zipCode: '97477',
-    isDefault: true,
-  },
-  {
-    id: 2,
-    fullName: 'Alex Office',
-    phone: '+1 555-0234',
-    street: '100 Silicon Blvd, Suite 400',
-    city: 'San Jose',
-    state: 'CA',
-    country: 'United States',
-    zipCode: '95113',
-    isDefault: false,
-  },
-];
-
 // Fetch Profile
 export const useUserProfile = () => {
-  return useQuery({
-    queryKey: ['profile'],
-    queryFn: async (): Promise<UserProfile> => {
-      try {
-        const res = await apiClient.get<any>('/api/v1/auth/me');
-        return res.data.data;
-      } catch (err) {
-        return {
-          id: 1,
-          email: 'alex.johnson@example.com',
-          fullName: 'Alex Johnson',
-          phone: '+1 555-0199',
-        };
-      }
-    },
-  });
+  const { user } = useContext(AuthContext);
+  return useQuery({ queryKey: ['profile', user?.id], enabled: !!user,
+    queryFn: async (): Promise<UserProfile> => (await apiClient.get('/api/v1/auth/me')).data.data });
 };
 
 // Update Profile
@@ -84,24 +47,16 @@ export const useUpdateProfile = () => {
       return res.data.data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['profile'], data);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 };
 
 // Fetch User Addresses
 export const useUserAddresses = () => {
-  return useQuery({
-    queryKey: ['addresses'],
-    queryFn: async (): Promise<AddressResponse[]> => {
-      try {
-        const res = await apiClient.get<any>('/api/v1/addresses');
-        return res.data.data;
-      } catch (err) {
-        return MOCK_ADDRESSES;
-      }
-    },
-  });
+  const { user } = useContext(AuthContext);
+  return useQuery({ queryKey: ['addresses', user?.id], enabled: !!user,
+    queryFn: async (): Promise<AddressResponse[]> => (await apiClient.get('/api/v1/addresses')).data.data });
 };
 
 // Add Address
