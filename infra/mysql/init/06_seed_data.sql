@@ -44,7 +44,7 @@ INSERT INTO categories (id, parent_id, name, slug, theme_color, level, path, sor
 (1,NULL,'Electronics','electronics','#8B5CF6',1,'/1/',1),
 (2,NULL,'Fashion','fashion','#3B6FE0',1,'/2/',2),
 (3,NULL,'Beauty','beauty','#F07A2B',1,'/3/',3),
-(4,NULL,'Fresh Fruits','fresh-fruits','#E05A5A',1,'/4/',4),
+(4,NULL,'Toys','toys','#E05A5A',1,'/4/',4),
 (11,1,'Smartphones','smartphones',NULL,2,'/1/11/',1),
 (12,1,'Tablets','tablets',NULL,2,'/1/12/',2),
 (13,1,'Laptops','laptops',NULL,2,'/1/13/',3),
@@ -52,7 +52,8 @@ INSERT INTO categories (id, parent_id, name, slug, theme_color, level, path, sor
 (21,2,'Shoes','shoes',NULL,2,'/2/21/',1),
 (22,2,'Bags','bags',NULL,2,'/2/22/',2),
 (23,2,'Hoodies','hoodies',NULL,2,'/2/23/',3),
-(31,3,'Lipstick','lipstick',NULL,2,'/3/31/',1);
+(31,3,'Lipstick','lipstick',NULL,2,'/3/31/',1),
+(41,4,'Toys','toys-items',NULL,2,'/4/41/',1);
 
 INSERT INTO products (id, shop_id, category_id, brand_id, name, slug, short_description,
                       min_price, max_price, original_price, discount_percent, promo_label,
@@ -84,6 +85,9 @@ UPDATE products SET
 UPDATE products SET has_free_return_30d    = 1 WHERE category_id IN (11,12,13,14,21,22,23);
 UPDATE products SET is_best_deal           = 1 WHERE id IN (4,9,10,11);
 UPDATE products SET supports_ship_to_store = 1 WHERE shop_id = 1;
+-- Product records 14-19 were fruit demo rows in older seed versions. Keep their
+-- IDs for order/history references, but do not expose them after the Toys swap.
+UPDATE products SET status='HIDDEN', deleted_at=NOW(3) WHERE id BETWEEN 14 AND 19;
 
 -- Hoodie: Color x Size (3 x 5 = 15 SKU)
 INSERT INTO product_options (id, product_id, name, sort_order) VALUES (1,12,'Color',0),(2,12,'Size',1);
@@ -149,7 +153,7 @@ INSERT INTO banners (title, subtitle, image_url, background_color, cta_text, lin
 ('Shoes','50% off','/images/banners/shoes-50.png','#F3F0FF','Buy now','CATEGORY','21','HOME_HERO',NULL,1),
 ('Bag deal','Up to 30% off','/images/banners/bag.jpg',NULL,NULL,'PRODUCT','11','HOME_GRID','30%',1),
 ('Laptop deal','Up to 30% off','/images/banners/laptop.jpg',NULL,NULL,'PRODUCT','9','HOME_GRID','30%',2),
-('Fresh Fruits','Fresh every day','/images/banners/fruits.jpg',NULL,NULL,'CATEGORY','4','CATEGORY_TOP',NULL,1),
+('Toys','Fun toys for everyone','/images/banners/toys.jpg',NULL,NULL,'CATEGORY','4','CATEGORY_TOP',NULL,1),
 ('Electronics','New arrivals','/images/banners/electronics.jpg',NULL,NULL,'CATEGORY','1','CATEGORY_TOP',NULL,2);
 
 -- ======================= order_db =======================

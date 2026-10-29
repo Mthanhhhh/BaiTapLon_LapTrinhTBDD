@@ -40,6 +40,10 @@ export interface ProductResponse {
   shopLocation?: string;
   thumbnailUrl: string | null;
   images: string[];
+  /** JSON metadata with category attributes, optionLabels and variantImages. */
+  attributes?: string | null;
+  optionLabels?: string[];
+  variantImages?: Record<string, string[]>;
   stock: number;
   rating: number;
   ratingCount: number;

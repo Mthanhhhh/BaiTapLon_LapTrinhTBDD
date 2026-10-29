@@ -56,7 +56,8 @@ const CATEGORY_META: Record<number, { icon: string; color: string; viName: strin
   22: { icon: 'briefcase-outline', color: COLORS.lemon, viName: 'Túi Xách' },
   23: { icon: 'shirt-outline', color: COLORS.lilac, viName: 'Áo Hoodie' },
   31: { icon: 'sparkles-outline', color: COLORS.peach, viName: 'Mỹ Phẩm' },
-  4: { icon: 'nutrition-outline', color: COLORS.mint, viName: 'Trái Cây' },
+  4: { icon: 'game-controller-outline', color: COLORS.mint, viName: 'Đồ Chơi' },
+  41: { icon: 'game-controller-outline', color: COLORS.mint, viName: 'Đồ Chơi' },
   1: { icon: 'hardware-chip-outline', color: COLORS.sky, viName: 'Điện Tử' },
   2: { icon: 'shirt-outline', color: COLORS.pink, viName: 'Thời Trang' },
   3: { icon: 'heart-outline', color: COLORS.peach, viName: 'Làm Đẹp' },
@@ -71,7 +72,7 @@ const DISPLAY_CATEGORIES = [
   { id: 22, name: 'Bags', viName: 'Túi Xách', icon: 'briefcase-outline', color: COLORS.lemon },
   { id: 23, name: 'Hoodies', viName: 'Áo Hoodie', icon: 'shirt-outline', color: COLORS.lilac },
   { id: 31, name: 'Lipstick', viName: 'Mỹ Phẩm', icon: 'sparkles-outline', color: COLORS.peach },
-  { id: 4, name: 'Fresh Fruits', viName: 'Trái Cây', icon: 'nutrition-outline', color: COLORS.mint },
+  { id: 41, name: 'Toys', viName: 'Đồ Chơi', icon: 'game-controller-outline', color: COLORS.mint },
 ];
 
 export default function HomeScreen() {

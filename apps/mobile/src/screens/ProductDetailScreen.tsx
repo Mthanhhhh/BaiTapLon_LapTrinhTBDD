@@ -125,6 +125,7 @@ export default function ProductDetailScreen() {
   }, [relatedData, product]);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const carouselRef = useRef<FlatList<string | null>>(null);
   const [isVariantSheetVisible, setIsVariantSheetVisible] = useState(route.params?.sheet === 'true');
   const [isBuyNowFlow, setIsBuyNowFlow] = useState(false);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
@@ -132,6 +133,11 @@ export default function ProductDetailScreen() {
 
   // Variant management
   const variants: ProductVariantResponse[] = useMemo(() => product?.variants || [], [product]);
+  const productMetadata = useMemo(() => {
+    if (!product?.attributes) return {} as Record<string, any>;
+    try { return JSON.parse(product.attributes) as Record<string, any>; }
+    catch { return {} as Record<string, any>; }
+  }, [product?.attributes]);
 
   // Check if all variants are in "Color / Size" format
   const canSplitVariants = useMemo(() => {
@@ -216,13 +222,43 @@ export default function ProductDetailScreen() {
     return variants[0];
   }, [variants, canSplitVariants, selectedColor, selectedSize, selectedVariantId]);
 
+  const optionLabels: string[] = product?.optionLabels?.length
+    ? product.optionLabels : (Array.isArray(productMetadata.optionLabels) ? productMetadata.optionLabels : ['Màu sắc', 'Kích cỡ']);
+  const variantImageMap = product?.variantImages || productMetadata.variantImages as Record<string, string[]> | undefined;
+  const colorOptions = useMemo(() => {
+    if (!variantImageMap) return [];
+    const candidates = canSplitVariants ? colors : variants.map((variant) => variant.name);
+    return candidates.filter((value) => !!variantImageMap[value]?.length);
+  }, [variantImageMap, canSplitVariants, colors, variants]);
+  const selectedVisualOption = canSplitVariants ? selectedColor : activeVariant?.name;
+
   // Carousel images
   const images = useMemo(() => {
     if (!product) return [];
+    const imageKey = canSplitVariants ? selectedColor : activeVariant?.name;
+    if (imageKey && variantImageMap?.[imageKey]?.length) return variantImageMap[imageKey];
     if (product.images && product.images.length > 0) return product.images;
     if (product.thumbnailUrl) return [product.thumbnailUrl];
     return [];
-  }, [product]);
+  }, [product, variantImageMap, canSplitVariants, selectedColor, activeVariant]);
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+    carouselRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [images]);
+
+  const selectImageVariant = (value: string) => {
+    if (canSplitVariants) {
+      setSelectedColor(value);
+      const available = variants.find((variant) => variant.name.startsWith(`${value} / `) && variant.stock > 0);
+      if (available) setSelectedSize(available.name.split(' / ')[1]);
+    } else {
+      const variant = variants.find((item) => item.name === value);
+      if (variant) setSelectedVariantId(variant.id);
+    }
+    setCurrentImageIndex(0);
+    carouselRef.current?.scrollToOffset({ offset: 0, animated: false });
+  };
 
   // Calculated discount percentage: Math.round((1 - price / originalPrice) * 100)
   const discountPercent = useMemo(() => {
@@ -260,7 +296,7 @@ export default function ProductDetailScreen() {
 
   const handleAddToCartClick = () => {
     setIsBuyNowFlow(false);
-    if (variants.length > 1 && !isSingleDefault) {
+    if (variants.length > 1 && !isSingleDefault && (!colorOptions.length || canSplitVariants)) {
       setIsVariantSheetVisible(true);
     } else {
       executeAddToCart(false);
@@ -269,7 +305,7 @@ export default function ProductDetailScreen() {
 
   const handleBuyNowClick = () => {
     setIsBuyNowFlow(true);
-    if (variants.length > 1 && !isSingleDefault) {
+    if (variants.length > 1 && !isSingleDefault && (!colorOptions.length || canSplitVariants)) {
       setIsVariantSheetVisible(true);
     } else {
       executeAddToCart(true);
@@ -338,6 +374,8 @@ export default function ProductDetailScreen() {
         {/* Image Carousel (Fixed ratio 1:1, max 480px on web) */}
         <View style={[styles.carouselContainer, { width: carouselSize, height: carouselSize }]}>
           <FlatList
+            ref={carouselRef}
+            key={`${product.id}-${selectedVisualOption || 'gallery'}`}
             data={images.length > 0 ? images : [null]}
             keyExtractor={(_, index) => index.toString()}
             horizontal
@@ -413,6 +451,32 @@ export default function ProductDetailScreen() {
           <Typography variant="lg" weight="semiBold" role="heading" aria-level={1} numberOfLines={2} style={styles.productName}>
             {product.name}
           </Typography>
+
+          {colorOptions.length > 0 && (
+            <View style={styles.colorOptionsSection}>
+              <Typography variant="sm" weight="bold" style={styles.colorOptionsTitle}>
+                {optionLabels[0] || 'Màu sắc'}{selectedVisualOption ? `: ${selectedVisualOption}` : ''}
+              </Typography>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorOptionsList}>
+                {colorOptions.map((value) => {
+                  const isSelected = selectedVisualOption === value;
+                  return (
+                    <TouchableOpacity
+                      key={value}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${optionLabels[0] || 'Màu sắc'} ${value}`}
+                      accessibilityState={{ selected: isSelected }}
+                      onPress={() => selectImageVariant(value)}
+                      activeOpacity={0.8}
+                      style={[styles.colorOptionButton, isSelected && styles.colorOptionButtonSelected]}
+                    >
+                      <RemoteImage sourceUrl={variantImageMap?.[value]?.[0]} name={`${product.name} ${value}`} style={styles.colorOptionImage} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
           <View style={styles.statsRow}>
             <View style={styles.ratingBox}>
@@ -712,9 +776,9 @@ export default function ProductDetailScreen() {
             {canSplitVariants ? (
               <View style={styles.sheetBody}>
                 {/* Color Row with Color Dots */}
-                <View style={styles.sheetOptionGroup}>
+                {colorOptions.length === 0 && <View style={styles.sheetOptionGroup}>
                   <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                    Màu sắc: {selectedColor}
+                    {optionLabels[0] || 'Tuỳ chọn'}: {selectedColor}
                   </Typography>
                   <View style={styles.badgeRow}>
                     {colors.map((c) => {
@@ -736,12 +800,12 @@ export default function ProductDetailScreen() {
                       );
                     })}
                   </View>
-                </View>
+                </View>}
 
                 {/* Size Row in standard order XS, S, M, L, XL, XXL */}
                 <View style={styles.sheetOptionGroup}>
                   <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                    Kích cỡ: {selectedSize}
+                    {optionLabels[1] || 'Tuỳ chọn'}: {selectedSize}
                   </Typography>
                   <View style={styles.badgeRow}>
                     {sizes.map((s) => {
@@ -772,11 +836,11 @@ export default function ProductDetailScreen() {
                   </View>
                 </View>
               </View>
-            ) : !isSingleDefault && variants.length > 0 ? (
+            ) : colorOptions.length === 0 && !isSingleDefault && variants.length > 0 ? (
               /* Single Variant Row */
               <View style={styles.sheetOptionGroup}>
                 <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                  Phân loại hàng
+                  {optionLabels[0] || 'Phân loại hàng'}
                 </Typography>
                 <View style={styles.badgeRow}>
                   {variants.map((v) => {
@@ -944,6 +1008,39 @@ const styles = StyleSheet.create({
   productName: {
     marginBottom: spacing.sm,
     lineHeight: 26,
+  },
+  colorOptionsSection: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  colorOptionsTitle: {
+    marginBottom: spacing.xs,
+    color: COLORS.ink,
+  },
+  colorOptionsList: {
+    alignItems: 'center',
+    paddingVertical: 2,
+    paddingRight: spacing.sm,
+  },
+  colorOptionButton: {
+    width: 58,
+    height: 58,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 3,
+    marginRight: spacing.sm,
+    backgroundColor: COLORS.surface,
+    overflow: 'hidden',
+  },
+  colorOptionButtonSelected: {
+    borderWidth: 2,
+    borderColor: COLORS.primaryDeep,
+  },
+  colorOptionImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: radius.sm,
   },
   statsRow: {
     flexDirection: 'row',

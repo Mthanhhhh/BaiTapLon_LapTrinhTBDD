@@ -161,6 +161,7 @@ public class ProductService {
                 .originalPrice(request.getOriginalPrice())
                 .categoryId(request.getCategoryId())
                 .thumbnailUrl(request.getThumbnailUrl())
+                .currency("VND")
                 .images(images)
                 .attributes(request.getAttributes())
                 .build();
