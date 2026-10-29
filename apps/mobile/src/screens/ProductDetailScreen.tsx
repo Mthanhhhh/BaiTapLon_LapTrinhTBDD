@@ -280,7 +280,7 @@ export default function ProductDetailScreen() {
     addToCart(
       {
         productId: product.id,
-        variantId: activeVariant && !isSingleDefault ? activeVariant.id : undefined,
+        variantId: activeVariant?.id,
         quantity,
       },
       {
@@ -289,6 +289,9 @@ export default function ProductDetailScreen() {
           if (isBuyNow) {
             navigation.navigate('Checkout');
           }
+        },
+        onError: (error: any) => {
+          appAlert.alert('Không thể thêm vào giỏ', error?.message || 'Vui lòng thử lại sau.');
         },
       }
     );

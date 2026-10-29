@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Modal,
   TextInput,
   ActivityIndicator,
@@ -30,6 +29,33 @@ import {
   useDeleteAddress,
   useSetDefaultAddress,
 } from '../hooks/useProfile';
+
+const addressFieldNames: Record<string, string> = {
+  fullName: 'Tên người nhận',
+  phone: 'Số điện thoại',
+  street: 'Địa chỉ nhà/tên đường',
+  city: 'Tỉnh/thành phố',
+  state: 'Quận/huyện',
+  country: 'Quốc gia',
+};
+
+const getAddressSaveError = (error: any) => {
+  const fieldErrors = error?.fieldErrors as Record<string, string> | undefined;
+  const firstFieldError = fieldErrors && Object.entries(fieldErrors)[0];
+  if (firstFieldError) {
+    const [field, message] = firstFieldError;
+    const label = addressFieldNames[field] || field;
+    if (/blank|empty|required/i.test(message)) return `Vui lòng nhập ${label.toLowerCase()}.`;
+    return `${label}: ${message}`;
+  }
+
+  if (error?.status === 401) return 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại rồi thử lưu địa chỉ.';
+  if (error?.status === 403) return 'Tài khoản hiện không có quyền lưu địa chỉ.';
+  if (error?.code === 'NETWORK_ERROR') return 'Không kết nối được máy chủ. Kiểm tra mạng và thử lại.';
+  if (error?.code === 'CONFLICT') return 'Địa chỉ này đang bị trùng hoặc không thể lưu.';
+  if (error?.message && error.message !== 'An unexpected error occurred') return error.message;
+  return 'Máy chủ chưa lưu được địa chỉ. Vui lòng kiểm tra thông tin và thử lại.';
+};
 
 export default function AccountScreen() {
   const { user, logout } = useContext(AuthContext);
@@ -58,8 +84,10 @@ export default function AccountScreen() {
   const [newPhone, setNewPhone] = useState('');
   const [newStreet, setNewStreet] = useState('');
   const [newCity, setNewCity] = useState('');
-  const [newCountry, setNewCountry] = useState('United States');
+  const [newState, setNewState] = useState('');
+  const [newCountry, setNewCountry] = useState('Việt Nam');
   const [newZip, setNewZip] = useState('');
+  const [addressError, setAddressError] = useState('');
 
   if (!user) {
     return (
@@ -120,10 +148,19 @@ export default function AccountScreen() {
   };
 
   const handleAddNewAddress = () => {
-    if (!newFullName || !newPhone || !newStreet || !newCity) {
-      appAlert.alert('Missing Fields', 'Please complete the recipient name, phone, street and city.');
+    const missingField = [
+      [newFullName, 'tên người nhận'],
+      [newPhone, 'số điện thoại'],
+      [newStreet, 'địa chỉ nhà hoặc tên đường'],
+      [newCity, 'tỉnh/thành phố'],
+      [newState, 'quận/huyện'],
+      [newCountry, 'quốc gia'],
+    ].find(([value]) => !String(value).trim());
+    if (missingField) {
+      setAddressError(`Vui lòng nhập ${missingField[1]}.`);
       return;
     }
+    setAddressError('');
 
     addAddressMutation.mutate(
       {
@@ -131,6 +168,7 @@ export default function AccountScreen() {
         phone: newPhone.trim(),
         street: newStreet.trim(),
         city: newCity.trim(),
+        state: newState.trim(),
         country: newCountry.trim(),
         zipCode: newZip.trim() || undefined,
         isDefault: !addresses || addresses.length === 0,
@@ -142,11 +180,13 @@ export default function AccountScreen() {
           setNewPhone('');
           setNewStreet('');
           setNewCity('');
+          setNewState('');
           setNewZip('');
+          setAddressError('');
           appAlert.alert('Address Added', 'New delivery address has been saved.');
         },
         onError: (err: any) => {
-          appAlert.alert('Error', err.response?.data?.message || 'Failed to save address.');
+          setAddressError(getAddressSaveError(err));
         },
       }
     );
@@ -325,7 +365,7 @@ export default function AccountScreen() {
                         {addr.phone}
                       </Typography>
                       <Typography variant="sm" color="ink" style={{ marginTop: 4 }}>
-                        {addr.street}, {addr.city}, {addr.country}
+                        {[addr.street, addr.state, addr.city, addr.country].filter(Boolean).join(', ')}
                       </Typography>
                     </View>
 
@@ -355,7 +395,7 @@ export default function AccountScreen() {
                 variant="outline"
                 size="md"
                 fullWidth
-                onPress={() => setNewAddressModalVisible(true)}
+                onPress={() => { setAddressError(''); setNewAddressModalVisible(true); }}
                 style={{ marginTop: spacing.md }}
               >
                 + Thêm địa chỉ mới
@@ -383,117 +423,52 @@ export default function AccountScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Typography variant="xs" weight="bold" color="inkSoft">
-                TÊN NGƯỜI NHẬN
-              </Typography>
-              <TextInput
-                style={styles.modalInput}
-                value={newFullName}
-                onChangeText={setNewFullName}
-                placeholder="Họ và tên người nhận"
-                placeholderTextColor={COLORS.muted}
-              />
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Typography variant="xs" weight="bold" color="inkSoft">TÊN NGƯỜI NHẬN</Typography>
+              <TextInput style={styles.modalInput} value={newFullName} onChangeText={(value) => { setNewFullName(value); setAddressError(''); }} placeholder="Họ và tên người nhận" placeholderTextColor={COLORS.muted} />
 
-              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>
-                SỐ ĐIỆN THOẠI
-              </Typography>
-              <TextInput
-                style={styles.modalInput}
-                value={newPhone}
-                onChangeText={setNewPhone}
-                placeholder="Số điện thoại nhận hàng"
-                placeholderTextColor={COLORS.muted}
-                keyboardType="phone-pad"
-              />
+              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>SỐ ĐIỆN THOẠI</Typography>
+              <TextInput style={styles.modalInput} value={newPhone} onChangeText={(value) => { setNewPhone(value); setAddressError(''); }} placeholder="Số điện thoại nhận hàng" placeholderTextColor={COLORS.muted} keyboardType="phone-pad" />
 
-              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>
-                ĐỊA CHỈ NHÀ / TÊN ĐƯỜNG
-              </Typography>
-              <TextInput
-                style={styles.modalInput}
-                value={newStreet}
-                onChangeText={setNewStreet}
-                placeholder="Số nhà, tên đường, phường/xã"
-                placeholderTextColor={COLORS.muted}
-              />
+              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>ĐỊA CHỈ NHÀ / TÊN ĐƯỜNG</Typography>
+              <TextInput style={styles.modalInput} value={newStreet} onChangeText={(value) => { setNewStreet(value); setAddressError(''); }} placeholder="Số nhà, tên đường, phường/xã" placeholderTextColor={COLORS.muted} />
 
-              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>
-                TỈNH / THÀNH PHỐ
-              </Typography>
-              <TextInput
-                style={styles.modalInput}
-                value={newCity}
-                onChangeText={setNewCity}
-                placeholder="Quận/Huyện, Tỉnh/Thành phố"
-                placeholderTextColor={COLORS.muted}
-              />
+              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>QUẬN / HUYỆN</Typography>
+              <TextInput style={styles.modalInput} value={newState} onChangeText={(value) => { setNewState(value); setAddressError(''); }} placeholder="Ví dụ: Quận 1" placeholderTextColor={COLORS.muted} />
 
-              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>
-                QUỐC GIA
-              </Typography>
-              <TextInput
-                style={styles.modalInput}
-                value={newCountry}
-                onChangeText={setNewCountry}
-                placeholder="Việt Nam"
-                placeholderTextColor={COLORS.muted}
-              />
-
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                loading={addAddressMutation.isPending}
-                onPress={handleAddNewAddress}
-                style={{ marginTop: spacing.lg, marginBottom: spacing.md }}
-              >
-                Lưu địa chỉ
-              </Button>
-              <TextInput
-                style={styles.modalInput}
-                value={newStreet}
-                onChangeText={setNewStreet}
-                placeholder="Street and apartment number"
-                placeholderTextColor={COLORS.muted}
-              />
+              <Typography variant="xs" weight="bold" color="inkSoft" style={{ marginTop: spacing.sm }}>TỈNH / THÀNH PHỐ</Typography>
+              <TextInput style={styles.modalInput} value={newCity} onChangeText={(value) => { setNewCity(value); setAddressError(''); }} placeholder="Ví dụ: Hồ Chí Minh" placeholderTextColor={COLORS.muted} />
 
               <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
                 <View style={{ flex: 1 }}>
-                  <Typography variant="xs" weight="bold" color="inkSoft">
-                    CITY
-                  </Typography>
-                  <TextInput
-                    style={styles.modalInput}
-                    value={newCity}
-                    onChangeText={setNewCity}
-                    placeholder="City"
-                    placeholderTextColor={COLORS.muted}
-                  />
+                  <Typography variant="xs" weight="bold" color="inkSoft">QUỐC GIA</Typography>
+                  <TextInput style={styles.modalInput} value={newCountry} onChangeText={(value) => { setNewCountry(value); setAddressError(''); }} placeholder="Việt Nam" placeholderTextColor={COLORS.muted} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Typography variant="xs" weight="bold" color="inkSoft">
-                    ZIP CODE
-                  </Typography>
-                  <TextInput
-                    style={styles.modalInput}
-                    value={newZip}
-                    onChangeText={setNewZip}
-                    placeholder="ZIP"
-                    placeholderTextColor={COLORS.muted}
-                  />
+                  <Typography variant="xs" weight="bold" color="inkSoft">MÃ BƯU CHÍNH (KHÔNG BẮT BUỘC)</Typography>
+                  <TextInput style={styles.modalInput} value={newZip} onChangeText={(value) => { setNewZip(value); setAddressError(''); }} placeholder="Mã bưu chính" placeholderTextColor={COLORS.muted} />
                 </View>
               </View>
+
+              {addressError ? (
+                <View style={styles.addressErrorBox} accessibilityRole="alert">
+                  <Ionicons name="alert-circle" size={16} color={COLORS.danger} />
+                  <Typography variant="xs" color={COLORS.danger} style={styles.addressErrorText} numberOfLines={2}>
+                    {addressError}
+                  </Typography>
+                </View>
+              ) : null}
 
               <Button
                 variant="primary"
                 size="md"
                 fullWidth
                 loading={addAddressMutation.isPending}
+                disabled={addAddressMutation.isPending}
                 onPress={handleAddNewAddress}
-                style={{ marginTop: spacing.lg }}
+                style={{ marginTop: spacing.md, marginBottom: spacing.md }}
               >
-                Save Address
+                Lưu địa chỉ
               </Button>
             </ScrollView>
           </View>
@@ -615,6 +590,20 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     fontSize: 14,
     marginTop: 4,
+  },
+  addressErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.dangerSoft,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginTop: spacing.md,
+  },
+  addressErrorText: {
+    flex: 1,
+    marginLeft: spacing.xs,
+    color: COLORS.danger,
   },
   addressItemCard: {
     flexDirection: 'row',

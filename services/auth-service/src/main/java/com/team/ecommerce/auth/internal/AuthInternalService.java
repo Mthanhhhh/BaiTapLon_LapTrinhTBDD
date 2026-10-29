@@ -24,6 +24,7 @@ public class AuthInternalService {
                 .phone(address.getPhone())
                 .street(address.getStreet())
                 .city(address.getCity())
+                .district(address.getState())
                 .country(address.getCountry())
                 .build();
     }

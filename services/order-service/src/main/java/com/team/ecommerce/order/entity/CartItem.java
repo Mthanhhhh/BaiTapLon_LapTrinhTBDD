@@ -4,6 +4,8 @@ import com.team.ecommerce.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "cart_items")
 @Getter
@@ -17,11 +19,18 @@ public class CartItem extends BaseEntity {
     @JoinColumn(name = "cart_id")
     private Cart cart;
 
+    @Column(name = "shop_id", nullable = false)
+    private Long shopId;
+
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    @Column(name = "variant_id")
+    // Product variants are stored as product_db.product_skus and are represented by sku_id in order_db.
+    @Column(name = "sku_id", nullable = false)
     private Long variantId;
+
+    @Column(name = "added_price", nullable = false, precision = 12, scale = 2)
+    private BigDecimal addedPrice;
 
     @Column(nullable = false)
     @Builder.Default

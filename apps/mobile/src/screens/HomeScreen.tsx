@@ -454,11 +454,13 @@ export default function HomeScreen() {
                 onPress={() => navigation.navigate('Checkout')}
               >
                 <Ionicons name="cart-outline" size={23} color={COLORS.ink} />
-                <View style={styles.badgeCount}>
-                  <Typography variant="xs" color="surface" weight="bold" style={{ fontSize: 11 }}>
-                    {(cartData?.totalItems ?? 2) > 99 ? '99+' : (cartData?.totalItems ?? 2)}
-                  </Typography>
-                </View>
+                {!!cartData?.totalItems && cartData.totalItems > 0 && (
+                  <View style={styles.badgeCount}>
+                    <Typography variant="xs" color="surface" weight="bold" style={{ fontSize: 11 }}>
+                      {cartData.totalItems > 99 ? '99+' : cartData.totalItems}
+                    </Typography>
+                  </View>
+                )}
               </TouchableOpacity>
 
               {/* Notification / Message Icon */}

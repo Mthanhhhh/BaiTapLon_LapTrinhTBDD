@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +49,7 @@ public class OrderService {
     private final EventPublisher eventPublisher;
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new BadRequestException("Cart is empty"));
 
         List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
@@ -73,8 +74,6 @@ public class OrderService {
             BigDecimal price = product.getPrice();
             String variantName = null;
             
-            productInternalService.deductStock(cartItem.getProductId(), cartItem.getVariantId(), cartItem.getQuantity());
-
             if (cartItem.getVariantId() != null) {
                 VariantInternalDTO variant = product.getVariants().stream()
                         .filter(v -> v.getId().equals(cartItem.getVariantId()))
@@ -88,6 +87,7 @@ public class OrderService {
             subtotal = subtotal.add(itemSubtotal);
 
             OrderItem orderItem = OrderItem.builder()
+                    .shopId(cartItem.getShopId())
                     .productId(product.getId())
                     .variantId(cartItem.getVariantId())
                     .productName(product.getName())
@@ -120,7 +120,10 @@ public class OrderService {
                 : OrderStatus.PENDING_PAYMENT;
 
         Order order = Order.builder()
+                .orderNo("EC" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")))
+                .idempotencyKey(UUID.randomUUID().toString())
                 .userId(userId)
+                .currency("VND")
                 .paymentMethod(request.getPaymentMethod())
                 .status(initialStatus)
                 .subtotal(subtotal)
@@ -133,7 +136,8 @@ public class OrderService {
                 .shippingPhone(address.getPhone())
                 .shippingStreet(address.getStreet())
                 .shippingCity(address.getCity())
-                .shippingCountry(address.getCountry())
+                .shippingDistrict(address.getDistrict())
+                .shippingCountry("VN")
                 .note(request.getNote())
                 .build();
 
@@ -146,11 +150,30 @@ public class OrderService {
 
         order.setItems(orderItems);
 
+        // Reserve inventory only after the order snapshot has been persisted. If any SKU
+        // reservation fails, compensate earlier reservations while the DB transaction rolls back.
+        List<CartItem> deductedItems = new ArrayList<>();
+        try {
+            for (CartItem cartItem : cartItems) {
+                productInternalService.deductStock(cartItem.getProductId(), cartItem.getVariantId(), cartItem.getQuantity());
+                deductedItems.add(cartItem);
+            }
+        } catch (RuntimeException reservationError) {
+            for (CartItem deductedItem : deductedItems) {
+                try {
+                    productInternalService.restoreStock(deductedItem.getProductId(), deductedItem.getVariantId(), deductedItem.getQuantity());
+                } catch (RuntimeException compensationError) {
+                    reservationError.addSuppressed(compensationError);
+                }
+            }
+            throw reservationError;
+        }
+
         if (voucherId != null) {
             voucherService.incrementUsedCount(voucherId);
         }
 
-        cartItemRepository.deleteByCartId(cart.getId());
+        cartItemRepository.deleteAllByCartIdInBulk(cart.getId());
 
         // Publish OrderCreatedEvent to Kafka
         List<OrderCreatedEvent.OrderItemEvent> eventItems = orderItems.stream()

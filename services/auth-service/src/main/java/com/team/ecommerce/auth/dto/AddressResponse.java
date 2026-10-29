@@ -25,9 +25,18 @@ public class AddressResponse {
                 .street(address.getStreet())
                 .city(address.getCity())
                 .state(address.getState())
-                .country(address.getCountry())
+                .country(countryName(address.getCountry()))
                 .zipCode(address.getZipCode())
                 .isDefault(address.isDefault())
                 .build();
+    }
+
+    public static String countryName(String countryCode) {
+        if (countryCode == null) return "";
+        return switch (countryCode.toUpperCase()) {
+            case "VN" -> "Việt Nam";
+            case "US" -> "United States";
+            default -> countryCode;
+        };
     }
 }
