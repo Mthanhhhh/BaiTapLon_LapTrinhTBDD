@@ -26,6 +26,7 @@ import {
   useReceiveOrder,
   useReturnOrder,
   useCancelOrder,
+  useRejectShopOrder,
   useSubmitReview,
   ReviewRequest,
 } from '../hooks/useOrders';
@@ -69,6 +70,7 @@ export default function OrdersScreen() {
   const receiveOrderMutation = useReceiveOrder();
   const returnOrderMutation = useReturnOrder();
   const cancelOrderMutation = useCancelOrder();
+  const rejectShopOrderMutation = useRejectShopOrder();
   const submitReviewMutation = useSubmitReview();
 
   // Review Modal State
@@ -133,6 +135,16 @@ export default function OrdersScreen() {
         },
       ]
     );
+  };
+
+  const handleRejectShopOrder = (orderId: number) => {
+    appAlert.alert('Từ chối đơn hàng', 'Bạn có chắc muốn từ chối đơn này không? Tồn kho sẽ được hoàn lại.', [
+      { text: 'Quay lại', style: 'cancel' },
+      { text: 'Từ chối đơn', style: 'destructive', onPress: () => rejectShopOrderMutation.mutate(orderId, {
+        onSuccess: () => appAlert.alert('Đã từ chối', 'Đơn đã hủy và tồn kho được hoàn lại.'),
+        onError: (err:any) => appAlert.alert('Lỗi', err.message || 'Không thể từ chối đơn hàng.'),
+      }) },
+    ]);
   };
 
   const handleConfirmOrder = (orderId: number) => {
@@ -343,8 +355,8 @@ export default function OrdersScreen() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onPress={() => handleCancelOrder(item.id)}
-                    loading={cancelOrderMutation.isPending}
+                    onPress={() => handleRejectShopOrder(item.id)}
+                    loading={rejectShopOrderMutation.isPending}
                     style={styles.actionBtn}
                   >
                     Từ chối đơn

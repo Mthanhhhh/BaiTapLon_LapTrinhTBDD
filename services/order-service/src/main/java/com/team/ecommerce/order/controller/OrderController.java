@@ -24,7 +24,7 @@ public class OrderController {
     public ApiResponse<java.util.Map<String,Object>> shop(@AuthenticationPrincipal Long userId) { return ApiResponse.success(shops.mine(userId)); }
 
     @PostMapping("/shop/me")
-    public ApiResponse<java.util.Map<String,Object>> openShop(@AuthenticationPrincipal Long userId, @RequestBody java.util.Map<String,String> body) { return ApiResponse.success(shops.open(userId, body.get("name"))); }
+    public ApiResponse<java.util.Map<String,Object>> openShop(@AuthenticationPrincipal Long userId, @RequestBody java.util.Map<String,String> body) { return ApiResponse.success(shops.open(userId, body.get("name"), body.get("description"), body.get("province"))); }
 
     @GetMapping("/shop/orders")
     public ApiResponse<PageResponse<OrderResponse>> shopOrders(@AuthenticationPrincipal Long userId, Pageable pageable) { return ApiResponse.success(orderService.getShopOrders(userId, pageable)); }
@@ -47,6 +47,11 @@ public class OrderController {
     @PostMapping("/{id}/cancel")
     public ApiResponse<OrderResponse> cancelOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
         return ApiResponse.success("Order cancelled", orderService.cancelOrder(userId, id));
+    }
+
+    @PostMapping("/{id}/reject")
+    public ApiResponse<OrderResponse> rejectOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
+        return ApiResponse.success("Shop declined the order", orderService.rejectOrder(userId, id));
     }
 
     @PostMapping("/{id}/confirm")

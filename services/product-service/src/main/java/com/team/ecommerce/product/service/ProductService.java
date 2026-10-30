@@ -186,6 +186,7 @@ public class ProductService {
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }
 
+    @CacheEvict(value = "products", key = "'id:' + #id")
     public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
@@ -205,10 +206,24 @@ public class ProductService {
         if (request.getPrice() != null) {
             product.setMinPrice(request.getPrice());
             product.setMaxPrice(request.getPrice());
+            // Product cards use products.min_price while detail/cart use SKU prices.
+            // Keep both representations in sync when the seller edits a single product price.
+            List<ProductVariant> variants = productVariantRepository.findByProductId(id);
+            variants.forEach(variant -> variant.setPrice(request.getPrice()));
         }
-        if (request.getOriginalPrice() != null) product.setOriginalPrice(request.getOriginalPrice());
+        if (request.getOriginalPrice() != null) {
+            product.setOriginalPrice(request.getOriginalPrice());
+            productVariantRepository.findByProductId(id).forEach(variant -> variant.setOriginalPrice(request.getOriginalPrice()));
+        }
         if (request.getThumbnailUrl() != null) product.setThumbnailUrl(request.getThumbnailUrl());
         if (request.getAttributes() != null) product.setAttributes(request.getAttributes());
+
+        if (request.getStock() != null) {
+            List<ProductVariant> variants = productVariantRepository.findByProductId(id);
+            // The legacy edit form has one stock field; only apply it when the product
+            // has one SKU, so a total stock value is not copied to every variation.
+            if (variants.size() == 1) variants.get(0).setStock(request.getStock());
+        }
 
         if (request.getImages() != null) {
             product.getImages().clear();
@@ -239,6 +254,7 @@ public class ProductService {
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }
 
+    @CacheEvict(value = "products", key = "'id:' + #id")
     public void deleteProduct(Long id) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));

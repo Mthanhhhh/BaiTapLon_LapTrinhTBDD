@@ -41,6 +41,7 @@ import { formatVND, formatSoldVi } from '../utils/formatters';
 import { SORT_OPTIONS } from '../constants/sort';
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const DEFAULT_SHOPS = [
   { id: 1, name: 'TechZone Official', location: 'TP. Hồ Chí Minh', rating: 4.8 },
@@ -78,6 +79,7 @@ const DISPLAY_CATEGORIES = [
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { login } = useContext(AuthContext);
+  const queryClient = useQueryClient();
 
   const { data: cartData } = useCart();
   const { data: categories, isLoading: catLoading } = useCategories();
@@ -111,6 +113,9 @@ export default function HomeScreen() {
   const [formStock, setFormStock] = useState('100');
   const [formLocation, setFormLocation] = useState('TP. Hồ Chí Minh');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  const [editLoadFailed, setEditLoadFailed] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // Search and recommendation state
   const [searchKeywords, setSearchKeywords] = useState<string[]>([]);
@@ -251,24 +256,45 @@ export default function HomeScreen() {
     setFormDescription('Đèn học LED để bàn 3 màu siêu sáng 10 chế độ bảo vệ mắt, tích hợp pin sạc tiện lợi.');
     setFormStock('150');
     setFormLocation(currentShop.location);
+    setSaveError('');
+    setIsLoadingEdit(false);
+    setEditLoadFailed(false);
     setModalVisible(true);
   };
 
   // OPEN EDIT MODAL
-  const handleOpenEditModal = (prod: ProductListResponse) => {
+  const handleOpenEditModal = async (prod: ProductListResponse) => {
     setModalMode('edit');
     setEditingId(prod.id);
     setFormName(prod.name);
-    const numPrice = prod.price < 5000 ? Math.round(prod.price * 25000) : Math.round(prod.price);
-    const numOrig = prod.originalPrice ? (prod.originalPrice < 5000 ? Math.round(prod.originalPrice * 25000) : Math.round(prod.originalPrice)) : '';
-    setFormPrice(String(numPrice));
-    setFormOriginalPrice(String(numOrig));
+    setFormPrice(String(Math.round(prod.price)));
+    setFormOriginalPrice(prod.originalPrice ? String(Math.round(prod.originalPrice)) : '');
     setFormCategoryId(prod.categoryId || 14);
     setFormThumbnailUrl(prod.thumbnailUrl || '');
-    setFormDescription(prod.name);
+    setFormDescription('');
     setFormStock(String(prod.stock || 100));
     setFormLocation(prod.shopLocation || currentShop.location);
+    setSaveError('');
+    setEditLoadFailed(false);
     setModalVisible(true);
+    setIsLoadingEdit(true);
+    try {
+      const { data } = await apiClient.get(`/api/v1/products/${prod.id}`);
+      const detail = data.data;
+      setFormName(detail.name ?? prod.name);
+      setFormPrice(String(Math.round(Number(detail.price ?? prod.price))));
+      setFormOriginalPrice(detail.originalPrice != null ? String(Math.round(Number(detail.originalPrice))) : '');
+      setFormCategoryId(detail.categoryId ?? prod.categoryId ?? 14);
+      setFormThumbnailUrl(detail.thumbnailUrl ?? prod.thumbnailUrl ?? '');
+      setFormDescription(detail.description ?? '');
+      setFormStock(String(detail.stock ?? prod.stock ?? 100));
+      setFormLocation(detail.shopLocation ?? prod.shopLocation ?? currentShop.location);
+    } catch (err: any) {
+      setEditLoadFailed(true);
+      setSaveError(err?.message || 'Không tải được thông tin chi tiết sản phẩm.');
+    } finally {
+      setIsLoadingEdit(false);
+    }
   };
 
   // SAVE PRODUCT (CREATE / UPDATE)
@@ -279,17 +305,22 @@ export default function HomeScreen() {
       else Alert.alert('Thông báo', msg);
       return;
     }
-    const rawPrice = parseFloat(formPrice) || 100000;
-    const priceUSD = rawPrice > 5000 ? Number((rawPrice / 25000).toFixed(2)) : rawPrice;
-    const rawOrig = parseFloat(formOriginalPrice) || 0;
-    const origUSD = rawOrig > 5000 ? Number((rawOrig / 25000).toFixed(2)) : rawOrig;
+    const rawPrice = Number(formPrice);
+    const priceVnd = Math.round(rawPrice);
+    const rawOrig = formOriginalPrice.trim() ? Number(formOriginalPrice) : 0;
+    const originalPriceVnd = rawOrig > 0 ? Math.round(rawOrig) : undefined;
+    if (!Number.isFinite(priceVnd) || priceVnd <= 0) {
+      setSaveError('Giá bán phải lớn hơn 0đ.');
+      return;
+    }
 
+    setSaveError('');
     setIsSaving(true);
     try {
       const payload: any = {
         name: formName.trim(),
-        price: priceUSD,
-        originalPrice: origUSD > 0 ? origUSD : undefined,
+        price: priceVnd,
+        originalPrice: originalPriceVnd,
         categoryId: formCategoryId,
         thumbnailUrl: formThumbnailUrl.trim() || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
         description: formDescription.trim(),
@@ -304,8 +335,8 @@ export default function HomeScreen() {
         const newProdItem: ProductListResponse = {
           id: createdId,
           name: formName.trim(),
-          price: priceUSD,
-          originalPrice: origUSD > 0 ? origUSD : undefined,
+          price: priceVnd,
+          originalPrice: originalPriceVnd,
           thumbnailUrl: payload.thumbnailUrl,
           rating: 5.0,
           ratingCount: 1,
@@ -330,8 +361,10 @@ export default function HomeScreen() {
               ? {
                   ...p,
                   name: formName.trim(),
-                  price: priceUSD,
-                  originalPrice: origUSD > 0 ? origUSD : undefined,
+                  price: priceVnd,
+                  originalPrice: originalPriceVnd,
+                  categoryId: formCategoryId,
+                  description: formDescription.trim(),
                   thumbnailUrl: payload.thumbnailUrl,
                   shopLocation: formLocation,
                 }
@@ -344,35 +377,15 @@ export default function HomeScreen() {
       }
 
       setModalVisible(false);
-      refetchProd();
+      await Promise.all([
+        refetchProd(),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        ...(editingId ? [queryClient.invalidateQueries({ queryKey: ['product', editingId] })] : []),
+        queryClient.invalidateQueries({ queryKey: ['shopProducts'] }),
+      ]);
     } catch (err: any) {
       console.log('Error saving product', err);
-      // Fallback: update local list for immediate visual response
-      const fallbackId = editingId || Date.now();
-      const updatedItem: ProductListResponse = {
-        id: fallbackId,
-        name: formName.trim(),
-        price: priceUSD,
-        originalPrice: origUSD > 0 ? origUSD : undefined,
-        thumbnailUrl: formThumbnailUrl.trim(),
-        rating: 4.9,
-        ratingCount: 10,
-        soldCount: 50,
-        stock: parseInt(formStock) || 100,
-        categoryName: 'Sản phẩm',
-        shopId: currentShop.id,
-        shopName: currentShop.name,
-        shopLocation: formLocation,
-      };
-
-      setLocalCustomProducts((prev) => [
-        updatedItem,
-        ...prev.filter((p) => p.id !== fallbackId),
-      ]);
-      setModalVisible(false);
-      const sMsg = 'Đã lưu sản phẩm thành công!';
-      if (Platform.OS === 'web') alert(sMsg);
-      else Alert.alert('Thành công', sMsg);
+      setSaveError(err?.message || 'Không thể lưu sản phẩm. Vui lòng thử lại.');
     } finally {
       setIsSaving(false);
     }
@@ -703,6 +716,7 @@ export default function HomeScreen() {
               <Typography variant="xs" weight="medium" color="inkSoft" style={styles.fieldLabel}>
                 TÊN SẢN PHẨM *
               </Typography>
+              {isLoadingEdit && <Typography variant="xs" color="inkSoft">Đang tải thông tin sản phẩm…</Typography>}
               <TextInput
                 style={styles.textInput}
                 placeholder="Nhập tên sản phẩm đầy đủ"
@@ -831,10 +845,13 @@ export default function HomeScreen() {
                 onChangeText={setFormDescription}
               />
 
+              {!!saveError && <Typography variant="xs" color="danger">{saveError}</Typography>}
+
               <Button
                 title={modalMode === 'create' ? 'Đăng Bán Ngay Lên E-Shop' : 'Lưu Thay Đổi'}
                 fullWidth
                 loading={isSaving}
+                disabled={isSaving || isLoadingEdit || editLoadFailed}
                 onPress={handleSaveProduct}
                 style={{ marginTop: spacing.md }}
               />

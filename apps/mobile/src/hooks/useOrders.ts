@@ -122,6 +122,17 @@ export const useCancelOrder = () => {
   });
 };
 
+export const useRejectShopOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: number): Promise<OrderResponse> => {
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/reject`);
+      return data.data as OrderResponse;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
+  });
+};
+
 // Hook Đánh giá sản phẩm
 export const useSubmitReview = () => {
   const queryClient = useQueryClient();

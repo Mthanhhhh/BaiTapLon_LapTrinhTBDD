@@ -16,9 +16,12 @@ public class ShopAccessService {
         return rows.isEmpty() ? null : rows.get(0);
     }
     public Map<String,Object> open(Long userId, String name) {
+        return open(userId,name,null,null);
+    }
+    public Map<String,Object> open(Long userId, String name, String description, String province) {
         if (name == null || name.isBlank() || name.length()>150) throw new com.team.ecommerce.shared.exception.BadRequestException("Tên shop không hợp lệ");
-        if (mine(userId)==null) jdbc.update("INSERT INTO product_db.shops(owner_user_id,name,slug,status) VALUES(?,?,?,'ACTIVE')",userId,name.trim(),"shop-"+userId);
-        return mine(userId);
+        if (mine(userId)==null) jdbc.update("INSERT INTO product_db.shops(owner_user_id,name,slug,description,province,status) VALUES(?,?,?,?,?,'ACTIVE')",userId,name.trim(),"shop-"+userId,description,province);
+        return jdbc.queryForMap("SELECT id,name,description,province,status FROM product_db.shops WHERE owner_user_id=? AND deleted_at IS NULL",userId);
     }
     public void requireSingleShop(java.util.List<com.team.ecommerce.order.entity.CartItem> items) {
         var shopIds = items.stream().map(i -> jdbc.queryForObject("SELECT shop_id FROM product_db.products WHERE id=?",Long.class,i.getProductId())).distinct().toList();

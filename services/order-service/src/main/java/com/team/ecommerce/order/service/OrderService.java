@@ -251,6 +251,20 @@ public class OrderService {
         return OrderResponse.from(order, voucherCode);
     }
 
+    public OrderResponse rejectOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        shops.requireOwner(userId, order.getItems());
+        if (order.getStatus() != OrderStatus.WAITING_CONFIRMATION) {
+            throw new BadRequestException("Chỉ có thể từ chối đơn đang chờ xác nhận");
+        }
+        for (OrderItem item : order.getItems()) {
+            productInternalService.restoreStock(item.getProductId(), item.getVariantId(), item.getQuantity());
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        return OrderResponse.from(orderRepository.save(order), null);
+    }
+
     public PageResponse<OrderResponse> getShopOrders(Long userId, Pageable pageable) {
         var orders = orderRepository.findAll().stream().filter(o -> !o.getItems().isEmpty() && o.getItems().stream().allMatch(item -> shops.ownsProduct(userId,item.getProductId()))).map(o -> OrderResponse.from(o,null)).toList();
         int start = (int)Math.min(pageable.getOffset(),orders.size());

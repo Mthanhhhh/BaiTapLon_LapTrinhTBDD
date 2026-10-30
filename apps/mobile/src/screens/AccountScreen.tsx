@@ -1,5 +1,5 @@
 import { appAlert } from '../utils/appAlert';
-import { useShop, useOpenShop } from '../hooks/useShop';
+import { useShop } from '../hooks/useShop';
 import React, { useContext, useState } from 'react';
 import {
   View,
@@ -62,7 +62,6 @@ export default function AccountScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const { data: shop } = useShop();
-  const openShop = useOpenShop();
 
   // Profile Query & Mutations
   const { data: profile } = useUserProfile();
@@ -233,10 +232,7 @@ export default function AccountScreen() {
             onPress={() => setAddressModalVisible(true)}
           />
           <MenuItem icon="storefront-outline" title={shop ? `Quản lý shop: ${shop.name}` : 'Mở shop của tôi'}
-            onPress={() => {
-              if (shop) navigation.navigate('Shop', { shopId: shop.id });
-              else openShop.mutate(`${user.fullName} Shop`, { onError: (err: any) => appAlert.alert('Không thể mở shop', err.message) });
-            }} />
+            onPress={() => navigation.navigate('SellerCenter')} />
           <MenuItem
             icon="receipt-outline"
             title="Lịch sử đơn hàng"
