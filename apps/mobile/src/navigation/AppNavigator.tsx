@@ -17,9 +17,9 @@ import { COLORS } from '../theme/colors';
 export type TabParamList = {
   Home: undefined;
   Search: { keyword?: string; categoryId?: number; categoryName?: string; sort?: string } | undefined;
-  Orders: { shopMode?: boolean } | undefined;
+  Orders: { shopMode?: boolean; status?: string } | undefined;
   Account: undefined;
-  Showcase?: undefined;
+  Notifications: undefined;
 };
 
 export type RootStackParamList = {
@@ -45,6 +45,7 @@ const linking: LinkingOptions<RootStackParamList> = {
           Home: '',
           Search: 'search',
           Orders: 'orders',
+          Notifications: 'notifications',
           Account: 'account',
         },
       },

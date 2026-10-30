@@ -18,6 +18,7 @@ export interface ProductCardProps {
   soldCount?: number;
   shopName?: string;
   shopLocation?: string;
+  compact?: boolean;
   isShopOwner?: boolean;
   isCheapest?: boolean;
   onPress?: () => void;
@@ -33,6 +34,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   rating,
   soldCount,
   shopLocation = 'TP. Hồ Chí Minh',
+  compact = false,
   isShopOwner = false,
   isCheapest = false,
   onPress,
@@ -55,7 +57,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       onPress={onPress}
     >
       {/* Product Image Box */}
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, compact && {aspectRatio:1.15}]}>
         <RemoteImage
           sourceUrl={thumbnailUrl}
           name={name}
@@ -103,7 +105,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       </View>
 
       {/* Card Content Body */}
-      <View style={styles.content}>
+      <View style={[styles.content, compact && {paddingVertical:6}]}>
         {/* Name with 2 lines max */}
         <Typography variant="sm" weight="medium" numberOfLines={2} style={styles.title}>
           {name}
@@ -132,7 +134,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             </Typography>
           )}
         </View>
-        {originalPrice && originalPrice > price ? (
+        {!compact && originalPrice && originalPrice > price ? (
           <Typography variant="xs" weight="medium" color="deal" numberOfLines={1} style={styles.savingText}>
             {STRINGS.SAVING} {formatVND(originalPrice - price)}
           </Typography>
@@ -154,7 +156,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         </View>
 
         {/* Delivery Time & Shop Location Row */}
-        <View style={styles.shippingRow}>
+        {!compact && <View style={styles.shippingRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Ionicons
               name="car-outline"
@@ -177,7 +179,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               {shopLocation}
             </Typography>
           </View>
-        </View>
+        </View>}
       </View>
     </TouchableOpacity>
   );

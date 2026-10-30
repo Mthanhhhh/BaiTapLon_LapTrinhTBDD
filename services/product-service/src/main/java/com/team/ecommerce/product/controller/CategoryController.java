@@ -17,6 +17,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
+    private final com.team.ecommerce.product.repository.CategoryRepository categories;
+
+    @GetMapping("/catalog")
+    public ApiResponse<List<CategoryResponse>> catalog() { return ApiResponse.success(categories.findAll().stream().filter(c -> Boolean.TRUE.equals(c.getActive())).sorted(java.util.Comparator.comparing(com.team.ecommerce.product.entity.Category::getDisplayOrder)).map(CategoryResponse::from).toList()); }
 
     @GetMapping
     public ApiResponse<List<CategoryResponse>> getRootCategories() {

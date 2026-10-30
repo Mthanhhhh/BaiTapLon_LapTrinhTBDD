@@ -11,6 +11,19 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ShopAccessService {
     private final JdbcTemplate jdbc;
+    public void notifyBuyer(com.team.ecommerce.order.entity.Order order) {
+        String status=switch(order.getStatus()) {
+            case PENDING_PAYMENT -> "Đang chờ thanh toán";
+            case WAITING_CONFIRMATION -> "Đang chờ shop xác nhận";
+            case WAITING_PICKUP -> "Shop đã xác nhận, đang chuẩn bị hàng";
+            case SHIPPING -> "Đơn hàng đang được giao";
+            case DELIVERED -> "Đã xác nhận nhận hàng";
+            case CANCELLED -> "Đơn hàng đã hủy";
+            case RETURNED -> "Đã gửi yêu cầu trả hàng";
+            default -> order.getStatus().name();
+        };
+        jdbc.update("INSERT INTO auth_db.app_notifications(user_id,event_key,type,title,body,order_id) VALUES(?,?,'ORDER',?,?,?) ON DUPLICATE KEY UPDATE event_key=VALUES(event_key)",order.getUserId(),"order-"+order.getId()+"-"+order.getStatus(),"Cập nhật đơn #"+order.getId(),status,order.getId());
+    }
     public Map<String,Object> mine(Long userId) {
         var rows = jdbc.queryForList("SELECT id,name,status FROM product_db.shops WHERE owner_user_id=? AND deleted_at IS NULL", userId);
         return rows.isEmpty() ? null : rows.get(0);

@@ -1,3 +1,5 @@
+import { MarketplaceHeader } from '../components/MarketplaceHeader';
+import { useOrders } from '../hooks/useOrders';
 import { appAlert } from '../utils/appAlert';
 import { useShop, useOpenShop } from '../hooks/useShop';
 import React, { useContext, useState } from 'react';
@@ -37,6 +39,7 @@ export default function AccountScreen() {
 
   const { data: shop } = useShop();
   const openShop = useOpenShop();
+  const orders = useOrders(0,100);
 
   // Profile Query & Mutations
   const { data: profile } = useUserProfile();
@@ -58,7 +61,7 @@ export default function AccountScreen() {
   const [newPhone, setNewPhone] = useState('');
   const [newStreet, setNewStreet] = useState('');
   const [newCity, setNewCity] = useState('');
-  const [newCountry, setNewCountry] = useState('United States');
+  const [newCountry, setNewCountry] = useState('Việt Nam');
   const [newZip, setNewZip] = useState('');
 
   if (!user) {
@@ -153,29 +156,24 @@ export default function AccountScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <AuroraBackground variant="header" headerHeight={260} palette="calm">
-        <SafeAreaView style={styles.headerSafeArea}>
-          <Typography variant="xl" weight="bold" role="heading" aria-level={1} style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md }}>{STRINGS.ACCOUNT_TITLE}</Typography>
-          <View style={styles.headerContent}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarPlaceholder}>
-                <Typography variant="xxxl" weight="bold" color="primaryDeep">
-                  {getInitials(profile?.fullName || user.fullName)}
-                </Typography>
-              </View>
-            </View>
-            <Typography variant="xl" weight="bold" color="ink" style={{ marginTop: spacing.sm }}>
-              {profile?.fullName || user.fullName}
-            </Typography>
-            <Typography variant="sm" color="inkSoft">
-              {profile?.email || user.email}
-            </Typography>
+    <SafeAreaView style={styles.container}>
+      <MarketplaceHeader title="Tài khoản" />
+      <ScrollView contentContainerStyle={[styles.scrollContent,{paddingTop:12,gap:14}]}>
+        <View style={{backgroundColor:COLORS.primarySoft,borderRadius:18,padding:16,gap:16,borderWidth:1,borderColor:COLORS.border}}>
+          <View style={{flexDirection:'row',gap:12,alignItems:'center'}}>
+            <View style={{width:60,height:60,borderRadius:30,backgroundColor:COLORS.surface,alignItems:'center',justifyContent:'center'}}><Typography variant="xxl" weight="bold" color="primaryDeep">{getInitials(profile?.fullName||user.fullName)}</Typography></View>
+            <View style={{flex:1,gap:4}}><Typography variant="lg" weight="bold">{profile?.fullName||user.fullName}</Typography><Typography variant="xs" color="inkSoft" numberOfLines={1}>{profile?.email||user.email}</Typography><Typography variant="xs" color="primaryDeep">{shop?'Người mua · Chủ shop':'Tài khoản mua sắm'}</Typography></View>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Sửa hồ sơ" onPress={()=>{setEditFullName(profile?.fullName||user.fullName);setEditPhone(profile?.phone||'');setProfileModalVisible(true);}}><Ionicons name="settings-outline" size={24} color={COLORS.primaryDeep}/></TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </AuroraBackground>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+          <TouchableOpacity accessibilityRole="button" onPress={()=>shop?navigation.navigate('Shop',{shopId:shop.id}):openShop.mutate(`${user.fullName} Shop`,{onError:(e:any)=>appAlert.alert('Không thể mở shop',e.message)})} style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="storefront-outline" size={20} color={COLORS.primaryDeep}/><Typography variant="sm" weight="bold" style={{flex:1}}>{shop?`Quản lý ${shop.name}`:'Mở shop và bắt đầu bán hàng'}</Typography><Ionicons name="chevron-forward" size={18} color={COLORS.primaryDeep}/></TouchableOpacity>
+        </View>
+        <View style={[styles.menuCard,{padding:14,gap:18}]}>
+          <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}><Typography weight="bold">Đơn mua</Typography><TouchableOpacity accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{shopMode:false,status:'ALL'}})}><Typography variant="xs" color="inkSoft">Lịch sử mua hàng ›</Typography></TouchableOpacity></View>
+          <View style={{flexDirection:'row',justifyContent:'space-between'}}>{([
+            ['WAITING_CONFIRMATION','Chờ xác nhận','wallet-outline'],['WAITING_PICKUP','Chờ lấy hàng','cube-outline'],['SHIPPING','Đang giao','car-outline'],['DELIVERED','Đã nhận','star-outline']
+          ] as const).map(([status,label,icon])=>{const count=orders.data?.last?orders.data.content.filter(o=>o.status===status||(status==='WAITING_PICKUP'&&o.status==='PAID')).length:undefined;return <TouchableOpacity key={status} accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{shopMode:false,status}})} style={{alignItems:'center',gap:8,width:'24%'}}><View><Ionicons name={icon} size={27} color={COLORS.primaryDeep}/>{!!count&&<View style={{position:'absolute',top:-6,right:-10,paddingHorizontal:4,borderRadius:9,backgroundColor:COLORS.deal}}><Typography variant="xs" color="surface">{count}</Typography></View>}</View><Typography variant="xs" align="center">{label}</Typography></TouchableOpacity>})}</View>
+        </View>
+        <Typography variant="lg" weight="bold">Tiện ích của tôi</Typography>
         {/* Main Menu Options */}
         <View style={styles.menuCard}>
           <MenuItem
@@ -200,17 +198,17 @@ export default function AccountScreen() {
           <MenuItem
             icon="receipt-outline"
             title="Lịch sử đơn hàng"
-            onPress={() => navigation.navigate('Main', { screen: 'Orders' } as any)}
+            onPress={() => navigation.navigate('Main', { screen: 'Orders', params:{shopMode:false,status:'ALL'} })}
           />
           <MenuItem
             icon="card-outline"
-            title="Phương thức thanh toán"
-            onPress={() => appAlert.alert('Phương thức thanh toán', 'Quản lý thẻ ngân hàng và ví điện tử của bạn.')}
+            title="Đơn chờ thanh toán"
+            onPress={() => navigation.navigate('Main',{screen:'Orders',params:{shopMode:false,status:'PENDING_PAYMENT'}})}
           />
           <MenuItem
             icon="notifications-outline"
-            title="Cài đặt thông báo"
-            onPress={() => appAlert.alert('Thông báo', 'Tính năng nhận thông báo ưu đãi đang được bật.')}
+            title="Thông báo của tôi"
+            onPress={() => navigation.navigate('Main',{screen:'Notifications'})}
           />
           <MenuItem
             icon="log-out-outline"
@@ -499,7 +497,7 @@ export default function AccountScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

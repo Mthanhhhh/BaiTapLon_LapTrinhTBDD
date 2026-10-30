@@ -138,6 +138,7 @@ public class OrderService {
                 .build();
 
         order = orderRepository.save(order);
+        shops.notifyBuyer(order);
 
         for (OrderItem item : orderItems) {
             item.setOrder(order);
@@ -169,6 +170,7 @@ public class OrderService {
                 .items(eventItems)
                 .build());
 
+        shops.notifyBuyer(order);
         return OrderResponse.from(order, appliedVoucherCode);
     }
 
@@ -216,6 +218,7 @@ public class OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         order = orderRepository.save(order);
+        shops.notifyBuyer(order);
 
         String voucherCode = null;
         if (order.getVoucherId() != null) {
@@ -254,6 +257,7 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         order.setStatus(status);
         order = orderRepository.save(order);
+        shops.notifyBuyer(order);
         
         String voucherCode = null;
         if (order.getVoucherId() != null) {

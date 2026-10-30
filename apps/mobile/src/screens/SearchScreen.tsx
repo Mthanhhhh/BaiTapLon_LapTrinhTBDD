@@ -1,3 +1,5 @@
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Platform, ScrollView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -10,6 +12,8 @@ import { STRINGS } from '../constants/strings';
 import { searchHistory } from '../utils/searchHistory';
 
 export default function SearchScreen() {
+  const { user } = useContext(AuthContext);
+  const previousUser = useRef(user?.id);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   
@@ -36,6 +40,15 @@ export default function SearchScreen() {
     const list = await searchHistory.getKeywords();
     setRecentKeywords(list);
   };
+
+  useEffect(() => {
+    if (previousUser.current !== user?.id) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setKeyword('');setDebouncedKeyword('');setCategoryId(null);setCategoryName('');
+      previousUser.current=user?.id;
+    }
+    loadRecentKeywords();
+  },[user?.id]);
 
   useEffect(() => {
     loadRecentKeywords();

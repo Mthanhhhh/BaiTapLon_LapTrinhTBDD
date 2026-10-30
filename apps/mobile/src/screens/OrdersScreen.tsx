@@ -58,7 +58,8 @@ export default function OrdersScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState<OrderTab>('ALL');
   const route = useRoute();
-  useEffect(() => { if ((route.params as {shopMode?:boolean})?.shopMode) setIsShopView(true); }, [route.params]);
+  useEffect(() => { if ((route.params as {shopMode?:boolean})?.shopMode !== undefined) setIsShopView(!!(route.params as {shopMode?:boolean}).shopMode); }, [route.params]);
+  useEffect(() => { const status=(route.params as {status?:string})?.status;if(status && TABS.some(t=>t.id===status))setActiveTab(status as OrderTab); },[route.params]);
   const [shopMode, setIsShopView] = useState(false);
   const { data: shop } = useShop();
   const isShopView = !!shop && shopMode;

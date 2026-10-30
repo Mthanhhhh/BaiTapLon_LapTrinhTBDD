@@ -30,6 +30,11 @@ public class ProductController {
         return ApiResponse.success(productService.getProducts(pageable));
     }
 
+    @GetMapping("/recommendations")
+    public ApiResponse<PageResponse<ProductListResponse>> recommendations(@RequestParam(defaultValue="") String keyword,@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size) {
+        return ApiResponse.success(productService.recommendations(keyword,page,size));
+    }
+
     @GetMapping("/search")
     public ApiResponse<PageResponse<ProductListResponse>> searchProducts(@ModelAttribute ProductSearchRequest request, Pageable pageable) {
         return ApiResponse.success(productService.searchProducts(request, pageable));

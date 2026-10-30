@@ -1,3 +1,4 @@
+import { searchHistory } from '../utils/searchHistory';
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient, AppError } from '../api/client';
 import { tokenStorage } from '../utils/tokenStorage';
@@ -42,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadUser = async () => {
     const token = await tokenStorage.getAccessToken();
     if (!token) {
+      searchHistory.setAccount();
       setUser(null);
       return null;
     }
@@ -49,10 +51,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await apiClient.get('/api/v1/auth/me');
       const currentUser = response.data.data as User;
+      searchHistory.setAccount(currentUser.id);
       setUser(currentUser);
       return currentUser;
     } catch (error) {
       await tokenStorage.clearTokens();
+      searchHistory.setAccount();
       setUser(null);
       throw error;
     }
@@ -64,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .finally(() => setLoading(false));
 
     const handleLogoutEvent = () => {
+      searchHistory.setAccount();
       setUser(null);
       queryClient.clear();
     };
@@ -128,7 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await tokenStorage.clearTokens();
-    setUser(null);
+    searchHistory.setAccount();
+      setUser(null);
     queryClient.clear();
   };
 

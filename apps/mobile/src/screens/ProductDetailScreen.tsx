@@ -49,9 +49,9 @@ const COLOR_MAP: Record<string, string> = {
 const getColorDot = (color: string) => COLOR_MAP[color] || '#9E9E9E';
 
 const EMOTION_ICONS: Record<string, string> = {
-  GOOD: '😄',
-  NEUTRAL: '😐',
-  BAD: '🙁',
+  GOOD: 'Hài lòng',
+  NEUTRAL: 'Bình thường',
+  BAD: 'Chưa hài lòng',
 };
 
 const TAG_NAMES: Record<string, string> = {
@@ -93,6 +93,8 @@ export default function ProductDetailScreen() {
   const numericProductId = Number(productId) || 0;
   const { user } = useContext(AuthContext);
   const contentWidth = useContentWidth();
+  const galleryRef = useRef<FlatList>(null);
+  const {height: viewportHeight} = useWindowDimensions();
 
   // Carousel size: 1:1 ratio, matching content frame width (max 480px)
   const carouselSize = contentWidth;
@@ -208,7 +210,7 @@ export default function ProductDetailScreen() {
     if (!variants || variants.length === 0) return null;
     if (canSplitVariants && selectedColor && selectedSize) {
       const match = variants.find((v) => v.name === `${selectedColor} / ${selectedSize}`);
-      return match || variants[0];
+      return match || null;
     }
     if (selectedVariantId) {
       return variants.find((v) => v.id === selectedVariantId) || variants[0];
@@ -226,9 +228,10 @@ export default function ProductDetailScreen() {
 
   // Calculated discount percentage: Math.round((1 - price / originalPrice) * 100)
   const discountPercent = useMemo(() => {
-    if (!product || !product.originalPrice || product.originalPrice <= product.price) return 0;
-    return Math.round((1 - product.price / product.originalPrice) * 100);
-  }, [product]);
+    if (!product || !product.originalPrice) return 0;
+    const price = activeVariant?.price ?? product.price;
+    return product.originalPrice > price ? Math.round((1-price/product.originalPrice)*100) : 0;
+  }, [product,activeVariant]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0 && viewableItems[0].index !== undefined) {
@@ -236,10 +239,11 @@ export default function ProductDetailScreen() {
     }
   }).current;
 
-  const currentStock = activeVariant ? activeVariant.stock : (product?.stock ?? 0);
+  const currentStock = activeVariant ? activeVariant.stock : (variants.length ? 0 : (product?.stock ?? 0));
+  useEffect(()=>{setQuantity(q=>currentStock>0?Math.min(Math.max(1,q),currentStock):1);},[currentStock]);
 
   const executeAddToCart = (isBuyNow: boolean) => {
-    if (!product) return;
+    if (!product || currentStock<=0 || quantity>currentStock || (variants.length>0&&!activeVariant)) return;
 
     addToCart(
       {
@@ -331,6 +335,9 @@ export default function ProductDetailScreen() {
     <View style={styles.container}>
       {/* Main vertical ScrollView wrapping the entire page */}
       <ScrollView
+        aria-hidden={isVariantSheetVisible}
+        accessibilityElementsHidden={isVariantSheetVisible}
+        importantForAccessibility={isVariantSheetVisible?'no-hide-descendants':'auto'}
         bounces={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -338,6 +345,7 @@ export default function ProductDetailScreen() {
         {/* Image Carousel (Fixed ratio 1:1, max 480px on web) */}
         <View style={[styles.carouselContainer, { width: carouselSize, height: carouselSize }]}>
           <FlatList
+            ref={galleryRef}
             data={images.length > 0 ? images : [null]}
             keyExtractor={(_, index) => index.toString()}
             horizontal
@@ -394,10 +402,11 @@ export default function ProductDetailScreen() {
           </SafeAreaView>
         </View>
 
+        {images.length>1&&<View style={{padding:12,backgroundColor:COLORS.surface,gap:8}}><Typography variant="xs" color="inkSoft">{images.length} ảnh sản phẩm · Chạm để xem</Typography><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:8}}>{images.map((url,index)=><TouchableOpacity key={`${index}-${url}`} accessibilityRole="button" accessibilityLabel={`Xem ảnh ${index+1}`} onPress={()=>{galleryRef.current?.scrollToOffset({offset:index*carouselSize,animated:true});setCurrentImageIndex(index);}} style={{borderWidth:2,borderColor:index===currentImageIndex?COLORS.primaryDeep:COLORS.border,borderRadius:8,overflow:'hidden'}}><RemoteImage sourceUrl={url} name={product.name} style={{width:52,height:52}}/></TouchableOpacity>)}</ScrollView></View>}
         {/* Section: Price & Title & Stats */}
         <View style={styles.section}>
           <View style={styles.priceRow}>
-            <Typography variant="xxl" weight="bold" color="primaryDeep">
+            <Typography variant="xxl" weight="bold" color="deal">
               {formatPrice(currentPrice)}
             </Typography>
             {product.originalPrice && product.originalPrice > currentPrice && (
@@ -434,13 +443,7 @@ export default function ProductDetailScreen() {
             </Typography>
           </View>
 
-          {/* Shipping Time Estimate */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }}>
-            <Ionicons name="car-outline" size={15} color="#2F855A" style={{ marginRight: 6 }} />
-            <Typography variant="xs" color="inkSoft">
-              Vận chuyển: <Typography variant="xs" weight="bold" style={{ color: '#2F855A' }}>{calculateShippingTime(product.shopLocation).timeText}</Typography> (từ {product.shopLocation || 'TP. Hồ Chí Minh'})
-            </Typography>
-          </View>
+          <View style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,marginTop:10,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="location-outline" size={18} color={COLORS.primaryDeep}/><Typography variant="sm" color="inkSoft">{product.shopLocation||'Xem thông tin giao hàng tại shop'}</Typography></View>
         </View>
 
         {/* Section: Shop Information */}
@@ -639,7 +642,7 @@ export default function ProductDetailScreen() {
       </ScrollView>
 
       {/* Fixed Bottom Bar: Cart button + Add to Cart button (soft) + Buy Now button (primary) */}
-      <SafeAreaView style={styles.bottomBarContainer}>
+      <SafeAreaView aria-hidden={isVariantSheetVisible} accessibilityElementsHidden={isVariantSheetVisible} style={styles.bottomBarContainer}>
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={styles.cartBarBtn}
@@ -675,7 +678,7 @@ export default function ProductDetailScreen() {
       </SafeAreaView>
 
       {/* Variant Selection Bottom Sheet Modal (Semi-transparent backdrop shows product page behind) */}
-      <Modal visible={isVariantSheetVisible} animationType="slide" transparent>
+      <Modal visible={isVariantSheetVisible} animationType="slide" transparent onRequestClose={()=>setIsVariantSheetVisible(false)}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             style={styles.backdropDismiss}
@@ -695,6 +698,7 @@ export default function ProductDetailScreen() {
                 <Typography variant="xl" weight="bold" color="primaryDeep">
                   {formatPrice(currentPrice)}
                 </Typography>
+                {!!product.originalPrice && product.originalPrice > currentPrice && <Typography variant="sm" color="muted" style={{textDecorationLine:'line-through'}}>{formatPrice(product.originalPrice)}</Typography>}
                 <Typography variant="sm" color="muted">
                   Kho còn: {currentStock}
                 </Typography>
@@ -708,6 +712,7 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
 
+            <ScrollView style={{maxHeight:Math.max(180,viewportHeight*0.43)}} showsVerticalScrollIndicator={false}>
             {/* Split Variants (Color & Size) */}
             {canSplitVariants ? (
               <View style={styles.sheetBody}>
@@ -723,7 +728,7 @@ export default function ProductDetailScreen() {
                         <TouchableOpacity
                           key={c}
                           style={[styles.variantChip, isActive && styles.variantChipActive]}
-                          onPress={() => setSelectedColor(c)}
+                          onPress={() => {setSelectedColor(c);const valid=variants.find(v=>v.name===`${c} / ${selectedSize}`&&v.stock>0);if(!valid){const first=variants.find(v=>v.name.startsWith(`${c} / `)&&v.stock>0);if(first)setSelectedSize(first.name.split(' / ')[1].trim());}}}
                           activeOpacity={0.8}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -756,6 +761,7 @@ export default function ProductDetailScreen() {
                             isActive && styles.variantChipActive,
                             isOutOfStock && styles.variantChipDisabled,
                           ]}
+                          disabled={isOutOfStock}
                           onPress={() => setSelectedSize(s)}
                           activeOpacity={0.8}
                         >
@@ -790,6 +796,7 @@ export default function ProductDetailScreen() {
                           isActive && styles.variantChipActive,
                           isOutOfStock && styles.variantChipDisabled,
                         ]}
+                        disabled={isOutOfStock}
                         onPress={() => setSelectedVariantId(v.id)}
                         activeOpacity={0.8}
                       >
@@ -833,6 +840,7 @@ export default function ProductDetailScreen() {
               </View>
             </View>
 
+            </ScrollView>
             {/* Confirm Button */}
             <View style={styles.sheetFooter}>
               <Button
@@ -934,6 +942,7 @@ const styles = StyleSheet.create({
   },
   priceRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'baseline',
     marginBottom: spacing.xs,
   },
@@ -1044,8 +1053,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   reviewImage: {
-    width: 64,
-    height: 64,
+    width: 94,
+    height: 94,
     borderRadius: radius.sm,
     marginRight: spacing.sm,
     overflow: 'hidden',
@@ -1118,7 +1127,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     padding: spacing.lg,
-    maxHeight: '75%',
+    maxHeight: '88%',
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
@@ -1129,8 +1138,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sheetImage: {
-    width: 64,
-    height: 64,
+    width: 94,
+    height: 94,
     borderRadius: radius.md,
     overflow: 'hidden',
     marginRight: spacing.md,
@@ -1154,7 +1163,9 @@ const styles = StyleSheet.create({
   variantChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: radius.full,
+    borderRadius: 8,
+    minHeight: 42,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
     marginRight: spacing.sm,

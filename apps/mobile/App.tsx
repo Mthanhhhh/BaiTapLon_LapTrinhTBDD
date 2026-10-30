@@ -1,3 +1,4 @@
+import { NotificationToast } from './src/components/NotificationToast';
 import { WebFontFaces } from './src/components/ui/WebFontFaces';
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
@@ -39,7 +40,7 @@ export default function App() {
           <View style={styles.appFrame}>
             <WebFontFaces />
             <WaveBackdrop />
-            <View style={styles.appContent}><AppNavigator /></View>
+            <View style={styles.appContent}><AppNavigator /><NotificationToast /></View>
           </View>
         </AuthProvider>
       </QueryClientProvider>

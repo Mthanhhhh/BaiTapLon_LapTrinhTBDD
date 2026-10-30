@@ -1,14 +1,19 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const SEARCH_HISTORY_KEY = 'ESHOP_SEARCH_KEYWORDS_HISTORY';
-const VIEWED_CATEGORIES_KEY = 'ESHOP_VIEWED_CATEGORIES_HISTORY';
+let SEARCH_HISTORY_KEY = 'ESHOP_SEARCH_KEYWORDS_HISTORY_guest';
+let VIEWED_CATEGORIES_KEY = 'ESHOP_VIEWED_CATEGORIES_HISTORY_guest';
 
 // Memory fallback for environments without storage
 let memoryKeywords: string[] = [];
 let memoryCategories: number[] = [];
 
 export const searchHistory = {
+  setAccount(userId?:number) {
+    SEARCH_HISTORY_KEY='ESHOP_SEARCH_KEYWORDS_HISTORY_'+(userId??'guest');
+    VIEWED_CATEGORIES_KEY='ESHOP_VIEWED_CATEGORIES_HISTORY_'+(userId??'guest');
+    memoryKeywords=[];memoryCategories=[];
+  },
   /**
    * Lưu từ khóa tìm kiếm mới nhất vào đầu danh sách
    */

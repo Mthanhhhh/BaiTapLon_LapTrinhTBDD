@@ -39,6 +39,16 @@ public class ProductService {
     private final ElasticsearchSyncService elasticsearchSyncService;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public PageResponse<ProductListResponse> recommendations(String keyword,int page,int size) {
+        var paging=org.springframework.data.domain.PageRequest.of(Math.max(0,page),Math.max(1,Math.min(size,50)),org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("ratingAvg"),org.springframework.data.domain.Sort.Order.desc("ratingCount"),org.springframework.data.domain.Sort.Order.desc("soldCount"),org.springframework.data.domain.Sort.Order.desc("id")));
+        String term=keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        var result=productRepository.findAll((root,query,cb)->{
+            var active=cb.and(cb.equal(root.get("status"),ProductStatus.ACTIVE),cb.isNull(root.get("deletedAt")));
+            return term.isEmpty()?active:cb.and(active,cb.like(cb.lower(root.get("name")),"%"+term.replace("%","\\%").replace("_","\\_")+"%"));
+        },paging);
+        return mapToPageResponse(result);
+    }
+
     @Transactional(value = "productTransactionManager", readOnly = true)
     public PageResponse<ProductListResponse> getProducts(Pageable pageable) {
         Page<Product> page = productRepository.findByDeletedAtIsNullAndStatus(ProductStatus.ACTIVE, pageable);
