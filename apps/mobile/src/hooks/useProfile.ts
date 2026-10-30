@@ -25,7 +25,7 @@ export interface AddressPayload {
   phone: string;
   street: string;
   city: string;
-  state?: string;
+  state: string;
   country: string;
   zipCode?: string;
   isDefault: boolean;

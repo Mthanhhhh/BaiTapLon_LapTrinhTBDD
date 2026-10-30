@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -37,6 +38,8 @@ public class ProductResponse {
     private int ratingCount;
     private int soldCount;
     private String attributes;
+    private List<String> optionLabels;
+    private Map<String, List<String>> variantImages;
     private boolean isActive;
     private List<ProductVariantResponse> variants;
     private LocalDateTime createdAt;
@@ -65,6 +68,19 @@ public class ProductResponse {
         Long sId = product.getShopId();
         String sName = product.getShop() != null ? product.getShop().getName() : null;
         String sLoc = product.getShop() != null ? product.getShop().getProvince() : null;
+        List<String> optionLabels = new ArrayList<>();
+        Map<String, List<String>> variantImages = Map.of();
+        if (product.getAttributes() != null && !product.getAttributes().isBlank()) {
+            try {
+                Map<String, Object> metadata = mapper.readValue(product.getAttributes(), new TypeReference<>() {});
+                Object labels = metadata.get("optionLabels");
+                if (labels != null) optionLabels = mapper.convertValue(labels, new TypeReference<List<String>>() {});
+                Object imageMap = metadata.get("variantImages");
+                if (imageMap != null) variantImages = mapper.convertValue(imageMap, new TypeReference<Map<String, List<String>>>() {});
+            } catch (JsonProcessingException ignored) {
+                // Keep optional selectors empty for legacy products with non-JSON attributes.
+            }
+        }
 
         return ProductResponse.builder()
                 .id(product.getId())
@@ -84,6 +100,8 @@ public class ProductResponse {
                 .ratingCount(product.getRatingCount())
                 .soldCount(product.getSoldCount())
                 .attributes(product.getAttributes())
+                .optionLabels(optionLabels)
+                .variantImages(variantImages)
                 .isActive(product.isActive())
                 .variants(variantResponses)
                 .createdAt(product.getCreatedAt())

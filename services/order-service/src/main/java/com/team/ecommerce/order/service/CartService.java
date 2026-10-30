@@ -14,15 +14,18 @@ import com.team.ecommerce.product.internal.VariantInternalDTO;
 import com.team.ecommerce.shared.exception.BadRequestException;
 import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional("orderTransactionManager")
 public class CartService {
 
@@ -59,8 +62,8 @@ public class CartService {
                     .findFirst()
                     .orElseThrow(() -> new ResourceNotFoundException("ProductVariant", "id", request.getVariantId()));
             availableStock = variant.getStock();
-        } else if (product.getVariants() != null && !product.getVariants().isEmpty()) {
-            throw new BadRequestException("Product has variants, variantId must be specified");
+        } else {
+            throw new BadRequestException("A product SKU must be selected before adding it to the cart");
         }
 
         Optional<CartItem> existingItemOpt = cartItemRepository.findByCartIdAndProductIdAndVariantId(
@@ -80,8 +83,10 @@ public class CartService {
             }
             CartItem newItem = CartItem.builder()
                     .cart(cart)
+                    .shopId(product.getShopId())
                     .productId(product.getId())
                     .variantId(request.getVariantId())
+                    .addedPrice(variant.getPrice())
                     .quantity(request.getQuantity())
                     .build();
             cartItemRepository.save(newItem);
@@ -140,37 +145,44 @@ public class CartService {
     public void clearCart(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
-        cartItemRepository.deleteByCartId(cart.getId());
+        cartItemRepository.deleteAllByCartIdInBulk(cart.getId());
     }
 
     private CartResponse buildCartResponse(Cart cart) {
         List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
-        List<CartItemResponse> itemResponses = cartItems.stream().map(item -> {
+        List<CartItemResponse> itemResponses = new ArrayList<>();
+        for (CartItem item : cartItems) {
+            ProductInternalDTO product;
             try {
-                ProductInternalDTO product = productInternalService.getProductById(item.getProductId());
-                VariantInternalDTO variant = null;
-                if (item.getVariantId() != null) {
-                    variant = product.getVariants().stream()
-                            .filter(v -> v.getId().equals(item.getVariantId()))
-                            .findFirst()
-                            .orElse(null);
-                }
-                
-                return CartItemResponse.builder()
-                        .id(item.getId())
-                        .productId(product.getId())
-                        .variantId(variant != null ? variant.getId() : null)
-                        .productName(product.getName())
-                        .variantName(variant != null ? variant.getName() : null)
-                        .price(variant != null ? variant.getPrice() : product.getPrice())
-                        .quantity(item.getQuantity())
-                        .subtotal((variant != null ? variant.getPrice() : product.getPrice()).multiply(java.math.BigDecimal.valueOf(item.getQuantity())))
-                        .productImage(product.getThumbnailUrl())
-                        .build();
-            } catch (Exception e) {
-                return null;
+                product = productInternalService.getProductById(item.getProductId());
+            } catch (HttpClientErrorException.NotFound missingProduct) {
+                log.warn("Removing stale cart item {} for unavailable product {}", item.getId(), item.getProductId());
+                cartItemRepository.delete(item);
+                continue;
             }
-        }).filter(item -> item != null).collect(Collectors.toList());
+
+            VariantInternalDTO variant = product.getVariants().stream()
+                    .filter(v -> v.getId().equals(item.getVariantId()))
+                    .findFirst()
+                    .orElse(null);
+            if (variant == null) {
+                log.warn("Removing stale cart item {} for unavailable SKU {}", item.getId(), item.getVariantId());
+                cartItemRepository.delete(item);
+                continue;
+            }
+
+            itemResponses.add(CartItemResponse.builder()
+                    .id(item.getId())
+                    .productId(product.getId())
+                    .variantId(variant.getId())
+                    .productName(product.getName())
+                    .variantName(variant.getName())
+                    .price(variant.getPrice())
+                    .quantity(item.getQuantity())
+                    .subtotal(variant.getPrice().multiply(java.math.BigDecimal.valueOf(item.getQuantity())))
+                    .productImage(product.getThumbnailUrl())
+                    .build());
+        }
 
         return CartResponse.from(cart, itemResponses);
     }

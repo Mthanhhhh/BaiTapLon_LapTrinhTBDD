@@ -6,6 +6,7 @@ import com.team.ecommerce.auth.entity.Address;
 import com.team.ecommerce.auth.entity.User;
 import com.team.ecommerce.auth.repository.AddressRepository;
 import com.team.ecommerce.auth.repository.UserRepository;
+import com.team.ecommerce.shared.exception.BadRequestException;
 import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class AddressService {
                 .street(request.getStreet())
                 .city(request.getCity())
                 .state(request.getState())
-                .country(request.getCountry())
+                .country(toCountryCode(request.getCountry()))
                 .zipCode(request.getZipCode())
                 .isDefault(request.isDefault())
                 .build();
@@ -65,7 +66,7 @@ public class AddressService {
         address.setStreet(request.getStreet());
         address.setCity(request.getCity());
         address.setState(request.getState());
-        address.setCountry(request.getCountry());
+        address.setCountry(toCountryCode(request.getCountry()));
         address.setZipCode(request.getZipCode());
         address.setDefault(request.isDefault());
 
@@ -88,5 +89,19 @@ public class AddressService {
         
         address = addressRepository.save(address);
         return AddressResponse.from(address);
+    }
+
+    private String toCountryCode(String country) {
+        String normalized = country == null ? "" : country.trim();
+        if (normalized.equalsIgnoreCase("Việt Nam") || normalized.equalsIgnoreCase("Vietnam") || normalized.equalsIgnoreCase("VN")) {
+            return "VN";
+        }
+        if (normalized.equalsIgnoreCase("United States") || normalized.equalsIgnoreCase("USA") || normalized.equalsIgnoreCase("US")) {
+            return "US";
+        }
+        if (normalized.matches("(?i)[a-z]{2}")) {
+            return normalized.toUpperCase();
+        }
+        throw new BadRequestException("Quốc gia chưa được hỗ trợ. Hãy nhập Việt Nam hoặc mã quốc gia gồm 2 ký tự.");
     }
 }

@@ -50,7 +50,7 @@ public class Product extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private String currency = "USD";
+    private String currency = "VND";
 
     @Column(name = "min_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal minPrice;

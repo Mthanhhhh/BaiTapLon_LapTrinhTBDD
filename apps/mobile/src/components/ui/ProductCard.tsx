@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: radius.md,
     overflow: 'hidden',
-    marginBottom: spacing.md,
+    marginBottom: 0,
     borderWidth: 1.25,
     borderColor: COLORS.border,
     padding: 6,

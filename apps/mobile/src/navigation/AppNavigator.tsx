@@ -1,3 +1,4 @@
+import CartScreen from '../screens/CartScreen';
 import React, { useContext } from 'react';
 import { NavigationContainer, NavigatorScreenParams, LinkingOptions, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -26,6 +27,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList> | undefined;
   ProductDetail: { productId: number | string };
   Shop: { shopId: number | string };
+  Cart: undefined;
   Checkout: undefined;
   Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'MAESTRO' | 'PAYPAL' } | undefined;
   Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;
@@ -51,6 +53,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       },
       ProductDetail: 'product/:productId',
       Shop: 'shop/:shopId',
+      Cart: 'cart',
       Checkout: 'checkout',
       Payment: 'payment/:orderId',
       Success: 'success',
@@ -78,6 +81,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
         <Stack.Screen name="Shop" component={ShopScreen} />
+        <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen name="Payment" component={PaymentScreen} />
         <Stack.Screen name="Success" component={SuccessScreen} />

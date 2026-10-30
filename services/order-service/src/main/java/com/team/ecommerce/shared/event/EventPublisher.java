@@ -3,7 +3,11 @@ package com.team.ecommerce.shared.event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Component
@@ -11,9 +15,18 @@ import org.springframework.stereotype.Component;
 public class EventPublisher {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public void publishOrderCreated(OrderCreatedEvent event) {
         log.info("Publishing OrderCreatedEvent to Kafka: orderId={}", event.getOrderId());
+        // Dispatch only after the order and its cart changes have committed.
+        // Kafka may be unavailable in local development and must not hold the HTTP request open.
+        applicationEventPublisher.publishEvent(event);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void sendOrderCreatedEvent(OrderCreatedEvent event) {
         try {
             kafkaTemplate.send("order-events", String.valueOf(event.getOrderId()), event);
         } catch (Exception e) {

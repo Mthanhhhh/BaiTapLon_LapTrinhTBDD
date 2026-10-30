@@ -71,7 +71,7 @@ CREATE TABLE products (
   short_description      VARCHAR(500) NULL,
   description            TEXT NULL,
   thumbnail_url          VARCHAR(500) NULL,
-  currency               CHAR(3) NOT NULL DEFAULT 'USD',
+  currency               CHAR(3) NOT NULL DEFAULT 'VND',
   min_price              DECIMAL(12,2) NOT NULL,
   max_price              DECIMAL(12,2) NOT NULL,
   original_price         DECIMAL(12,2) NULL COMMENT 'Giá gốc để hiện giảm giá',

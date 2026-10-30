@@ -1,9 +1,9 @@
 package com.team.ecommerce.order.entity;
 
-import com.team.ecommerce.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "order_items")
@@ -12,7 +12,14 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderItem extends BaseEntity {
+public class OrderItem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
@@ -21,24 +28,31 @@ public class OrderItem extends BaseEntity {
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    @Column(name = "variant_id")
+    @Column(name = "sku_id", nullable = false)
     private Long variantId;
+
+    @Column(name = "shop_id", nullable = false)
+    private Long shopId;
 
     @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(name = "product_image")
+    @Column(name = "image_url")
     private String productImage;
 
-    @Column(name = "variant_name")
+    @Column(name = "sku_name")
     private String variantName;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
     @Column(nullable = false)
     private int quantity;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Transient
     private BigDecimal subtotal;
+
+    public BigDecimal getSubtotal() {
+        return price == null ? BigDecimal.ZERO : price.multiply(BigDecimal.valueOf(quantity));
+    }
 }

@@ -129,7 +129,10 @@ export const useAddToCart = () => {
       const { data } = await apiClient.post('/api/v1/cart/items', payload);
       return data.data as CartResponse;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cartKey(user?.id) }),
+    onSuccess: (cart) => {
+      queryClient.setQueryData(cartKey(user?.id), cart);
+      queryClient.invalidateQueries({ queryKey: cartKey(user?.id) });
+    },
   });
 };
 

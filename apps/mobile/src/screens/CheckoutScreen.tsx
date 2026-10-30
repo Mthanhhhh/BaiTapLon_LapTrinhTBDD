@@ -1,3 +1,4 @@
+import {CartProductImage} from '../components/CartProductImage';
 import { appAlert } from '../utils/appAlert';
 import React, { useEffect, useState } from 'react';
 import {
@@ -28,7 +29,7 @@ import {
 export default function CheckoutScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const { data: cart, isLoading: isCartLoading } = useCart();
+  const { data: cart, isLoading: isCartLoading, isError: isCartError, error: cartError, refetch: refetchCart } = useCart();
   const { data: addresses, isLoading: isAddrLoading } = useAddresses();
   const updateCartItemMutation = useUpdateCartItem();
   const removeCartItemMutation = useRemoveCartItem();
@@ -69,6 +70,7 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = () => {
+    if (createOrderMutation.isPending) return;
     if (!cart?.items || cart.items.length === 0) {
       appAlert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm vào giỏ hàng trước khi đặt hàng.');
       return;
@@ -123,7 +125,7 @@ export default function CheckoutScreen() {
           <Ionicons name="arrow-back" size={22} color={COLORS.ink} />
         </TouchableOpacity>
         <Typography variant="lg" weight="bold" role="heading" aria-level={1}>
-          Thanh toán đơn hàng
+          Xác nhận đơn hàng
         </Typography>
         <View style={{ width: 40 }} />
       </View>
@@ -147,7 +149,7 @@ export default function CheckoutScreen() {
                 {currentAddress.fullName} | {currentAddress.phone}
               </Typography>
               <Typography variant="sm" color="inkSoft" style={{ marginTop: 2 }}>
-                {currentAddress.street}, {currentAddress.city}, {currentAddress.country}
+                {[currentAddress.street, currentAddress.state, currentAddress.city, currentAddress.country].filter(Boolean).join(', ')}
               </Typography>
             </View>
           ) : (
@@ -165,15 +167,18 @@ export default function CheckoutScreen() {
             </Typography>
           </View>
 
-          {cart?.items && cart.items.length > 0 ? (
+          {isCartError ? (
+            <View style={styles.emptyCartBox}>
+              <Ionicons name="cloud-offline-outline" size={36} color={COLORS.danger} />
+              <Typography variant="sm" color="inkSoft" align="center" style={{ marginTop: spacing.xs }}>
+                Không tải được giỏ hàng{cartError?.message ? `: ${cartError.message}` : '.'}
+              </Typography>
+              <Button title="Thử tải lại" variant="outline" size="sm" style={{ marginTop: spacing.sm }} onPress={() => refetchCart()} />
+            </View>
+          ) : cart?.items && cart.items.length > 0 ? (
             cart.items.map((item, idx) => (
               <View key={item.id} style={[styles.itemRow, idx !== cart.items.length - 1 && styles.itemBorder]}>
-                <RemoteImage
-                  sourceUrl={item.productImage}
-                  name={item.productName}
-                  style={styles.itemImage}
-                  iconSize={22}
-                />
+                <CartProductImage item={item} style={styles.itemImage} />
                 <View style={styles.itemDetails}>
                   <Typography variant="sm" weight="semiBold" numberOfLines={1}>
                     {item.productName}

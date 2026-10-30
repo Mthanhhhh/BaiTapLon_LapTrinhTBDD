@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ProductInternalDTO {
     private Long id;
+    private Long shopId;
     private String name;
     private BigDecimal price;
     private String thumbnailUrl;
