@@ -22,6 +22,7 @@ import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,7 @@ public class OrderService {
     private final ProductInternalService productInternalService;
     private final AuthInternalService authInternalService;
     private final EventPublisher eventPublisher;
+    private final JdbcTemplate jdbc;
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
         Cart cart = cartRepository.findByUserIdForUpdate(userId)
@@ -289,8 +291,15 @@ public class OrderService {
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        boolean newlyDelivered = status == OrderStatus.DELIVERED && order.getStatus() != OrderStatus.DELIVERED;
         order.setStatus(status);
         order = orderRepository.save(order);
+        if (newlyDelivered) {
+            for (OrderItem item : order.getItems()) {
+                jdbc.update("UPDATE product_db.products SET sold_count=sold_count+? WHERE id=?", item.getQuantity(), item.getProductId());
+                if (item.getVariantId() != null) jdbc.update("UPDATE product_db.product_skus SET sold_count=sold_count+? WHERE id=? AND product_id=?", item.getQuantity(), item.getVariantId(), item.getProductId());
+            }
+        }
         
         String voucherCode = null;
         if (order.getVoucherId() != null) {

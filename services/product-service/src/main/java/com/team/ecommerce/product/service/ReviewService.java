@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -32,6 +34,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final FeedbackTagRepository feedbackTagRepository;
+    private final JdbcTemplate jdbc;
 
     @Transactional(readOnly = true)
     public PageResponse<ReviewResponse> getReviewsByProduct(Long productId, Pageable pageable) {
@@ -43,9 +46,18 @@ public class ReviewService {
         return PageResponse.from(reviews.map(r -> ReviewResponse.from(r, "User " + r.getUserId())));
     }
 
+    @CacheEvict(value = "products", key = "'id:' + #productId")
     public ReviewResponse createReview(Long userId, Long productId, ReviewRequest request) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
+
+        Integer deliveredOrderItem = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM order_db.orders o JOIN order_db.order_items i ON i.order_id=o.id " +
+                        "WHERE o.id=? AND o.user_id=? AND o.status='DELIVERED' AND i.product_id=?",
+                Integer.class, request.getOrderId(), userId, productId);
+        if (deliveredOrderItem == null || deliveredOrderItem == 0) {
+            throw new BadRequestException("Chỉ có thể đánh giá sản phẩm thuộc đơn hàng đã giao thành công");
+        }
 
         if (reviewRepository.existsByUserIdAndOrderIdAndProductId(userId, request.getOrderId(), productId)) {
             throw new BadRequestException("User has already reviewed this product for this order");
@@ -83,8 +95,8 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         // Recalculate average
-        Double avgRating = reviewRepository.getAverageRatingByProductId(productId);
-        Integer ratingCount = reviewRepository.countReviewsByProductId(productId);
+        Double avgRating = reviewRepository.getAverageVisibleRatingByProductId(productId);
+        Integer ratingCount = reviewRepository.countVisibleReviewsByProductId(productId);
         
         product.setRatingAvg(BigDecimal.valueOf(avgRating != null ? avgRating : 0.0).setScale(2, RoundingMode.HALF_UP));
         product.setRatingCount(ratingCount != null ? ratingCount : 0);

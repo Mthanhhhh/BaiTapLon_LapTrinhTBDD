@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useContext } from 'react';
 import {
   View,
   StyleSheet,
@@ -39,14 +39,9 @@ import { searchHistory } from '../utils/searchHistory';
 import { apiClient } from '../api/client';
 import { formatVND, formatSoldVi } from '../utils/formatters';
 import { SORT_OPTIONS } from '../constants/sort';
-import { AuthContext } from '../context/AuthContext';
-import { useContext } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-
-const DEFAULT_SHOPS = [
-  { id: 1, name: 'TechZone Official', location: 'TP. Hồ Chí Minh', rating: 4.8 },
-  { id: 2, name: 'Daily Mart', location: 'Hà Nội', rating: 4.5 },
-];
+import { useShop } from '../hooks/useShop';
+import { AuthContext } from '../context/AuthContext';
 
 const CATEGORY_META: Record<number, { icon: string; color: string; viName: string }> = {
   11: { icon: 'phone-portrait-outline', color: COLORS.sky, viName: 'Điện Thoại' },
@@ -78,8 +73,9 @@ const DISPLAY_CATEGORIES = [
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { login } = useContext(AuthContext);
   const queryClient = useQueryClient();
+  const { user } = useContext(AuthContext);
+  const { data: ownedShop } = useShop();
 
   const { data: cartData } = useCart();
   const { data: categories, isLoading: catLoading } = useCategories();
@@ -95,7 +91,12 @@ export default function HomeScreen() {
 
   // Shop Seller Role State
   const [isShopMode, setIsShopMode] = useState(false);
-  const [currentShop, setCurrentShop] = useState(DEFAULT_SHOPS[0]);
+  const currentShop = ownedShop ? { id: ownedShop.id, name: ownedShop.name, location: ownedShop.province || 'Chưa cập nhật', rating: 0 } : null;
+  useEffect(() => { setIsShopMode(false); }, [user?.id]);
+  useEffect(() => { if (!ownedShop) setIsShopMode(false); }, [ownedShop]);
+  const canManageProduct = useCallback((product?: ProductListResponse) =>
+    !!(isShopMode && currentShop && product && Number(product.shopId) === Number(currentShop.id)),
+  [isShopMode, currentShop]);
   const [localCustomProducts, setLocalCustomProducts] = useState<ProductListResponse[]>([]);
 
   // Product Add / Edit Modal State
@@ -220,28 +221,13 @@ export default function HomeScreen() {
     });
   }, [allProducts, searchKeywords, viewedCategories]);
 
-  const handleToggleShopMode = async () => {
-    const next = !isShopMode;
-    setIsShopMode(next);
-    if (next) {
-      try {
-        const targetEmail = currentShop.id === 1 ? 'seller@ecommerce.local' : 'seller2@ecommerce.local';
-        await login({ email: targetEmail, password: 'password123' });
-      } catch (e) {
-        // ignore
-      }
+  const handleToggleShopMode = () => {
+    if (!ownedShop) {
+      setIsShopMode(false);
+      navigation.navigate('SellerCenter');
+      return;
     }
-  };
-
-  const handleSwitchShop = async () => {
-    const nextShop = currentShop.id === 1 ? DEFAULT_SHOPS[1] : DEFAULT_SHOPS[0];
-    setCurrentShop(nextShop);
-    try {
-      const targetEmail = nextShop.id === 1 ? 'seller@ecommerce.local' : 'seller2@ecommerce.local';
-      await login({ email: targetEmail, password: 'password123' });
-    } catch (e) {
-      // ignore
-    }
+    setIsShopMode((current) => !current);
   };
 
   // OPEN CREATE MODAL
@@ -255,7 +241,7 @@ export default function HomeScreen() {
     setFormThumbnailUrl('https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80');
     setFormDescription('Đèn học LED để bàn 3 màu siêu sáng 10 chế độ bảo vệ mắt, tích hợp pin sạc tiện lợi.');
     setFormStock('150');
-    setFormLocation(currentShop.location);
+    setFormLocation(currentShop?.location || '');
     setSaveError('');
     setIsLoadingEdit(false);
     setEditLoadFailed(false);
@@ -264,6 +250,7 @@ export default function HomeScreen() {
 
   // OPEN EDIT MODAL
   const handleOpenEditModal = async (prod: ProductListResponse) => {
+    if (!canManageProduct(prod)) return;
     setModalMode('edit');
     setEditingId(prod.id);
     setFormName(prod.name);
@@ -273,7 +260,7 @@ export default function HomeScreen() {
     setFormThumbnailUrl(prod.thumbnailUrl || '');
     setFormDescription('');
     setFormStock(String(prod.stock || 100));
-    setFormLocation(prod.shopLocation || currentShop.location);
+    setFormLocation(prod.shopLocation || currentShop?.location || '');
     setSaveError('');
     setEditLoadFailed(false);
     setModalVisible(true);
@@ -288,7 +275,7 @@ export default function HomeScreen() {
       setFormThumbnailUrl(detail.thumbnailUrl ?? prod.thumbnailUrl ?? '');
       setFormDescription(detail.description ?? '');
       setFormStock(String(detail.stock ?? prod.stock ?? 100));
-      setFormLocation(detail.shopLocation ?? prod.shopLocation ?? currentShop.location);
+      setFormLocation(detail.shopLocation ?? prod.shopLocation ?? currentShop?.location ?? '');
     } catch (err: any) {
       setEditLoadFailed(true);
       setSaveError(err?.message || 'Không tải được thông tin chi tiết sản phẩm.');
@@ -313,6 +300,15 @@ export default function HomeScreen() {
       setSaveError('Giá bán phải lớn hơn 0đ.');
       return;
     }
+    if (!currentShop || !isShopMode) {
+      setSaveError('Bạn cần mở kênh bán hàng của shop thuộc tài khoản để quản lý sản phẩm.');
+      return;
+    }
+    if (modalMode === 'edit' && !canManageProduct(allProducts.find((product) => product.id === editingId))) {
+      setSaveError('Bạn chỉ có thể chỉnh sửa sản phẩm thuộc shop của tài khoản đang đăng nhập.');
+      return;
+    }
+    const activeShop = currentShop;
 
     setSaveError('');
     setIsSaving(true);
@@ -325,7 +321,7 @@ export default function HomeScreen() {
         thumbnailUrl: formThumbnailUrl.trim() || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
         description: formDescription.trim(),
         stock: parseInt(formStock) || 100,
-        shopId: currentShop.id,
+        shopId: activeShop.id,
       };
 
       if (modalMode === 'create') {
@@ -343,8 +339,8 @@ export default function HomeScreen() {
           soldCount: 0,
           stock: parseInt(formStock) || 100,
           categoryName: 'Sản phẩm mới',
-          shopId: currentShop.id,
-          shopName: currentShop.name,
+          shopId: activeShop.id,
+          shopName: activeShop.name,
           shopLocation: formLocation,
         };
 
@@ -393,6 +389,7 @@ export default function HomeScreen() {
 
   // DELETE PRODUCT
   const handleDeleteProduct = (prodId: number) => {
+    if (!canManageProduct(allProducts.find((product) => product.id === prodId))) return;
     const doDelete = async () => {
       try {
         await apiClient.delete(`/api/v1/products/${prodId}`);
@@ -514,20 +511,10 @@ export default function HomeScreen() {
                   weight="bold"
                   style={{ color: isShopMode ? '#FFFFFF' : COLORS.primaryDeep }}
                 >
-                  {isShopMode ? `Đang quản lý: ${currentShop.name}` : STRINGS.SELLER_CHANNEL}
+                  {isShopMode ? `Đang quản lý: ${currentShop?.name}` : STRINGS.SELLER_CHANNEL}
                 </Typography>
               </TouchableOpacity>
 
-              {isShopMode && (
-                <TouchableOpacity
-                  style={styles.switchShopBtn}
-                  onPress={handleSwitchShop}
-                >
-                  <Typography variant="xs" weight="semiBold" style={{ color: COLORS.primaryDeep }}>
-                    Đổi Shop ({currentShop.id === 1 ? 'Hà Nội' : 'TP.HCM'})
-                  </Typography>
-                </TouchableOpacity>
-              )}
             </View>}
           </SafeAreaView>
         </View>
@@ -603,10 +590,10 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View>
                 <Typography variant="sm" weight="bold" style={{ color: COLORS.primaryDeep }}>
-                  {currentShop.name} ({currentShop.location})
+                  {currentShop?.name} ({currentShop?.location})
                 </Typography>
                 <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-                  Vị trí kho: {currentShop.location} • Đánh giá: {currentShop.rating}/5
+                  Vị trí kho: {currentShop?.location} • Đánh giá: {currentShop?.rating}/5
                 </Typography>
               </View>
               <TouchableOpacity style={styles.addProductBtn} onPress={handleOpenCreateModal}>
@@ -655,7 +642,7 @@ export default function HomeScreen() {
 
   const renderProduct = useCallback(
     ({ item }: { item: ProductListResponse }) => {
-      const isOwnedByShop = isShopMode && item.shopId === currentShop.id;
+      const isOwnedByShop = canManageProduct(item);
       const isCheapest = item.categoryId != null && item.price <= (minPriceByCategory[item.categoryId] ?? 0);
 
       return (
@@ -671,7 +658,7 @@ export default function HomeScreen() {
         </View>
       );
     },
-    [navigation, isShopMode, currentShop, minPriceByCategory]
+    [navigation, canManageProduct, minPriceByCategory]
   );
 
   return (
