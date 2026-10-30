@@ -54,8 +54,12 @@ export default function ShopScreen() {
       <View style={styles.row}>{chip('Sản phẩm',tab==='products',()=>setTab('products'))}{chip(`Đánh giá (${s.reviewCount})`,tab==='reviews',()=>setTab('reviews'))}</View>
       {tab==='products'?<>
         <View style={styles.row}><TextInput accessibilityLabel="Tìm trong shop" placeholder="Tìm sản phẩm trong shop" value={keyword} onChangeText={setKeyword} onSubmitEditing={()=>setSearch(keyword.trim())} style={[styles.input,{flex:1}]}/><Button size="sm" onPress={()=>setSearch(keyword.trim())}>Tìm</Button></View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>{chip('Tất cả danh mục',!collection,()=>setCollection(undefined))}{s.collections.map(c=>chip(c.name,collection===c.id,()=>setCollection(c.id),c.id))}</ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>{SORTS.map(([v,l])=>chip(l,sort===v,()=>setSort(v),v))}{chip('Lọc giá',filters,()=>setFilters(!filters))}</ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel="Danh mục và bộ lọc sản phẩm">
+          {chip('Tất cả danh mục',!collection,()=>setCollection(undefined))}
+          {s.collections.map(c=>chip(c.name,collection===c.id,()=>setCollection(c.id),c.id))}
+          {SORTS.map(([v,l])=>chip(l,sort===v,()=>setSort(v),v))}
+          {chip('Lọc giá',filters,()=>setFilters(!filters))}
+        </ScrollView>
         {filters&&<View style={styles.card}><View style={styles.row}><TextInput accessibilityLabel="Giá từ" placeholder="Giá từ" keyboardType="numeric" value={min} onChangeText={setMin} style={[styles.input,{flex:1}]}/><TextInput accessibilityLabel="Giá đến" placeholder="Giá đến" keyboardType="numeric" value={max} onChangeText={setMax} style={[styles.input,{flex:1}]}/></View><Button size="sm" onPress={()=>{const lo=min?Number(min):undefined,hi=max?Number(max):undefined;if((lo!==undefined&&(!Number.isFinite(lo)||lo<0))||(hi!==undefined&&(!Number.isFinite(hi)||hi<0))||(lo!==undefined&&hi!==undefined&&lo>hi)){setFilterError('Khoảng giá không hợp lệ');return;}setFilterError('');setPrices({minPrice:lo,maxPrice:hi});}}>Áp dụng</Button>{!!filterError&&<Typography>{filterError}</Typography>}</View>}
         <Typography variant="sm" color="inkSoft">{products.data?.pages[0]?.totalElements??0} sản phẩm</Typography>
         {products.isPending&&<ActivityIndicator/>}{products.isError&&<Button onPress={()=>products.refetch()}>Tải lại sản phẩm</Button>}
