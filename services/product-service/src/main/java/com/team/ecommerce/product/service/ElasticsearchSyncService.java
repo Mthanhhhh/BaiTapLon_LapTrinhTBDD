@@ -125,6 +125,8 @@ public class ElasticsearchSyncService {
                 if (p.getDeletedAt() == null && p.getStatus() == ProductStatus.ACTIVE) {
                     syncProduct(p);
                     count++;
+                  } else {
+                      deleteProduct(p.getId());
                 }
             }
             // Refresh index

@@ -40,6 +40,7 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
+                 .requestMatchers("/ws/promotions", "/api/v1/promotions/catalog").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()

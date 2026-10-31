@@ -1,3 +1,7 @@
+import PromotionsScreen from '../screens/PromotionsScreen';
+import CategoriesScreen from '../screens/CategoriesScreen';
+import ReviewsScreen from '../screens/ReviewsScreen';
+import PromotionManageScreen from '../screens/PromotionManageScreen';
 import OAuthCallbackScreen from '../screens/OAuthCallbackScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import CartScreen from '../screens/CartScreen';
@@ -28,9 +32,13 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList> | undefined;
-  ProductDetail: { productId: number | string; shopMode?: boolean };
+  ProductDetail: { productId: number | string; shopMode?: boolean; variantId?: number };
   Shop: { shopId: number | string };
   ShopOrders: { status?: string } | undefined;
+  Promotions: {mode?:string}|undefined;
+  Categories: {categoryId?:number}|undefined;
+  Reviews: {productId:number};
+  PromotionManage: undefined;
   Cart: undefined;
   SellerCenter: { editProductId?: number } | undefined;
   Checkout: undefined;
@@ -60,6 +68,10 @@ const linking: LinkingOptions<RootStackParamList> = {
       ProductDetail: 'product/:productId',
       Shop: 'shop/:shopId',
       ShopOrders: 'seller/orders',
+      Promotions: 'promotions',
+      Categories: 'categories',
+      Reviews: 'product/:productId/reviews',
+      PromotionManage: 'seller/promotions',
       Cart: 'cart',
       SellerCenter: 'seller',
       Checkout: 'checkout',
@@ -91,6 +103,10 @@ export default function AppNavigator() {
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
         <Stack.Screen name="Shop" component={ShopScreen} />
         <Stack.Screen name="ShopOrders" component={OrdersScreen} />
+        <Stack.Screen name="Promotions" component={PromotionsScreen} />
+        <Stack.Screen name="Categories" component={CategoriesScreen} />
+        <Stack.Screen name="Reviews" component={ReviewsScreen} />
+        <Stack.Screen name="PromotionManage" component={PromotionManageScreen} />
         <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="SellerCenter" component={SellerCenterScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />

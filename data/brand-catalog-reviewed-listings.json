@@ -1,0 +1,146 @@
+[
+  {
+    "brand": "vivo",
+    "categoryId": 32,
+    "url": "https://www.vivo.com/vn/products",
+    "names": [
+      "vivo X300 Ultra",
+      "vivo X300 Pro",
+      "vivo X300",
+      "vivo V70",
+      "vivo V70 FE",
+      "vivo Y31d",
+      "vivo V80 Lite 5G",
+      "vivo Y05e",
+      "vivo Y39 5G",
+      "vivo V60 Lite 5G"
+    ]
+  },
+  {
+    "brand": "google-pixel",
+    "categoryId": 32,
+    "url": "https://support.google.com/pixelphone/answer/15738422?hl=en-419",
+    "names": [
+      "Google Pixel 11 Pro Fold",
+      "Google Pixel 11 Pro XL",
+      "Google Pixel 11 Pro",
+      "Google Pixel 11",
+      "Google Pixel 10a",
+      "Google Pixel 10 Pro Fold",
+      "Google Pixel 10 Pro XL",
+      "Google Pixel 10 Pro",
+      "Google Pixel 10",
+      "Google Pixel 9a"
+    ]
+  },
+  {
+    "brand": "motorola",
+    "categoryId": 32,
+    "url": "https://uatsupport.motorola.com/en-au/devices/?family=motorola-razr-family",
+    "names": [
+      "Motorola signature",
+      "Motorola razr 70 ultra",
+      "Motorola razr fold",
+      "Motorola razr 60",
+      "Motorola razr 50 ultra",
+      "Motorola edge 70 fusion",
+      "Motorola edge 70",
+      "Motorola edge 60 pro",
+      "Motorola edge 60 fusion",
+      "Motorola moto g86 power 5G"
+    ]
+  },
+  {
+    "brand": "jbl",
+    "categoryId": 35,
+    "url": "https://www.jbl.com/headphones/",
+    "names": [
+      "JBL Live 660NC Personalized",
+      "JBL Live 460NC",
+      "JBL Tune 660NC",
+      "JBL Endurance Run 3 USB-C",
+      "JBL Tune 780NC",
+      "JBL Tune 135BT",
+      "JBL Tour One M3 Smart Tx",
+      "JBL Tune 530C",
+      "JBL Tune 730BT",
+      "JBL Junior 320BT"
+    ]
+  },
+  {
+    "brand": "microsoft",
+    "categoryId": 33,
+    "url": "https://learn.microsoft.com/en-us/surface/surface-supported-operating-systems",
+    "names": [
+      "Microsoft Surface Laptop Ultra",
+      "Microsoft Surface Laptop 13-inch 2nd Edition (Snapdragon)",
+      "Microsoft Surface Laptop 8th Edition (Snapdragon)",
+      "Microsoft Surface Laptop for Business 8th Edition (Intel)",
+      "Microsoft Surface Laptop 13-inch 1st Edition (Intel)",
+      "Microsoft Surface Laptop 13-inch 1st Edition (Snapdragon)",
+      "Microsoft Surface Laptop 5G for Business 7th Edition (Intel)",
+      "Microsoft Surface Laptop for Business 7th Edition (Intel)",
+      "Microsoft Surface Laptop 7th Edition (Snapdragon)",
+      "Microsoft Surface Laptop 6 for Business"
+    ]
+  },
+  {
+    "brand": "dell",
+    "categoryId": 33,
+    "url": "https://www.dell.com/en-us/shop/dell-laptops/scr/laptops",
+    "names": [
+      "New XPS Googlebook Laptop",
+      "Dell 16 Laptop",
+      "XPS 13 Laptop",
+      "Dell Pro 16 Laptop",
+      "Alienware 16 Aurora Gaming Laptop",
+      "Dell Pro 14 Laptop",
+      "Dell 15 Laptop",
+      "Dell Pro Precision 5 Series 14S Laptop",
+      "New Dell 14S Laptop",
+      "Dell 16 Plus Laptop"
+    ]
+  },
+  {
+    "brand": "hp",
+    "categoryId": 33,
+    "url": "https://www.hp.com/gb-en/shop/listings/laptops?subbrand=omnibook+omnibook-7+probook",
+    "names": [
+      "HP OmniBook 7 Laptop Next Gen AI 16-bh0006nax",
+      "HP OmniBook 7 17\" Next Gen AI Laptop, Intel Core Ultra 7 , 16GB, 1TB, Touchscreen Display",
+      "HP OmniBook 7 Laptop Next Gen AI 14-hg0002nax",
+      "HP OmniBook 7 Laptop Next Gen AI 14-hg0003nax",
+      "HP OmniBook 7 Laptop Next Gen AI 16-bh0004nax",
+      "HP OmniBook 7 14\" Next Gen AI Laptop, Intel Core Ultra 7 , 16GB, 1TB"
+    ]
+  },
+  {
+    "brand": "acer",
+    "categoryId": 33,
+    "url": "https://blog.acer.com/en/discussion/3408/official-2026-acer-copilot-pc-buyer-s-guide/p1",
+    "names": [
+      "Acer Swift 14 AI (SF14-61T-R49D)",
+      "Acer Aspire 14 AI (A14-52M-72FH)",
+      "Acer Swift Go 14 AI (SFG14-01-X006)",
+      "Nitro V 16S AI (ANV16S-41-R2AJ)",
+      "Predator Triton 14 AI"
+    ]
+  },
+  {
+    "brand": "purina",
+    "categoryId": 56,
+    "url": "https://shop.purina.com/shop-cat/pro-plan-dry",
+    "names": [
+      "Purina Pro Plan Adult Indoor + Hairball Chicken & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Adult Indoor + Hairball Turkey & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Adult Sensitive Skin & Stomach Lamb & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Adult Sensitive Skin & Stomach Salmon & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Adult Weight Management Chicken & Rice Formula Dry Cat Food",
+      "Purina Pro Plan AdvantEDGE Adult 7+ Senior Support+ Chicken & Rice Formula Dry Cat Food",
+      "Purina Pro Plan AdvantEDGE Adult Digestive Support+ Salmon & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Complete Essentials Chicken & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Complete Essentials Salmon & Rice Formula Dry Cat Food",
+      "Purina Pro Plan Kitten Complete Essentials Chicken & Rice Formula Dry Cat Food"
+    ]
+  }
+]

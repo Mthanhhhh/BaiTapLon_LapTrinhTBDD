@@ -12,9 +12,11 @@ import org.springframework.stereotype.Component;
 public class StockCompensationConsumer {
 
     private final ProductInternalService productInternalService;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @KafkaListener(topics = "payment-events", groupId = "ecommerce-stock-group")
     public void handlePaymentFailed(PaymentFailedEvent event) {
+        if(jdbc.queryForObject("SELECT COUNT(*) FROM order_db.promo_reservations WHERE order_id=?",Long.class,event.getOrderId())>0)return;
         log.warn("SAGA COMPENSATION TRIGGERED: Received PaymentFailedEvent for orderId={}, reason={}",
                 event.getOrderId(), event.getReason());
 

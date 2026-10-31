@@ -100,52 +100,19 @@ public class ProductService {
 
     @Transactional(value = "productTransactionManager", readOnly = true)
     public PageResponse<ProductListResponse> searchProducts(ProductSearchRequest request, Pageable pageable) {
-        if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
-            Double minP = request.getMinPrice() != null ? request.getMinPrice().doubleValue() : null;
-            Double maxP = request.getMaxPrice() != null ? request.getMaxPrice().doubleValue() : null;
-            List<Long> esIds = elasticsearchSyncService.searchProductIds(request.getKeyword(), request.getCategoryId(), minP, maxP, 50);
-
-            if (!esIds.isEmpty()) {
-                List<Product> matched = productRepository.findAllById(esIds);
-                // Keep the relevance score order returned by Elasticsearch
-                Map<Long, Product> productMap = new HashMap<>();
-                for (Product p : matched) {
-                    if (p.getDeletedAt() == null && p.getStatus() == ProductStatus.ACTIVE) {
-                        productMap.put(p.getId(), p);
-                    }
-                }
-                List<ProductListResponse> sortedList = new ArrayList<>();
-                for (Long id : esIds) {
-                    Product p = productMap.get(id);
-                    if (p != null) {
-                        sortedList.add(ProductListResponse.from(p, getCategoryName(p.getCategoryId())));
-                    }
-                }
-                if (!sortedList.isEmpty()) {
-                    return PageResponse.<ProductListResponse>builder()
-                            .content(sortedList)
-                            .page(0)
-                            .size(sortedList.size())
-                            .totalElements((long) sortedList.size())
-                            .totalPages(1)
-                            .last(true)
-                            .build();
-                }
-            }
-        }
-
-        // Fallback to MySQL JPA Specification
-        Page<Product> page = productRepository.findAll(
-                ProductSpecification.search(
-                        request.getKeyword(),
-                        request.getCategoryId(),
-                        request.getMinPrice(),
-                        request.getMaxPrice(),
-                        request.getMinRating()
-                ),
-                pageable
-        );
-        return mapToPageResponse(page);
+        // Exact catalog results retain database pagination and every selected filter.
+        var filters=ProductSpecification.search(request.getKeyword(),request.getCategoryId(),
+                request.getMinPrice(),request.getMaxPrice(),request.getMinRating());
+        Page<Product> page=productRepository.findAll(filters,pageable);
+        if(page.getTotalElements()>0 || request.getKeyword()==null || request.getKeyword().isBlank())return mapToPageResponse(page);
+        // Typo fallback still uses Elasticsearch, then applies category descendants, price and rating in SQL.
+        List<Long> esIds=elasticsearchSyncService.searchProductIds(request.getKeyword(),null,
+                request.getMinPrice()==null?null:request.getMinPrice().doubleValue(),
+                request.getMaxPrice()==null?null:request.getMaxPrice().doubleValue(),10000);
+        if(esIds.isEmpty())return mapToPageResponse(page);
+        var fuzzyFilters=ProductSpecification.search(null,request.getCategoryId(),request.getMinPrice(),request.getMaxPrice(),request.getMinRating())
+                .and((root,query,cb)->root.get("id").in(esIds));
+        return mapToPageResponse(productRepository.findAll(fuzzyFilters,pageable));
     }
 
     @Transactional(value = "productTransactionManager", readOnly = true)

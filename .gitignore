@@ -35,4 +35,5 @@ web-build/
 *.tsbuildinfo
 npm-debug.log*
 yarn-error.log
+__pycache__/
 expo-env.d.ts

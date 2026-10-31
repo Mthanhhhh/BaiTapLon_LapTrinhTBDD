@@ -1,0 +1,10 @@
+import React,{useState} from 'react';
+import {Modal,ScrollView,View} from 'react-native';
+import {Button,Typography} from './ui';
+import {useOrderPricing} from '../hooks/usePromotions';
+import {formatVND} from '../utils/formatters';
+import {COLORS} from '../theme';
+export function OrderPriceDetails({orderId}:{orderId:number}){
+ const [open,setOpen]=useState(false);const q=useOrderPricing(orderId,open);
+ return <><Button variant="ghost" size="sm" onPress={()=>setOpen(true)}>Chi tiết giá và ưu đãi</Button><Modal visible={open} transparent animationType="fade" onRequestClose={()=>setOpen(false)}><View style={{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(25,30,45,0.35)'}}><View style={{backgroundColor:COLORS.surface,padding:18,borderTopLeftRadius:20,borderTopRightRadius:20,maxHeight:'85%',width:'100%',maxWidth:520,alignSelf:'center',gap:12}}><Typography variant="lg" weight="bold">Giá tại lúc đặt đơn #{orderId}</Typography><ScrollView contentContainerStyle={{gap:10}}>{q.isPending?<Typography>Đang tải...</Typography>:q.isError?<Typography variant="sm">Đơn này chưa có bảng ưu đãi chi tiết hoặc bạn không có quyền xem.</Typography>:q.data&&<><Typography variant="sm" color="muted">Các thay đổi chương trình sau khi đặt không làm đổi bảng giá này.</Typography>{q.data.lines.map(l=><View key={l.skuId}><Typography variant="sm" weight="semiBold">{l.name} · {l.variantName} ×{l.quantity}</Typography><Typography variant="sm">{formatVND(l.unitPrice)} / sản phẩm{l.flashItemId?' · Flash sale':''}</Typography></View>)}{[['Giá hàng ban đầu',q.data.originalSubtotal],['Tiết kiệm flash sale',-q.data.flashSavings],...q.data.applied.map(a=>[a.code,-a.amount]),['Thuế theo chính sách đơn',q.data.tax],['Phí giao ban đầu',q.data.shippingOriginal],['Tổng thanh toán',q.data.total]].map(([label,value],i)=><View key={i} style={{flexDirection:'row',justifyContent:'space-between',gap:12}}><Typography variant="sm" style={{flex:1}}>{label}</Typography><Typography variant="sm" weight="bold">{formatVND(Number(value))}</Typography></View>)}</>}</ScrollView><Button onPress={()=>setOpen(false)}>Đóng</Button></View></View></Modal></>;
+}

@@ -1,3 +1,4 @@
+import {OrderPriceDetails} from '../components/OrderPriceDetails';
 import { appAlert } from '../utils/appAlert';
 import { useShop } from '../hooks/useShop';
 import React, { useState, useEffect } from 'react';
@@ -324,6 +325,7 @@ export default function OrdersScreen() {
           ))}
         </View>
 
+        <OrderPriceDetails orderId={item.id}/>
         {/* Card Summary Breakdown */}
         <View style={styles.cardSummary}>
           <View>

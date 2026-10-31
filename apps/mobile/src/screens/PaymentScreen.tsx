@@ -1,3 +1,5 @@
+import {useOrderPricing,useCountdown} from '../hooks/usePromotions';
+import {OrderPriceDetails} from '../components/OrderPriceDetails';
 import { appAlert } from '../utils/appAlert';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
@@ -29,6 +31,9 @@ export default function PaymentScreen() {
 
   const orderId = Number(route.params?.orderId);
   const { user } = useContext(AuthContext);
+  const pricing=useOrderPricing(orderId);
+  const deadline=useCountdown(pricing.data?.expiresAt||undefined);
+  const expired=pricing.data?.reservationState==='RELEASED'||(!!pricing.data?.expiresAt&&deadline.seconds===0);
   const orderQuery = useQuery({queryKey:['orders',user?.id,'payment',orderId],enabled:!!user&&Number.isFinite(orderId)&&orderId>0,queryFn:async()=> (await apiClient.get(`/api/v1/orders/${orderId}`)).data.data as OrderResponse});
   const totalAmount = orderQuery.data?.total ?? route.params?.total ?? 0;
   const orderNumber = route.params?.orderNumber ?? (orderId ? `#EC${orderId}` : '');
@@ -58,6 +63,7 @@ export default function PaymentScreen() {
   };
 
   const handlePay = () => {
+    if(expired){setErrorMessage('Đơn đã hết thời gian giữ hàng. Vui lòng đặt lại.');return;}
     setErrorMessage('');
     if (!orderId || !orderQuery.data || orderQuery.data.status !== 'PENDING_PAYMENT') {
       setErrorMessage('Không tìm thấy đơn hàng cần thanh toán. Hãy quay lại giỏ hàng và tạo đơn trước.');
@@ -316,6 +322,8 @@ export default function PaymentScreen() {
             Giao dịch được bảo vệ và mã hóa 256-bit an toàn.
           </Typography>
         </View>
+        {pricing.data?.expiresAt&&<Typography variant="sm" weight="bold" color={expired?'danger':'deal'}>{expired?'Đã hết thời gian giữ hàng':`Hoàn tất thanh toán trong ${deadline.text}`}</Typography>}
+        <OrderPriceDetails orderId={orderId}/>
       </ScrollView>
 
       {/* Pay Now Bottom Bar */}
@@ -326,6 +334,7 @@ export default function PaymentScreen() {
           size="lg"
           fullWidth
           loading={processPaymentMutation.isPending}
+          disabled={expired}
           onPress={handlePay}
         />
       </View>

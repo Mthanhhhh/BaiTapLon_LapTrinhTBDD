@@ -25,6 +25,7 @@ public class CategoryService {
     @Cacheable(value = "categories", key = "'root'")
     public List<CategoryResponse> getRootCategories() {
         return categoryRepository.findByParentIdIsNullOrderByDisplayOrder().stream()
+                .filter(c -> Boolean.TRUE.equals(c.getActive()))
                 .map(CategoryResponse::from)
                 .collect(Collectors.toList());
     }
@@ -33,6 +34,7 @@ public class CategoryService {
     @Cacheable(value = "categories", key = "'sub:' + #parentId")
     public List<CategoryResponse> getSubCategories(Long parentId) {
         return categoryRepository.findByParentIdOrderByDisplayOrder(parentId).stream()
+                .filter(c -> Boolean.TRUE.equals(c.getActive()))
                 .map(CategoryResponse::from)
                 .collect(Collectors.toList());
     }

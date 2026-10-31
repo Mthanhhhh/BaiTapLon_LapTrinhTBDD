@@ -10,6 +10,9 @@ foreach ($line in Get-Content -LiteralPath $ConfigFile) {
         [Environment]::SetEnvironmentVariable($Matches[1], $value, 'Process')
     }
 }
+$sharedConfig=Join-Path $repositoryRoot '.env.server.local'
+if(Test-Path -LiteralPath $sharedConfig){foreach($entry in Get-Content -LiteralPath $sharedConfig){if($entry -match '^(JWT_SECRET)=(.*)$'){[Environment]::SetEnvironmentVariable($Matches[1],$Matches[2].Trim(),'Process')}}}
+$env:OAUTH_ALLOWED_REDIRECTS=(@($env:OAUTH_ALLOWED_REDIRECTS -split ',')+@('http://localhost:8082/oauth/callback','https://api-eshop.mtcord.io.vn/api/v1/auth/oauth/mobile/callback','https://eshop.mtcord.io.vn/oauth/callback') | Where-Object {$_} | Select-Object -Unique) -join ','
 $listener = Get-NetTCPConnection -State Listen -LocalPort 8083 -ErrorAction SilentlyContinue
 if ($listener) {
     $runningAuth = Get-CimInstance Win32_Process -Filter "ProcessId = $($listener[0].OwningProcess)"

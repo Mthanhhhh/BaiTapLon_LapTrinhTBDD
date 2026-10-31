@@ -1,3 +1,4 @@
+import {PromotionLiveProvider} from './src/hooks/usePromotions';
 import { NotificationToast } from './src/components/NotificationToast';
 import { WebFontFaces } from './src/components/ui/WebFontFaces';
 import React from 'react';
@@ -36,13 +37,13 @@ export default function App() {
     <SafeAreaProvider style={styles.webContainer}>
       <StatusBar style="dark" />
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+        <AuthProvider><PromotionLiveProvider>
           <View style={styles.appFrame}>
             <WebFontFaces />
             <WaveBackdrop />
             <View style={styles.appContent}><AppNavigator /><NotificationToast /></View>
           </View>
-        </AuthProvider>
+        </PromotionLiveProvider></AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

@@ -51,7 +51,7 @@ public class OrderResponse {
                 .subtotal(order.getSubtotal())
                 .discount(order.getDiscount())
                 .tax(order.getTax())
-                .fees(order.getFees())
+                .fees(order.getFees().add(order.getShippingFee()))
                 .total(order.getTotal())
                 .voucherCode(voucherCode)
                 .shippingName(order.getShippingName())

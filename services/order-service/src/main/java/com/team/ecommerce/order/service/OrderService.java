@@ -49,11 +49,20 @@ public class OrderService {
     private final AuthInternalService authInternalService;
     private final EventPublisher eventPublisher;
     private final JdbcTemplate jdbc;
+    private final com.team.ecommerce.order.promotion.PromotionService promotions;
+    private final com.team.ecommerce.order.promotion.PromotionEvents promotionEvents;
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
+        String method=java.util.Objects.toString(request.getPaymentMethod(),"").trim().toUpperCase(java.util.Locale.ROOT);
+        if(!java.util.Set.of("COD","VISA","MAESTRO","PAYPAL").contains(method))throw new BadRequestException("Phương thức thanh toán không được hỗ trợ");
+        request.setPaymentMethod(method);
         Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new BadRequestException("Cart is empty"));
 
+        String key=userId+":"+request.getIdempotencyKey();
+        var previous=orderRepository.findByIdempotencyKey(key);
+        if(previous.isPresent())return OrderResponse.from(previous.get(),null);
+        promotionEvents.throttle(userId);
         List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
         if (cartItems.isEmpty()) {
             throw new BadRequestException("Cart is empty");
@@ -63,67 +72,22 @@ public class OrderService {
 
         AddressInternalDTO address = authInternalService.getAddressByIdAndUserId(request.getAddressId(), userId);
 
-        BigDecimal subtotal = BigDecimal.ZERO;
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (CartItem cartItem : cartItems) {
-            ProductInternalDTO product = productInternalService.getProductById(cartItem.getProductId());
-            
-            if (!product.isActive()) {
-                throw new BadRequestException("Product is not active: " + product.getName());
-            }
-
-            BigDecimal price = product.getPrice();
-            String variantName = null;
-            
-            if (cartItem.getVariantId() != null) {
-                VariantInternalDTO variant = product.getVariants().stream()
-                        .filter(v -> v.getId().equals(cartItem.getVariantId()))
-                        .findFirst()
-                        .orElseThrow(() -> new BadRequestException("Variant not found: " + cartItem.getVariantId()));
-                price = variant.getPrice();
-                variantName = variant.getName();
-            }
-
-            BigDecimal itemSubtotal = price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
-            subtotal = subtotal.add(itemSubtotal);
-
-            OrderItem orderItem = OrderItem.builder()
-                    .shopId(cartItem.getShopId())
-                    .productId(product.getId())
-                    .variantId(cartItem.getVariantId())
-                    .productName(product.getName())
-                    .productImage(product.getThumbnailUrl())
-                    .variantName(variantName)
-                    .price(price)
-                    .quantity(cartItem.getQuantity())
-                    .subtotal(itemSubtotal)
-                    .build();
-            orderItems.add(orderItem);
-        }
-
-        BigDecimal discount = BigDecimal.ZERO;
-        Long voucherId = null;
-        String appliedVoucherCode = null;
-
-        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            VoucherResponse voucherResponse = voucherService.validateVoucher(request.getVoucherCode(), subtotal);
-            discount = voucherResponse.getDiscountAmount();
-            voucherId = voucherResponse.getId();
-            appliedVoucherCode = voucherResponse.getCode();
-        }
-
-        BigDecimal tax = subtotal.subtract(discount).multiply(BigDecimal.valueOf(0.10));
-        BigDecimal fees = BigDecimal.ZERO;
-        BigDecimal total = subtotal.subtract(discount).add(tax).add(fees);
+        java.util.List<String> codes=request.getVoucherCodes();
+        if((codes==null||codes.isEmpty())&&request.getVoucherCode()!=null&&!request.getVoucherCode().isBlank())codes=List.of(request.getVoucherCode());
+        var quote=promotions.quote(userId,new com.team.ecommerce.order.promotion.PromotionModels.QuoteInput(codes,request.getAutoBest()));
+        if(!quote.quoteHash().equals(request.getQuoteHash()))throw new BadRequestException("Giá hoặc ưu đãi đã thay đổi. Vui lòng cập nhật bảng tính tiền trước khi đặt.");
+        BigDecimal subtotal=quote.subtotal(),discount=quote.discount(),tax=quote.tax(),fees=BigDecimal.ZERO,total=quote.total();
+        Long voucherId=null;String appliedVoucherCode=quote.applied().stream().map(a->a.code()).collect(java.util.stream.Collectors.joining(", "));
+        List<OrderItem> orderItems=new ArrayList<>();
+        for(var line:quote.lines())orderItems.add(OrderItem.builder().shopId(line.shopId()).productId(line.productId()).variantId(line.skuId()).productName(line.name()).productImage(line.image()).variantName(line.variantName()).price(line.unitPrice()).quantity(line.quantity()).subtotal(line.subtotal()).build());
 
         OrderStatus initialStatus = (request.getPaymentMethod() != null && "COD".equalsIgnoreCase(request.getPaymentMethod().trim()))
                 ? OrderStatus.WAITING_CONFIRMATION
                 : OrderStatus.PENDING_PAYMENT;
 
         Order order = Order.builder()
-                .orderNo("EC" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")))
-                .idempotencyKey(UUID.randomUUID().toString())
+                .orderNo("EC"+UUID.randomUUID().toString().replace("-","").substring(0,26))
+                .idempotencyKey(key)
                 .userId(userId)
                 .currency("VND")
                 .paymentMethod(request.getPaymentMethod())
@@ -132,6 +96,7 @@ public class OrderService {
                 .discount(discount)
                 .tax(tax)
                 .fees(fees)
+                .shippingFee(quote.fees())
                 .total(total)
                 .voucherId(voucherId)
                 .shippingName(address.getFullName())
@@ -153,47 +118,13 @@ public class OrderService {
 
         order.setItems(orderItems);
 
-        // Reserve inventory only after the order snapshot has been persisted. If any SKU
-        // reservation fails, compensate earlier reservations while the DB transaction rolls back.
-        List<CartItem> deductedItems = new ArrayList<>();
-        try {
-            for (CartItem cartItem : cartItems) {
-                productInternalService.deductStock(cartItem.getProductId(), cartItem.getVariantId(), cartItem.getQuantity());
-                deductedItems.add(cartItem);
-            }
-        } catch (RuntimeException reservationError) {
-            for (CartItem deductedItem : deductedItems) {
-                try {
-                    productInternalService.restoreStock(deductedItem.getProductId(), deductedItem.getVariantId(), deductedItem.getQuantity());
-                } catch (RuntimeException compensationError) {
-                    reservationError.addSuppressed(compensationError);
-                }
-            }
-            throw reservationError;
-        }
-
-        if (voucherId != null) {
-            voucherService.incrementUsedCount(voucherId);
-        }
+        // One InnoDB transaction covers order, promotion counters and SKU stock across schemas.
+        orderRepository.flush();
+        promotions.reserve(userId,order.getId(),quote,initialStatus==OrderStatus.WAITING_CONFIRMATION);
 
         cartItemRepository.deleteAllByCartIdInBulk(cart.getId());
 
-        // Publish OrderCreatedEvent to Kafka
-        List<OrderCreatedEvent.OrderItemEvent> eventItems = orderItems.stream()
-                .map(oi -> OrderCreatedEvent.OrderItemEvent.builder()
-                        .productId(oi.getProductId())
-                        .variantId(oi.getVariantId())
-                        .quantity(oi.getQuantity())
-                        .build())
-                .collect(Collectors.toList());
-
-        eventPublisher.publishOrderCreated(OrderCreatedEvent.builder()
-                .orderId(order.getId())
-                .userId(userId)
-                .totalAmount(order.getTotal())
-                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod().toString() : "VISA")
-                .items(eventItems)
-                .build());
+        promotionEvents.enqueue("ORDER_CREATED",java.util.Map.of("orderId",order.getId(),"userId",userId,"total",total,"paymentMethod",request.getPaymentMethod()));
 
         shops.notifyBuyer(order);
         return OrderResponse.from(order, appliedVoucherCode);
@@ -215,7 +146,7 @@ public class OrderService {
     }
 
     public OrderResponse getOrderById(Long userId, Long orderId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+        Order order = orderRepository.findForUpdate(orderId).filter(o->o.getUserId().equals(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         
         String voucherCode = null;
@@ -230,14 +161,15 @@ public class OrderService {
     }
 
     public OrderResponse cancelOrder(Long userId, Long orderId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+        Order order = orderRepository.findForUpdate(orderId).filter(o->o.getUserId().equals(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
+        if(order.getStatus()==OrderStatus.CANCELLED)return OrderResponse.from(order,null);
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT && order.getStatus() != OrderStatus.WAITING_CONFIRMATION) {
             throw new BadRequestException("Only pending or waiting confirmation orders can be cancelled");
         }
 
-        for (OrderItem item : order.getItems()) {
+        if(!promotions.release(order.getId()))for (OrderItem item : order.getItems()) {
             productInternalService.restoreStock(item.getProductId(), item.getVariantId(), item.getQuantity());
         }
 
@@ -257,28 +189,27 @@ public class OrderService {
     }
 
     public OrderResponse rejectOrder(Long userId, Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
         shops.requireOwner(userId, order.getItems());
+        if(order.getStatus()==OrderStatus.CANCELLED)return OrderResponse.from(order,null);
         if (order.getStatus() != OrderStatus.WAITING_CONFIRMATION) {
             throw new BadRequestException("Chỉ có thể từ chối đơn đang chờ xác nhận");
         }
-        for (OrderItem item : order.getItems()) {
+        if(!promotions.release(order.getId()))for (OrderItem item : order.getItems()) {
             productInternalService.restoreStock(item.getProductId(), item.getVariantId(), item.getQuantity());
         }
         order.setStatus(OrderStatus.CANCELLED);
+        shops.notifyBuyer(order);
         return OrderResponse.from(orderRepository.save(order), null);
     }
 
     public PageResponse<OrderResponse> getShopOrders(Long userId, Pageable pageable) {
-        var orders = orderRepository.findAll().stream().filter(o -> !o.getItems().isEmpty() && o.getItems().stream().allMatch(item -> shops.ownsProduct(userId,item.getProductId()))).map(o -> OrderResponse.from(o,null)).toList();
-        int start = (int)Math.min(pageable.getOffset(),orders.size());
-        int end = Math.min(start+pageable.getPageSize(),orders.size());
-        return PageResponse.from(new org.springframework.data.domain.PageImpl<>(orders.subList(start,end),pageable,orders.size()));
+        return PageResponse.from(orderRepository.findShopOrders(userId,pageable).map(o->OrderResponse.from(o,null)));
     }
 
     public OrderResponse transition(Long userId, Long orderId, OrderStatus target) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order","id",orderId));
+        Order order = orderRepository.findForUpdate(orderId).orElseThrow(() -> new ResourceNotFoundException("Order","id",orderId));
         OrderStatus expected;
         if (target == OrderStatus.WAITING_PICKUP || target == OrderStatus.SHIPPING) {
             shops.requireOwner(userId,order.getItems());
@@ -292,12 +223,18 @@ public class OrderService {
     }
 
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        if(status==OrderStatus.WAITING_CONFIRMATION){
+            if(order.getStatus()==status)return OrderResponse.from(order,null);
+            if(order.getStatus()!=OrderStatus.PENDING_PAYMENT)throw new BadRequestException("Đơn không còn chờ thanh toán");
+            promotions.commit(orderId);
+        }
         boolean newlyDelivered = status == OrderStatus.DELIVERED && order.getStatus() != OrderStatus.DELIVERED;
         order.setStatus(status);
         order = orderRepository.save(order);
         shops.notifyBuyer(order);
+        promotionEvents.enqueue("ORDER_STATUS_CHANGED",java.util.Map.of("orderId",orderId,"status",status.name()));
         if (newlyDelivered) {
             for (OrderItem item : order.getItems()) {
                 jdbc.update("UPDATE product_db.products SET sold_count=sold_count+? WHERE id=?", item.getQuantity(), item.getProductId());

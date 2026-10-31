@@ -29,7 +29,7 @@ export interface ProductCardProps {
   onDelete?: () => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = React.memo(({
+export const ProductCard: React.FC<ProductCardProps> = React.memo(function ProductCardView({
   id,
   name,
   price,
@@ -44,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   onPress,
   onEdit,
   onDelete,
-}) => {
+}) {
   const {province: destination}=useDeliveryDestination();
   const delivery=estimateDelivery(shopLocation,destination);
   const location=provinceLabel(shopLocation);

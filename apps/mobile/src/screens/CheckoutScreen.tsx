@@ -1,3 +1,7 @@
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '../api/client';
+import {PricingQuote} from '../hooks/usePromotions';
+import * as Crypto from 'expo-crypto';
 import {provinceLabel} from '../utils/vietnamShipping';
 import {CartProductImage} from '../components/CartProductImage';
 import { appAlert } from '../utils/appAlert';
@@ -39,6 +43,9 @@ export default function CheckoutScreen() {
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'COD' | 'VISA' | 'MAESTRO' | 'PAYPAL'>('COD');
   const [orderNote, setOrderNote] = useState('');
+  const [autoBest,setAutoBest]=useState(true),[voucherCodes,setVoucherCodes]=useState<string[]>([]),[manualCode,setManualCode]=useState('');
+  const [idempotencyKey]=useState(()=>Crypto.randomUUID());
+  const quote=useQuery<PricingQuote>({queryKey:['promotionQuote',cart?.id,cart?.items.map(i=>[i.id,i.quantity,i.price]),autoBest,voucherCodes],enabled:!!cart?.items.length,retry:false,queryFn:async()=>(await apiClient.post('/api/v1/promotions/quote',{autoBest,codes:voucherCodes})).data.data});
 
   useEffect(() => {
     if (selectedAddressId == null && addresses?.length) {
@@ -48,11 +55,7 @@ export default function CheckoutScreen() {
 
   const currentAddress = addresses?.find((a) => a.id === selectedAddressId) ?? addresses?.find((a) => a.isDefault) ?? addresses?.[0];
 
-  // Tính toán tổng tiền
-  const subtotal = cart?.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-  const tax = subtotal * 0.1; // Estimated; the server order response is authoritative.
-  const shippingFee = 0; // Miễn phí vận chuyển
-  const total = subtotal + tax + shippingFee;
+  const subtotal=quote.data?.subtotal??0,tax=quote.data?.tax??0,shippingFee=quote.data?.fees??0,total=quote.data?.total??0;
 
   const handleQuantityChange = (itemId: number, currentQty: number, delta: number) => {
     const newQty = currentQty + delta;
@@ -72,6 +75,7 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = () => {
     if (createOrderMutation.isPending) return;
+    if(!quote.data||quote.isFetching||quote.isError){appAlert.alert('Cập nhật giá','Hãy tải lại bảng tính tiền trước khi đặt hàng.');quote.refetch();return;}
     if (!cart?.items || cart.items.length === 0) {
       appAlert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm vào giỏ hàng trước khi đặt hàng.');
       return;
@@ -84,6 +88,7 @@ export default function CheckoutScreen() {
     createOrderMutation.mutate(
       {
         addressId: currentAddress.id,
+        autoBest,voucherCodes,quoteHash:quote.data.quoteHash,idempotencyKey,
         note: orderNote.trim(),
         paymentMethod: selectedPaymentMethod,
       },
@@ -101,6 +106,7 @@ export default function CheckoutScreen() {
           });
         },
         onError: (err: any) => {
+          quote.refetch();
           appAlert.alert('Lỗi đặt hàng', err.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
         },
       }
@@ -190,7 +196,7 @@ export default function CheckoutScreen() {
                     </Typography>
                   ) : null}
                   <Typography variant="sm" weight="bold" color="primaryDeep" style={{ marginTop: 4 }}>
-                    {formatVND(item.price)}
+                    {formatVND(quote.data?.lines.find(line=>line.cartItemId===item.id)?.unitPrice??item.price)}
                   </Typography>
                 </View>
 
@@ -271,6 +277,12 @@ export default function CheckoutScreen() {
           })}
         </View>
 
+        <View style={styles.card}><Typography variant="md" weight="bold">Voucher và ưu đãi</Typography><Typography variant="xs" color="muted">Tối đa 1 mã shop + 1 mã sàn + 1 mã vận chuyển, tùy điều kiện cộng dồn.</Typography><Button variant={autoBest?'primary':'outline'} onPress={()=>setAutoBest(!autoBest)}>{autoBest?'✓ Tự chọn tổ hợp tiết kiệm nhất':'Chọn mã thủ công'}</Button>
+        {!autoBest&&<><TextInput accessibilityLabel="Mã voucher" placeholder="Nhập mã, cách nhau bằng dấu phẩy" value={manualCode} onChangeText={setManualCode} style={styles.noteInput}/><Button variant="outline" onPress={()=>setVoucherCodes(manualCode.split(',').map(c=>c.trim().toUpperCase()).filter(Boolean))}>Áp dụng mã đã nhập</Button><Button variant="ghost" onPress={()=>{setVoucherCodes([]);setManualCode('');}}>Bỏ các mã đã chọn</Button></>}
+        {quote.isFetching&&<Typography variant="sm">Đang tính giá và kiểm tra lượt...</Typography>}{quote.isError&&<><Typography variant="sm" color="danger">{(quote.error as any)?.message||'Không tính được ưu đãi.'}</Typography><Button variant="outline" onPress={()=>quote.refetch()}>Tính lại</Button></>}
+        {quote.data?.applied.map(a=><Typography key={a.id} variant="sm" weight="bold" color="deal">{a.code}: −{formatVND(a.amount)}</Typography>)}
+        {quote.data?.vouchers.map(v=><View key={v.id} style={{paddingVertical:6,gap:4}}><Typography variant="sm" weight="semiBold">{v.code}</Typography><Typography variant="xs" color={v.eligible?'primaryDeep':'muted'}>{v.eligible?'Đủ điều kiện để chọn':v.reason}</Typography>{v.eligible&&<Button size="sm" variant="outline" onPress={()=>{setAutoBest(false);setVoucherCodes(current=>[...current.filter(code=>quote.data?.vouchers.find(c=>c.code===code)?.layer!==v.layer),v.code!]);}}>Chọn mã này</Button>}</View>)}
+        </View>
         {/* Section 5: Order Note */}
         <View style={styles.card}>
           <Typography variant="md" weight="bold" style={{ marginBottom: spacing.xs }}>
@@ -286,6 +298,7 @@ export default function CheckoutScreen() {
           />
         </View>
 
+        {quote.data&&<View style={styles.card}><Typography variant="sm">Giá hàng ban đầu: {formatVND(quote.data.originalSubtotal)}</Typography><Typography variant="sm" color="deal">Tiết kiệm flash sale: {formatVND(quote.data.flashSavings)}</Typography><Typography variant="sm" color="deal">Giảm mã shop/sàn: {formatVND(quote.data.discount)}</Typography><Typography variant="sm">Phí giao shop quy định: {formatVND(quote.data.shippingOriginal)}</Typography><Typography variant="sm" color="deal">Giảm vận chuyển: {formatVND(quote.data.shippingDiscount)}</Typography></View>}
         {/* Section 6: Payment Summary Breakdown */}
         <View style={styles.card}>
           <Typography variant="md" weight="bold" style={{ marginBottom: spacing.sm }}>
@@ -300,6 +313,7 @@ export default function CheckoutScreen() {
             </Typography>
           </View>
 
+          {!!quote.data?.discount&&<View style={styles.summaryRow}><Typography variant="sm" color="inkSoft">Giảm mã shop / sàn</Typography><Typography variant="sm" weight="semiBold" color="deal">−{formatVND(quote.data.discount)}</Typography></View>}
           <View style={styles.summaryRow}>
             <Typography variant="sm" color="inkSoft">
               Thuế VAT (10%)
@@ -314,7 +328,7 @@ export default function CheckoutScreen() {
               Phí vận chuyển
             </Typography>
             <Typography variant="sm" weight="semiBold" color="mintDeep">
-              Miễn phí
+              {formatVND(shippingFee)}
             </Typography>
           </View>
 
@@ -322,7 +336,7 @@ export default function CheckoutScreen() {
 
           <View style={styles.summaryRow}>
             <Typography variant="md" weight="bold">
-              Tổng số tiền
+              Tổng sau ưu đãi
             </Typography>
             <Typography variant="lg" weight="bold" color="primaryDeep">
               {formatVND(total)}
@@ -346,7 +360,7 @@ export default function CheckoutScreen() {
           variant="primary"
           size="md"
           loading={createOrderMutation.isPending}
-          disabled={!cart?.items || cart.items.length === 0}
+          disabled={!cart?.items || cart.items.length === 0||!quote.data||quote.isFetching||quote.isError}
           onPress={handlePlaceOrder}
           style={styles.placeOrderBtn}
         />

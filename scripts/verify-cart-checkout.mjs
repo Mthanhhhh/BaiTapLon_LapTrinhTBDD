@@ -11,8 +11,9 @@ if((await api('orders','GET',undefined,token)).totalElements!==before)throw Erro
 await api('cart/items/'+item.id,'DELETE',undefined,token);
 c=await api('cart/items','POST',{productId:product.id,variantId:v.id,quantity:1},token);
 const address=await api('addresses','POST',{fullName:'Khách kiểm thử local',phone:'0900000101',street:'Địa chỉ kiểm thử local',city:'TP Hồ Chí Minh',state:'Quận kiểm thử',country:'VN',isDefault:false},token);
-const order=await api('orders','POST',{addressId:address.id,paymentMethod:'COD',note:'Đơn kiểm thử giỏ hàng sau khi đồng bộ GitHub'},token);
-if(order.status!=='WAITING_CONFIRMATION'||order.total!==v.price*1.1)throw Error('Checkout totals/status');
+const pricing=await api('promotions/quote','POST',{autoBest:true},token);
+const order=await api('orders','POST',{quoteHash:pricing.quoteHash,idempotencyKey:crypto.randomUUID(),autoBest:true,addressId:address.id,paymentMethod:'COD',note:'Đơn kiểm thử giỏ hàng sau khi đồng bộ GitHub'},token);
+if(order.status!=='WAITING_CONFIRMATION'||order.total!==pricing.total)throw Error('Checkout totals/status');
 if((await api('cart','GET',undefined,token)).items.length)throw Error('Cart not cleared');
 const legacy=await api('orders/14','GET',undefined,token);if(!legacy.total||!legacy.items[0]?.price)throw Error('Legacy order values lost');
 const urls=[...new Set(Object.values(product.variantImages).flat())];for(const url of urls.slice(0,3)){const r=await fetch(url,{method:'HEAD',signal:AbortSignal.timeout(15000)});if(!r.ok||!r.headers.get('content-type')?.startsWith('image/'))throw Error('Bad photo '+url);}

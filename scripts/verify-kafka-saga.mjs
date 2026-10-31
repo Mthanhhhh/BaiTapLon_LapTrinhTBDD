@@ -44,11 +44,16 @@ async function runSagaTest() {
 
   // 4. Create Order using Address ID 4 (User 1's address)
   console.log('4. Creating Order with addressId = 4 (POST /api/v1/orders)...');
+  const quoteRes=await fetch(`${BASE_URL}/promotions/quote`,{method:'POST',headers,body:JSON.stringify({autoBest:true})});
+  const quoteData=await quoteRes.json();if(!quoteRes.ok)throw Error(quoteData.message);
   const orderRes = await fetch(`${BASE_URL}/orders`, {
     method: 'POST',
     headers,
     body: JSON.stringify({
       addressId: 4,
+      quoteHash: quoteData.data.quoteHash,
+      idempotencyKey: crypto.randomUUID(),
+      autoBest: true,
       paymentMethod: 'VISA',
       note: 'Kafka Saga Test',
     }),

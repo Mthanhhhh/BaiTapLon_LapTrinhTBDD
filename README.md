@@ -1,5 +1,11 @@
 # E-Commerce Marketplace
 
+**Thành viên nhóm:** [Pull code và chạy frontend với server/database chung](docs/TEAM_QUICKSTART.md). API: `https://api-eshop.mtcord.io.vn`.
+
+Voucher/Flash sale mới chạy trên các service tách riêng (gateway, auth, product, order, payment), dùng Redis, Kafka và WebSocket. Xem [hướng dẫn triển khai, sử dụng và kiểm thử](docs/PROMOTIONS.md). Phần quick start monolith bên dưới là hướng dẫn legacy.
+
+Lịch sử tài khoản–đơn hàng–đánh giá phục vụ trình bày đồ án: [bộ dữ liệu lớp học và kiểm chứng](docs/CLASSROOM_DATA.md).
+
 Hệ thống backend cho dự án E-Commerce Marketplace theo kiến trúc modular monolith.
 
 ## Tech Stack
@@ -41,3 +47,6 @@ OpenAPI Docs: http://localhost:8080/api-docs
 - `src/main/java/com/team/ecommerce`: Chứa source code Java theo layered architecture (controller, service, repository).
 - `src/main/resources/db/migration`: Các file migration Flyway cho database.
 - `infra/docker-compose.yml`: File cấu hình Docker.
+### Catalog shop cho bài trình diễn
+
+Xem [tài khoản shop, nguồn model, dữ liệu lớp học và cách kiểm tra](docs/BRAND_CATALOG.md). Danh sách tài khoản và báo cáo ảnh còn thiếu được xuất vào `.tools/`, không commit mật khẩu.

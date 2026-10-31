@@ -21,9 +21,12 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping
-    public ApiResponse<PageResponse<ReviewResponse>> getReviewsByProduct(@PathVariable Long productId, Pageable pageable) {
-        return ApiResponse.success(reviewService.getReviewsByProduct(productId, pageable));
+    public ApiResponse<PageResponse<ReviewResponse>> getReviewsByProduct(@PathVariable Long productId,@RequestParam(required=false) Integer rating, Pageable pageable) {
+        return ApiResponse.success(reviewService.getReviewsByProduct(productId,rating,pageable));
     }
+
+    @GetMapping("/summary")
+    public ApiResponse<?> summary(@PathVariable Long productId){return ApiResponse.success(reviewService.summary(productId));}
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -32,7 +35,6 @@ public class ReviewController {
             @PathVariable Long productId,
             @Valid @RequestBody ReviewRequest request,
             Principal principal) {
-        // In real app, get user ID from token/principal. Using dummy 1L for now assuming authentication filter passes it
         Long userId = Long.valueOf(principal.getName());
         return ApiResponse.success("Review created successfully", reviewService.createReview(userId, productId, request));
     }

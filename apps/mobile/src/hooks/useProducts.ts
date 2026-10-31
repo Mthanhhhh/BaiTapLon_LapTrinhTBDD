@@ -57,6 +57,8 @@ export interface CategoryResponse {
   id: number;
   name: string;
   slug: string;
+  parentId?: number | null;
+  iconUrl?: string | null;
   displayOrder: number;
 }
 
@@ -126,11 +128,9 @@ export const useProductsInfinite = (params: any = {}) => {
   return useInfiniteQuery({
     queryKey: ['products', params],
     queryFn: async ({ pageParam = 0 }) => {
-      const endpoint = params.categoryId 
-        ? `/api/v1/products/category/${params.categoryId}`
-        : params.keyword || params.minPrice || params.maxPrice
-          ? `/api/v1/products/search`
-          : `/api/v1/products`;
+      const endpoint = params.keyword || params.minPrice != null || params.maxPrice != null || params.minRating != null
+        ? `/api/v1/products/search`
+        : params.categoryId ? `/api/v1/products/category/${params.categoryId}` : `/api/v1/products`;
       
       // Default: category & search = soldCount,desc; Recommended at Home = ratingAvg,desc
       const defaultSort = (params.categoryId || params.keyword)

@@ -230,6 +230,8 @@ export default function AccountScreen() {
             title="Sổ địa chỉ nhận hàng"
             onPress={() => setAddressModalVisible(true)}
           />
+          <MenuItem icon="pricetag-outline" title="Kho voucher của tôi" onPress={()=>navigation.navigate('Promotions',{mode:'wallet'})}/>
+          {user.roles.some(r=>r==='ADMIN'||r==='ROLE_ADMIN')&&<MenuItem icon="stats-chart-outline" title="Quản lý ưu đãi của sàn" onPress={()=>navigation.navigate('PromotionManage')}/>}
           <MenuItem icon="storefront-outline" title={shop ? `Quản lý shop: ${shop.name}` : 'Mở shop của tôi'}
             onPress={() => navigation.navigate('SellerCenter')} />
           <MenuItem

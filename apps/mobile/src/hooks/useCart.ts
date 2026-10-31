@@ -196,6 +196,10 @@ export const useCreateOrder = () => {
     mutationFn: async (payload: {
       addressId: number;
       voucherCode?: string;
+      voucherCodes?: string[];
+      autoBest?: boolean;
+      quoteHash: string;
+      idempotencyKey: string;
       note?: string;
       paymentMethod: string;
     }) => {

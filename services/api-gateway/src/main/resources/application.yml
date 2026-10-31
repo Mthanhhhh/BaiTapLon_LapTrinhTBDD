@@ -10,6 +10,10 @@ spring:
         locator:
           enabled: false
       routes:
+        - id: promotion-websocket
+          uri: ws://${ORDER_SERVICE_HOST:localhost}:8085
+          predicates:
+            - Path=/ws/promotions
         # Route 1: Auth APIs
         - id: auth-route
           uri: http://${AUTH_SERVICE_HOST:localhost}:8083
@@ -26,7 +30,7 @@ spring:
         - id: order-route
           uri: http://${ORDER_SERVICE_HOST:localhost}:8085
           predicates:
-            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/vouchers/**
+            - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/vouchers/**, /api/v1/promotions/**
 
         # Route 4: Payment APIs
         - id: payment-route
@@ -60,4 +64,8 @@ management:
     web:
       exposure:
         include: health,info,gateway
+
+app:
+  promotions:
+    allowed-origins: ${PROMOTIONS_ALLOWED_ORIGINS:http://localhost:8082,http://localhost:8087}
 

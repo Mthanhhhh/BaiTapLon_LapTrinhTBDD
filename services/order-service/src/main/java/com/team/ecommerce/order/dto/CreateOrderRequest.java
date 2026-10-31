@@ -15,6 +15,13 @@ public class CreateOrderRequest {
     private Long addressId;
 
     private String voucherCode;
+    private java.util.List<String> voucherCodes;
+    private Boolean autoBest;
+    @jakarta.validation.constraints.NotBlank
+    private String quoteHash;
+    @jakarta.validation.constraints.NotBlank
+    @jakarta.validation.constraints.Pattern(regexp="[A-Za-z0-9_-]{16,48}")
+    private String idempotencyKey;
 
     private String note;
 

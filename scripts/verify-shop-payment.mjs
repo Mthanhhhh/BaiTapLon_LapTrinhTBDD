@@ -12,7 +12,8 @@ if((await request('products/shops/1/products?collectionId='+cat[0].id)).content.
 for(const method of ['COD','VISA','PAYPAL']){
  await request('cart/items','POST',{productId:21,variantId:47,quantity:1},b);
  const addresses=await request('addresses','GET',undefined,b);
- const o=await request('orders','POST',{addressId:addresses[0].id,paymentMethod:method},b);
+ const pricing=await request('promotions/quote','POST',{autoBest:true},b);
+ const o=await request('orders','POST',{quoteHash:pricing.quoteHash,idempotencyKey:crypto.randomUUID(),autoBest:true,addressId:addresses[0].id,paymentMethod:method},b);
  if(o.paymentMethod!==method)throw Error('Method not persisted');
  if(method==='COD'){if(o.status!=='WAITING_CONFIRMATION')throw Error('COD status');}
  else {

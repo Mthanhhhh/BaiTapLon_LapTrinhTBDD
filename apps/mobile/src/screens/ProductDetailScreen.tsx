@@ -1,3 +1,4 @@
+import {usePromotionCatalog,useCountdown} from '../hooks/usePromotions';
 import {provinceLabel} from '../utils/vietnamShipping';
 import { appAlert } from '../utils/appAlert';
 import React, { useState, useRef, useMemo, useContext, useEffect } from 'react';
@@ -12,6 +13,7 @@ import {
   useWindowDimensions,
   Platform,
   Modal,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -95,6 +97,8 @@ export default function ProductDetailScreen() {
   const numericProductId = Number(productId) || 0;
   const { user } = useContext(AuthContext);
   const { data: ownedShop } = useShop();
+  const promotionCatalog=usePromotionCatalog();
+  const promotionClock=useCountdown();
   const contentWidth = useContentWidth();
   const {height: viewportHeight} = useWindowDimensions();
 
@@ -189,6 +193,9 @@ export default function ProductDetailScreen() {
   // Initialize selected variant: default to first in-stock combination (e.g. Red / XS)
   useEffect(() => {
     if (variants.length > 0) {
+      const requested=variants.find(v=>v.id===Number(route.params?.variantId));
+      if(requested){if(canSplitVariants){const [color,size]=requested.name.split(' / ');setSelectedColor(color);setSelectedSize(size);}else setSelectedVariantId(requested.id);return;}
+
       if (canSplitVariants && colors.length > 0 && sizes.length > 0) {
         let foundC = colors[0];
         let foundS = sizes[0];
@@ -371,7 +378,9 @@ export default function ProductDetailScreen() {
   const isLongDesc = description.length > 160;
   const displayedDesc = isLongDesc && !isDescExpanded ? `${description.slice(0, 160)}...` : description;
 
-  const currentPrice = activeVariant?.price ?? product.price;
+  const flashCampaign=promotionCatalog.data?.campaigns.find(c=>c.kind==='FLASH'&&c.status==='ACTIVE'&&new Date(c.startsAt).getTime()<=promotionClock.now&&new Date(c.endsAt).getTime()>promotionClock.now&&c.items?.some(i=>i.sku_id===activeVariant?.id&&i.remaining>=quantity&&i.userRemaining>=quantity));
+  const flashItem=flashCampaign?.items?.find(i=>i.sku_id===activeVariant?.id);
+  const currentPrice = flashItem?.sale_price ?? activeVariant?.price ?? product.price;
 
   return (
     <View style={styles.container}>
@@ -446,6 +455,7 @@ export default function ProductDetailScreen() {
         </View>
 
         {images.length>1&&<View style={{padding:12,backgroundColor:COLORS.surface,gap:8}}><Typography variant="xs" color="inkSoft">{images.length} ảnh sản phẩm · Chạm để xem</Typography><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:8}}>{images.map((url,index)=><TouchableOpacity key={`${index}-${url}`} accessibilityRole="button" accessibilityLabel={`Xem ảnh ${index+1}`} onPress={()=>{carouselRef.current?.scrollToOffset({offset:index*carouselSize,animated:true});setCurrentImageIndex(index);}} style={{borderWidth:2,borderColor:index===currentImageIndex?COLORS.primaryDeep:COLORS.border,borderRadius:8,overflow:'hidden'}}><RemoteImage sourceUrl={url} name={product.name} style={{width:52,height:52}}/></TouchableOpacity>)}</ScrollView></View>}
+        {flashItem&&<View style={[styles.section,{backgroundColor:COLORS.primarySoft}]}><Typography weight="bold" color="deal">Flash sale · {flashItem.remaining} suất còn lại</Typography><Typography variant="sm">Tối đa {flashItem.per_user_limit} sản phẩm/khách. Giá cuối và lượt còn lại được kiểm tra lại khi xác nhận đơn.</Typography></View>}
         {/* Section: Price & Title & Stats */}
         <View style={styles.section}>
           <View style={styles.priceRow}>
@@ -566,6 +576,8 @@ export default function ProductDetailScreen() {
           <Typography variant="md" weight="bold" style={{ marginBottom: spacing.xs }}>
             Mô tả sản phẩm
           </Typography>
+          {Array.isArray(productMetadata.specifications) && productMetadata.specifications.slice(0,12).map((fact: {label:string;value:string},index:number)=><View key={index} style={{flexDirection:'row',paddingVertical:6,gap:12,borderBottomWidth:1,borderBottomColor:COLORS.border}}><Typography variant="xs" color="muted" style={{width:'32%'}}>{fact.label}</Typography><Typography variant="xs" style={{flex:1}}>{fact.value}</Typography></View>)}
+          {typeof productMetadata.sourceUrl==='string' && <TouchableOpacity accessibilityRole="link" onPress={()=>Linking.openURL(productMetadata.sourceUrl)} style={{paddingVertical:12}}><Typography variant="xs" color="primaryDeep" weight="semiBold">Xem thông tin từ hãng ↗</Typography></TouchableOpacity>}
           <Typography variant="sm" color="inkSoft" style={styles.descText}>
             {displayedDesc}
           </Typography>
@@ -588,7 +600,7 @@ export default function ProductDetailScreen() {
             <Typography variant="md" weight="bold">
               Đánh giá từ khách hàng ({product.ratingCount || 0})
             </Typography>
-            <TouchableOpacity activeOpacity={0.7} style={styles.seeAllBtn}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Xem tất cả đánh giá" onPress={()=>navigation.navigate('Reviews',{productId:product.id})} activeOpacity={0.7} style={styles.seeAllBtn}>
               <Typography variant="sm" color="primaryDeep" weight="semiBold">
                 Xem tất cả
               </Typography>

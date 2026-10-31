@@ -55,6 +55,10 @@ public class Order extends BaseEntity {
     @Builder.Default
     private BigDecimal fees = BigDecimal.ZERO;
 
+    @Column(name = "shipping_fee", nullable = false)
+    @Builder.Default
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 

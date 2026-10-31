@@ -1,0 +1,2479 @@
+[
+  {
+    "key": "nike",
+    "name": "Nike",
+    "homeUrl": "https://nike.com/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://nike.com/vn/"
+      },
+      {
+        "id": 39,
+        "url": "https://nike.com/vn/"
+      },
+      {
+        "id": 52,
+        "url": "https://nike.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "adidas",
+    "name": "adidas",
+    "homeUrl": "https://adidas.com.vn/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://adidas.com.vn/"
+      },
+      {
+        "id": 39,
+        "url": "https://adidas.com.vn/"
+      },
+      {
+        "id": 52,
+        "url": "https://adidas.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "puma",
+    "name": "PUMA",
+    "homeUrl": "https://us.puma.com/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://us.puma.com/"
+      },
+      {
+        "id": 39,
+        "url": "https://us.puma.com/"
+      },
+      {
+        "id": 52,
+        "url": "https://us.puma.com/"
+      }
+    ]
+  },
+  {
+    "key": "asics",
+    "name": "ASICS",
+    "homeUrl": "https://asics.com/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://asics.com/vn/vi-vn/"
+      },
+      {
+        "id": 52,
+        "url": "https://asics.com/vn/vi-vn/"
+      }
+    ]
+  },
+  {
+    "key": "new-balance",
+    "name": "New Balance",
+    "homeUrl": "https://newbalance.com/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://newbalance.com/"
+      }
+    ]
+  },
+  {
+    "key": "skechers",
+    "name": "Skechers",
+    "homeUrl": "https://skechersvn.vn/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://skechersvn.vn/"
+      }
+    ]
+  },
+  {
+    "key": "converse",
+    "name": "Converse",
+    "homeUrl": "https://converse.vn/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://converse.vn/"
+      }
+    ]
+  },
+  {
+    "key": "vans",
+    "name": "Vans",
+    "homeUrl": "https://vans.com/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://vans.com/"
+      }
+    ]
+  },
+  {
+    "key": "reebok",
+    "name": "Reebok",
+    "homeUrl": "https://reebok.com/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://reebok.com/"
+      }
+    ]
+  },
+  {
+    "key": "biti-s",
+    "name": "Biti's",
+    "homeUrl": "https://bitis.com.vn/",
+    "categories": [
+      {
+        "id": 21,
+        "url": "https://bitis.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "apple",
+    "name": "Apple",
+    "homeUrl": "https://apple.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://apple.com/vn/iphone/"
+      },
+      {
+        "id": 33,
+        "url": "https://apple.com/vn/mac/"
+      },
+      {
+        "id": 34,
+        "url": "https://apple.com/vn/ipad/"
+      },
+      {
+        "id": 35,
+        "url": "https://apple.com/vn/airpods/"
+      },
+      {
+        "id": 36,
+        "url": "https://apple.com/vn/watch/"
+      }
+    ]
+  },
+  {
+    "key": "samsung",
+    "name": "Samsung",
+    "homeUrl": "https://samsung.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://samsung.com/vn/smartphones/"
+      },
+      {
+        "id": 33,
+        "url": "https://samsung.com/us/computers/galaxy-book/"
+      },
+      {
+        "id": 34,
+        "url": "https://samsung.com/vn/tablets/"
+      },
+      {
+        "id": 35,
+        "url": "https://samsung.com/vn/audio-sound/"
+      },
+      {
+        "id": 36,
+        "url": "https://samsung.com/vn/watches/"
+      },
+      {
+        "id": 49,
+        "url": "https://samsung.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "xiaomi",
+    "name": "Xiaomi",
+    "homeUrl": "https://mi.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://mi.com/vn/"
+      },
+      {
+        "id": 34,
+        "url": "https://mi.com/vn/mobile/"
+      },
+      {
+        "id": 36,
+        "url": "https://mi.com/vn/wearables/"
+      },
+      {
+        "id": 49,
+        "url": "https://mi.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "oppo",
+    "name": "OPPO",
+    "homeUrl": "https://oppo.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://oppo.com/vn/smartphones/"
+      },
+      {
+        "id": 34,
+        "url": "https://oppo.com/vn/tablets/"
+      }
+    ]
+  },
+  {
+    "key": "vivo",
+    "name": "vivo",
+    "homeUrl": "https://vivo.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://vivo.com/vn/products/"
+      }
+    ]
+  },
+  {
+    "key": "honor",
+    "name": "HONOR",
+    "homeUrl": "https://honor.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://honor.com/vn/phones/"
+      },
+      {
+        "id": 34,
+        "url": "https://honor.com/vn/tablets/"
+      }
+    ]
+  },
+  {
+    "key": "realme",
+    "name": "realme",
+    "homeUrl": "https://realme.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://realme.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "motorola",
+    "name": "Motorola",
+    "homeUrl": "https://motorola.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://motorola.com/us/en/"
+      }
+    ]
+  },
+  {
+    "key": "google-pixel",
+    "name": "Google Pixel",
+    "homeUrl": "https://store.google.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://store.google.com/category/phones/"
+      }
+    ]
+  },
+  {
+    "key": "hmd",
+    "name": "HMD",
+    "homeUrl": "https://hmd.com/",
+    "categories": [
+      {
+        "id": 32,
+        "url": "https://hmd.com/en_int/smartphones/"
+      }
+    ]
+  },
+  {
+    "key": "lenovo",
+    "name": "Lenovo",
+    "homeUrl": "https://lenovo.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://lenovo.com/vn/vi/laptops/"
+      },
+      {
+        "id": 34,
+        "url": "https://lenovo.com/vn/vi/tablets/"
+      }
+    ]
+  },
+  {
+    "key": "asus",
+    "name": "ASUS",
+    "homeUrl": "https://asus.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://asus.com/vn/laptops/for-home/all-series/"
+      }
+    ]
+  },
+  {
+    "key": "acer",
+    "name": "Acer",
+    "homeUrl": "https://acer.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://acer.com/vn-vi/laptops/"
+      }
+    ]
+  },
+  {
+    "key": "hp",
+    "name": "HP",
+    "homeUrl": "https://hp.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://hp.com/vn-vi/laptops-and-2-in-1s/"
+      }
+    ]
+  },
+  {
+    "key": "dell",
+    "name": "Dell",
+    "homeUrl": "https://dell.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://dell.com/en-vn/shop/laptops/sr/laptops/"
+      }
+    ]
+  },
+  {
+    "key": "msi",
+    "name": "MSI",
+    "homeUrl": "https://msi.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://msi.com/Laptops/"
+      }
+    ]
+  },
+  {
+    "key": "gigabyte",
+    "name": "GIGABYTE",
+    "homeUrl": "https://gigabyte.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://gigabyte.com/Laptop/"
+      }
+    ]
+  },
+  {
+    "key": "microsoft",
+    "name": "Microsoft",
+    "homeUrl": "https://microsoft.com/",
+    "categories": [
+      {
+        "id": 33,
+        "url": "https://microsoft.com/en-us/surface/devices/"
+      },
+      {
+        "id": 34,
+        "url": "https://microsoft.com/en-us/surface/devices/"
+      }
+    ]
+  },
+  {
+    "key": "huawei",
+    "name": "Huawei",
+    "homeUrl": "https://consumer.huawei.com/",
+    "categories": [
+      {
+        "id": 34,
+        "url": "https://consumer.huawei.com/vn/tablets/"
+      },
+      {
+        "id": 36,
+        "url": "https://consumer.huawei.com/vn/wearables/"
+      }
+    ]
+  },
+  {
+    "key": "amazon",
+    "name": "Amazon",
+    "homeUrl": "https://amazon.com/",
+    "categories": [
+      {
+        "id": 34,
+        "url": "https://amazon.com/fire-tablets/"
+      }
+    ]
+  },
+  {
+    "key": "tcl",
+    "name": "TCL",
+    "homeUrl": "https://tcl.com/",
+    "categories": [
+      {
+        "id": 34,
+        "url": "https://tcl.com/vn/vi/tablets/"
+      }
+    ]
+  },
+  {
+    "key": "sony",
+    "name": "Sony",
+    "homeUrl": "https://sony.com.vn/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://sony.com.vn/headphones/"
+      },
+      {
+        "id": 37,
+        "url": "https://sony.com.vn/interchangeable-lens-cameras/"
+      }
+    ]
+  },
+  {
+    "key": "jbl",
+    "name": "JBL",
+    "homeUrl": "https://jbl.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://jbl.com/headphones/"
+      }
+    ]
+  },
+  {
+    "key": "bose",
+    "name": "Bose",
+    "homeUrl": "https://bose.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://bose.com/c/headphones/"
+      }
+    ]
+  },
+  {
+    "key": "sennheiser",
+    "name": "Sennheiser",
+    "homeUrl": "https://sennheiser-hearing.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://sennheiser-hearing.com/en-US/"
+      }
+    ]
+  },
+  {
+    "key": "anker",
+    "name": "Anker",
+    "homeUrl": "https://anker.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://anker.com/"
+      },
+      {
+        "id": 38,
+        "url": "https://anker.com/"
+      }
+    ]
+  },
+  {
+    "key": "ugreen",
+    "name": "UGREEN",
+    "homeUrl": "https://ugreen.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://ugreen.com/"
+      },
+      {
+        "id": 38,
+        "url": "https://ugreen.com/"
+      }
+    ]
+  },
+  {
+    "key": "baseus",
+    "name": "Baseus",
+    "homeUrl": "https://baseus.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://baseus.com/"
+      },
+      {
+        "id": 38,
+        "url": "https://baseus.com/"
+      }
+    ]
+  },
+  {
+    "key": "logitech",
+    "name": "Logitech",
+    "homeUrl": "https://logitech.com/",
+    "categories": [
+      {
+        "id": 35,
+        "url": "https://logitech.com/en-us/products/headsets/"
+      },
+      {
+        "id": 38,
+        "url": "https://logitech.com/"
+      }
+    ]
+  },
+  {
+    "key": "garmin",
+    "name": "Garmin",
+    "homeUrl": "https://garmin.com/",
+    "categories": [
+      {
+        "id": 36,
+        "url": "https://garmin.com/vi-VN/"
+      }
+    ]
+  },
+  {
+    "key": "casio",
+    "name": "Casio",
+    "homeUrl": "https://casio.com/",
+    "categories": [
+      {
+        "id": 36,
+        "url": "https://casio.com/vn/watches/"
+      }
+    ]
+  },
+  {
+    "key": "seiko",
+    "name": "Seiko",
+    "homeUrl": "https://seikowatches.com/",
+    "categories": [
+      {
+        "id": 36,
+        "url": "https://seikowatches.com/vn-vi/"
+      }
+    ]
+  },
+  {
+    "key": "citizen",
+    "name": "Citizen",
+    "homeUrl": "https://citizenwatch.com/",
+    "categories": [
+      {
+        "id": 36,
+        "url": "https://citizenwatch.com/us/en/"
+      }
+    ]
+  },
+  {
+    "key": "fossil",
+    "name": "Fossil",
+    "homeUrl": "https://fossil.com/",
+    "categories": [
+      {
+        "id": 36,
+        "url": "https://fossil.com/en-us/watches/"
+      }
+    ]
+  },
+  {
+    "key": "timex",
+    "name": "Timex",
+    "homeUrl": "https://timex.com/",
+    "categories": [
+      {
+        "id": 36,
+        "url": "https://timex.com/"
+      }
+    ]
+  },
+  {
+    "key": "canon",
+    "name": "Canon",
+    "homeUrl": "https://vn.canon/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://vn.canon/vi/consumer/products/"
+      }
+    ]
+  },
+  {
+    "key": "nikon",
+    "name": "Nikon",
+    "homeUrl": "https://nikon.com.vn/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://nikon.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "fujifilm",
+    "name": "Fujifilm",
+    "homeUrl": "https://fujifilm-x.com/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://fujifilm-x.com/en-us/products/"
+      }
+    ]
+  },
+  {
+    "key": "panasonic",
+    "name": "Panasonic",
+    "homeUrl": "https://panasonic.com/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://panasonic.com/vn/consumer/cameras-camcorders/"
+      },
+      {
+        "id": 49,
+        "url": "https://panasonic.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "om-system",
+    "name": "OM SYSTEM",
+    "homeUrl": "https://explore.omsystem.com/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://explore.omsystem.com/us/en/"
+      }
+    ]
+  },
+  {
+    "key": "leica",
+    "name": "Leica",
+    "homeUrl": "https://leica-camera.com/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://leica-camera.com/en-int/"
+      }
+    ]
+  },
+  {
+    "key": "ricoh",
+    "name": "Ricoh",
+    "homeUrl": "https://ricoh-imaging.co.jp/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://ricoh-imaging.co.jp/english/products/"
+      }
+    ]
+  },
+  {
+    "key": "gopro",
+    "name": "GoPro",
+    "homeUrl": "https://gopro.com/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://gopro.com/en/us/"
+      }
+    ]
+  },
+  {
+    "key": "dji",
+    "name": "DJI",
+    "homeUrl": "https://store.dji.com/",
+    "categories": [
+      {
+        "id": 37,
+        "url": "https://store.dji.com/"
+      }
+    ]
+  },
+  {
+    "key": "belkin",
+    "name": "Belkin",
+    "homeUrl": "https://belkin.com/",
+    "categories": [
+      {
+        "id": 38,
+        "url": "https://belkin.com/"
+      }
+    ]
+  },
+  {
+    "key": "razer",
+    "name": "Razer",
+    "homeUrl": "https://razer.com/",
+    "categories": [
+      {
+        "id": 38,
+        "url": "https://razer.com/"
+      }
+    ]
+  },
+  {
+    "key": "corsair",
+    "name": "Corsair",
+    "homeUrl": "https://corsair.com/",
+    "categories": [
+      {
+        "id": 38,
+        "url": "https://corsair.com/"
+      }
+    ]
+  },
+  {
+    "key": "kingston",
+    "name": "Kingston",
+    "homeUrl": "https://kingston.com/",
+    "categories": [
+      {
+        "id": 38,
+        "url": "https://kingston.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "sandisk",
+    "name": "SanDisk",
+    "homeUrl": "https://sandisk.com/",
+    "categories": [
+      {
+        "id": 38,
+        "url": "https://sandisk.com/"
+      }
+    ]
+  },
+  {
+    "key": "tp-link",
+    "name": "TP-Link",
+    "homeUrl": "https://tp-link.com/",
+    "categories": [
+      {
+        "id": 38,
+        "url": "https://tp-link.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "uniqlo",
+    "name": "UNIQLO",
+    "homeUrl": "https://uniqlo.com/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://uniqlo.com/vn/vi/"
+      },
+      {
+        "id": 40,
+        "url": "https://uniqlo.com/vn/vi/"
+      }
+    ]
+  },
+  {
+    "key": "coolmate",
+    "name": "Coolmate",
+    "homeUrl": "https://coolmate.me/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://coolmate.me/"
+      }
+    ]
+  },
+  {
+    "key": "yody",
+    "name": "YODY",
+    "homeUrl": "https://yody.vn/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://yody.vn/"
+      },
+      {
+        "id": 40,
+        "url": "https://yody.vn/"
+      }
+    ]
+  },
+  {
+    "key": "canifa",
+    "name": "CANIFA",
+    "homeUrl": "https://canifa.com/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://canifa.com/"
+      },
+      {
+        "id": 40,
+        "url": "https://canifa.com/"
+      }
+    ]
+  },
+  {
+    "key": "routine",
+    "name": "Routine",
+    "homeUrl": "https://routine.vn/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://routine.vn/"
+      }
+    ]
+  },
+  {
+    "key": "owen",
+    "name": "OWEN",
+    "homeUrl": "https://owen.vn/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://owen.vn/"
+      }
+    ]
+  },
+  {
+    "key": "aristino",
+    "name": "Aristino",
+    "homeUrl": "https://aristino.com/",
+    "categories": [
+      {
+        "id": 39,
+        "url": "https://aristino.com/"
+      }
+    ]
+  },
+  {
+    "key": "ivy-moda",
+    "name": "IVY moda",
+    "homeUrl": "https://ivymoda.com/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://ivymoda.com/"
+      }
+    ]
+  },
+  {
+    "key": "elise",
+    "name": "Elise",
+    "homeUrl": "https://elise.vn/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://elise.vn/"
+      }
+    ]
+  },
+  {
+    "key": "nem",
+    "name": "NEM",
+    "homeUrl": "https://nemshop.vn/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://nemshop.vn/"
+      }
+    ]
+  },
+  {
+    "key": "hnoss",
+    "name": "Hnoss",
+    "homeUrl": "https://hnossfashion.com/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://hnossfashion.com/"
+      }
+    ]
+  },
+  {
+    "key": "zara",
+    "name": "Zara",
+    "homeUrl": "https://zara.com/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://zara.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "h-m",
+    "name": "H&M",
+    "homeUrl": "https://www2.hm.com/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://www2.hm.com/vi_vn/"
+      }
+    ]
+  },
+  {
+    "key": "mango",
+    "name": "Mango",
+    "homeUrl": "https://shop.mango.com/",
+    "categories": [
+      {
+        "id": 40,
+        "url": "https://shop.mango.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "charles-keith",
+    "name": "CHARLES & KEITH",
+    "homeUrl": "https://charleskeith.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://charleskeith.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "pedro",
+    "name": "PEDRO",
+    "homeUrl": "https://pedroshoes.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://pedroshoes.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "coach",
+    "name": "Coach",
+    "homeUrl": "https://coach.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://coach.com/"
+      }
+    ]
+  },
+  {
+    "key": "michael-kors",
+    "name": "Michael Kors",
+    "homeUrl": "https://michaelkors.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://michaelkors.com/"
+      }
+    ]
+  },
+  {
+    "key": "samsonite",
+    "name": "Samsonite",
+    "homeUrl": "https://samsonite.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://samsonite.com/"
+      },
+      {
+        "id": 53,
+        "url": "https://samsonite.com/"
+      }
+    ]
+  },
+  {
+    "key": "targus",
+    "name": "Targus",
+    "homeUrl": "https://us.targus.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://us.targus.com/"
+      }
+    ]
+  },
+  {
+    "key": "herschel",
+    "name": "Herschel",
+    "homeUrl": "https://herschel.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://herschel.com/"
+      }
+    ]
+  },
+  {
+    "key": "jansport",
+    "name": "JanSport",
+    "homeUrl": "https://jansport.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://jansport.com/"
+      }
+    ]
+  },
+  {
+    "key": "anello",
+    "name": "anello",
+    "homeUrl": "https://anello.jp/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://anello.jp/"
+      }
+    ]
+  },
+  {
+    "key": "kipling",
+    "name": "Kipling",
+    "homeUrl": "https://kipling-usa.com/",
+    "categories": [
+      {
+        "id": 42,
+        "url": "https://kipling-usa.com/"
+      }
+    ]
+  },
+  {
+    "key": "pnj",
+    "name": "PNJ",
+    "homeUrl": "https://pnj.com.vn/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://pnj.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "doji",
+    "name": "DOJI",
+    "homeUrl": "https://trangsuc.doji.vn/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://trangsuc.doji.vn/"
+      }
+    ]
+  },
+  {
+    "key": "sjc",
+    "name": "SJC",
+    "homeUrl": "https://sjc.com.vn/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://sjc.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "pandora",
+    "name": "Pandora",
+    "homeUrl": "https://pandora.norbreeze.vn/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://pandora.norbreeze.vn/"
+      }
+    ]
+  },
+  {
+    "key": "swarovski",
+    "name": "Swarovski",
+    "homeUrl": "https://swarovski.com/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://swarovski.com/"
+      }
+    ]
+  },
+  {
+    "key": "tiffany-co",
+    "name": "Tiffany & Co.",
+    "homeUrl": "https://tiffany.com/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://tiffany.com/"
+      }
+    ]
+  },
+  {
+    "key": "cartier",
+    "name": "Cartier",
+    "homeUrl": "https://cartier.com/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://cartier.com/"
+      }
+    ]
+  },
+  {
+    "key": "bvlgari",
+    "name": "Bvlgari",
+    "homeUrl": "https://bulgari.com/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://bulgari.com/"
+      }
+    ]
+  },
+  {
+    "key": "chopard",
+    "name": "Chopard",
+    "homeUrl": "https://chopard.com/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://chopard.com/"
+      }
+    ]
+  },
+  {
+    "key": "mejuri",
+    "name": "Mejuri",
+    "homeUrl": "https://mejuri.com/",
+    "categories": [
+      {
+        "id": 43,
+        "url": "https://mejuri.com/"
+      }
+    ]
+  },
+  {
+    "key": "la-roche-posay",
+    "name": "La Roche-Posay",
+    "homeUrl": "https://larocheposay.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://larocheposay.vn/"
+      }
+    ]
+  },
+  {
+    "key": "cerave",
+    "name": "CeraVe",
+    "homeUrl": "https://cerave.com/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://cerave.com/"
+      }
+    ]
+  },
+  {
+    "key": "bioderma",
+    "name": "Bioderma",
+    "homeUrl": "https://bioderma.com.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://bioderma.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "vichy",
+    "name": "Vichy",
+    "homeUrl": "https://vichy.com.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://vichy.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "eucerin",
+    "name": "Eucerin",
+    "homeUrl": "https://eucerin.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://eucerin.vn/"
+      }
+    ]
+  },
+  {
+    "key": "cetaphil",
+    "name": "Cetaphil",
+    "homeUrl": "https://cetaphil.com.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://cetaphil.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "kiehl-s",
+    "name": "Kiehl's",
+    "homeUrl": "https://kiehls.com.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://kiehls.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "paula-s-choice",
+    "name": "Paula's Choice",
+    "homeUrl": "https://paulaschoice.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://paulaschoice.vn/"
+      }
+    ]
+  },
+  {
+    "key": "innisfree",
+    "name": "Innisfree",
+    "homeUrl": "https://innisfree.vn/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://innisfree.vn/"
+      }
+    ]
+  },
+  {
+    "key": "cosrx",
+    "name": "COSRX",
+    "homeUrl": "https://cosrx.com/",
+    "categories": [
+      {
+        "id": 44,
+        "url": "https://cosrx.com/"
+      }
+    ]
+  },
+  {
+    "key": "maybelline",
+    "name": "Maybelline",
+    "homeUrl": "https://maybelline.vn/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://maybelline.vn/"
+      }
+    ]
+  },
+  {
+    "key": "l-oreal-paris",
+    "name": "L'Oréal Paris",
+    "homeUrl": "https://lorealparis.com.vn/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://lorealparis.com.vn/"
+      },
+      {
+        "id": 46,
+        "url": "https://lorealparis.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "mac-cosmetics",
+    "name": "MAC Cosmetics",
+    "homeUrl": "https://maccosmetics.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://maccosmetics.com/"
+      }
+    ]
+  },
+  {
+    "key": "dior",
+    "name": "Dior",
+    "homeUrl": "https://dior.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://dior.com/en_us/beauty/"
+      }
+    ]
+  },
+  {
+    "key": "chanel",
+    "name": "Chanel",
+    "homeUrl": "https://chanel.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://chanel.com/us/makeup/"
+      }
+    ]
+  },
+  {
+    "key": "ysl-beauty",
+    "name": "YSL Beauty",
+    "homeUrl": "https://yslbeautyus.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://yslbeautyus.com/"
+      }
+    ]
+  },
+  {
+    "key": "nars",
+    "name": "NARS",
+    "homeUrl": "https://narscosmetics.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://narscosmetics.com/"
+      }
+    ]
+  },
+  {
+    "key": "shiseido",
+    "name": "Shiseido",
+    "homeUrl": "https://shiseido.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://shiseido.com/"
+      }
+    ]
+  },
+  {
+    "key": "estee-lauder",
+    "name": "Estée Lauder",
+    "homeUrl": "https://esteelauder.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://esteelauder.com/"
+      }
+    ]
+  },
+  {
+    "key": "lancome",
+    "name": "Lancôme",
+    "homeUrl": "https://lancome-usa.com/",
+    "categories": [
+      {
+        "id": 45,
+        "url": "https://lancome-usa.com/"
+      }
+    ]
+  },
+  {
+    "key": "dove",
+    "name": "Dove",
+    "homeUrl": "https://dove.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://dove.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "pantene",
+    "name": "Pantene",
+    "homeUrl": "https://pantene.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://pantene.com/"
+      }
+    ]
+  },
+  {
+    "key": "head-shoulders",
+    "name": "Head & Shoulders",
+    "homeUrl": "https://headandshoulders.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://headandshoulders.com/"
+      }
+    ]
+  },
+  {
+    "key": "tresemme",
+    "name": "TRESemmé",
+    "homeUrl": "https://tresemme.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://tresemme.com/"
+      }
+    ]
+  },
+  {
+    "key": "ogx",
+    "name": "OGX",
+    "homeUrl": "https://ogxbeauty.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://ogxbeauty.com/"
+      }
+    ]
+  },
+  {
+    "key": "kerastase",
+    "name": "Kérastase",
+    "homeUrl": "https://kerastase-usa.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://kerastase-usa.com/"
+      }
+    ]
+  },
+  {
+    "key": "olaplex",
+    "name": "OLAPLEX",
+    "homeUrl": "https://olaplex.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://olaplex.com/"
+      }
+    ]
+  },
+  {
+    "key": "moroccanoil",
+    "name": "Moroccanoil",
+    "homeUrl": "https://moroccanoil.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://moroccanoil.com/"
+      }
+    ]
+  },
+  {
+    "key": "davines",
+    "name": "Davines",
+    "homeUrl": "https://us.davines.com/",
+    "categories": [
+      {
+        "id": 46,
+        "url": "https://us.davines.com/"
+      }
+    ]
+  },
+  {
+    "key": "ikea",
+    "name": "IKEA",
+    "homeUrl": "https://ikea.com/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://ikea.com/us/en/"
+      }
+    ]
+  },
+  {
+    "key": "jysk",
+    "name": "JYSK",
+    "homeUrl": "https://jysk.vn/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://jysk.vn/"
+      }
+    ]
+  },
+  {
+    "key": "muji",
+    "name": "MUJI",
+    "homeUrl": "https://muji.com/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://muji.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "locknlock",
+    "name": "LocknLock",
+    "homeUrl": "https://locknlock.vn/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://locknlock.vn/"
+      },
+      {
+        "id": 48,
+        "url": "https://locknlock.vn/"
+      }
+    ]
+  },
+  {
+    "key": "duy-tan",
+    "name": "Duy Tân",
+    "homeUrl": "https://duytan.com/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://duytan.com/"
+      }
+    ]
+  },
+  {
+    "key": "song-long",
+    "name": "Song Long",
+    "homeUrl": "https://songlongplastic.com/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://songlongplastic.com/"
+      }
+    ]
+  },
+  {
+    "key": "rubbermaid",
+    "name": "Rubbermaid",
+    "homeUrl": "https://rubbermaid.com/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://rubbermaid.com/"
+      }
+    ]
+  },
+  {
+    "key": "3m",
+    "name": "3M",
+    "homeUrl": "https://3m.com.vn/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://3m.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "philips",
+    "name": "Philips",
+    "homeUrl": "https://philips.com.vn/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://philips.com.vn/"
+      },
+      {
+        "id": 49,
+        "url": "https://philips.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "dien-quang",
+    "name": "Điện Quang",
+    "homeUrl": "https://dienquang.com/",
+    "categories": [
+      {
+        "id": 47,
+        "url": "https://dienquang.com/"
+      }
+    ]
+  },
+  {
+    "key": "sunhouse",
+    "name": "SUNHOUSE",
+    "homeUrl": "https://sunhouse.com.vn/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://sunhouse.com.vn/"
+      },
+      {
+        "id": 49,
+        "url": "https://sunhouse.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "elmich",
+    "name": "Elmich",
+    "homeUrl": "https://elmich.vn/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://elmich.vn/"
+      }
+    ]
+  },
+  {
+    "key": "tefal",
+    "name": "Tefal",
+    "homeUrl": "https://tefal.com.vn/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://tefal.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "supor",
+    "name": "SUPOR",
+    "homeUrl": "https://supor.com.vn/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://supor.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "zwilling",
+    "name": "ZWILLING",
+    "homeUrl": "https://zwilling.com/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://zwilling.com/us/"
+      }
+    ]
+  },
+  {
+    "key": "fissler",
+    "name": "Fissler",
+    "homeUrl": "https://fissler.com/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://fissler.com/us/"
+      }
+    ]
+  },
+  {
+    "key": "wmf",
+    "name": "WMF",
+    "homeUrl": "https://wmf.com/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://wmf.com/en/"
+      }
+    ]
+  },
+  {
+    "key": "luminarc",
+    "name": "Luminarc",
+    "homeUrl": "https://luminarc.com/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://luminarc.com/"
+      }
+    ]
+  },
+  {
+    "key": "glasslock",
+    "name": "Glasslock",
+    "homeUrl": "https://glasslock.com/",
+    "categories": [
+      {
+        "id": 48,
+        "url": "https://glasslock.com/"
+      }
+    ]
+  },
+  {
+    "key": "sharp",
+    "name": "Sharp",
+    "homeUrl": "https://vn.sharp/",
+    "categories": [
+      {
+        "id": 49,
+        "url": "https://vn.sharp/"
+      }
+    ]
+  },
+  {
+    "key": "toshiba",
+    "name": "Toshiba",
+    "homeUrl": "https://toshiba-lifestyle.com/",
+    "categories": [
+      {
+        "id": 49,
+        "url": "https://toshiba-lifestyle.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "electrolux",
+    "name": "Electrolux",
+    "homeUrl": "https://electrolux.vn/",
+    "categories": [
+      {
+        "id": 49,
+        "url": "https://electrolux.vn/"
+      }
+    ]
+  },
+  {
+    "key": "bosch",
+    "name": "Bosch",
+    "homeUrl": "https://bosch-home.com.vn/",
+    "categories": [
+      {
+        "id": 49,
+        "url": "https://bosch-home.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "lg",
+    "name": "LG",
+    "homeUrl": "https://lg.com/",
+    "categories": [
+      {
+        "id": 49,
+        "url": "https://lg.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "nha-nam",
+    "name": "Nhã Nam",
+    "homeUrl": "https://nhanam.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://nhanam.vn/"
+      }
+    ]
+  },
+  {
+    "key": "nxb-kim-dong",
+    "name": "NXB Kim Đồng",
+    "homeUrl": "https://nxbkimdong.com.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://nxbkimdong.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "nxb-tre",
+    "name": "NXB Trẻ",
+    "homeUrl": "https://nxbtre.com.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://nxbtre.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "alpha-books",
+    "name": "Alpha Books",
+    "homeUrl": "https://alphabooks.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://alphabooks.vn/"
+      }
+    ]
+  },
+  {
+    "key": "thai-ha-books",
+    "name": "Thái Hà Books",
+    "homeUrl": "https://thaihabooks.com/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://thaihabooks.com/"
+      }
+    ]
+  },
+  {
+    "key": "first-news",
+    "name": "First News",
+    "homeUrl": "https://firstnews.com.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://firstnews.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "dong-a-books",
+    "name": "Đông A Books",
+    "homeUrl": "https://dongabooks.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://dongabooks.vn/"
+      }
+    ]
+  },
+  {
+    "key": "dinh-ti-books",
+    "name": "Đinh Tị Books",
+    "homeUrl": "https://dinhtibooks.com.vn/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://dinhtibooks.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "fahasa",
+    "name": "FAHASA",
+    "homeUrl": "https://fahasa.com/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://fahasa.com/"
+      }
+    ]
+  },
+  {
+    "key": "phuong-nam-book",
+    "name": "Phương Nam Book",
+    "homeUrl": "https://nhasachphuongnam.com/",
+    "categories": [
+      {
+        "id": 50,
+        "url": "https://nhasachphuongnam.com/"
+      }
+    ]
+  },
+  {
+    "key": "thien-long",
+    "name": "Thiên Long",
+    "homeUrl": "https://thienlong.vn/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://thienlong.vn/"
+      }
+    ]
+  },
+  {
+    "key": "hong-ha",
+    "name": "Hồng Hà",
+    "homeUrl": "https://vpphongha.com.vn/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://vpphongha.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "deli",
+    "name": "Deli",
+    "homeUrl": "https://delivietnam.vn/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://delivietnam.vn/"
+      }
+    ]
+  },
+  {
+    "key": "pilot",
+    "name": "Pilot",
+    "homeUrl": "https://pilotpen.us/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://pilotpen.us/"
+      }
+    ]
+  },
+  {
+    "key": "pentel",
+    "name": "Pentel",
+    "homeUrl": "https://pentel.com/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://pentel.com/"
+      }
+    ]
+  },
+  {
+    "key": "uni-mitsubishi-pencil",
+    "name": "uni Mitsubishi Pencil",
+    "homeUrl": "https://unibrands.co/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://unibrands.co/"
+      }
+    ]
+  },
+  {
+    "key": "staedtler",
+    "name": "STAEDTLER",
+    "homeUrl": "https://staedtler.com/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://staedtler.com/"
+      }
+    ]
+  },
+  {
+    "key": "stabilo",
+    "name": "STABILO",
+    "homeUrl": "https://stabilo.com/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://stabilo.com/"
+      }
+    ]
+  },
+  {
+    "key": "faber-castell",
+    "name": "Faber-Castell",
+    "homeUrl": "https://fabercastell.com/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://fabercastell.com/"
+      }
+    ]
+  },
+  {
+    "key": "tombow",
+    "name": "Tombow",
+    "homeUrl": "https://tombowusa.com/",
+    "categories": [
+      {
+        "id": 51,
+        "url": "https://tombowusa.com/"
+      }
+    ]
+  },
+  {
+    "key": "decathlon",
+    "name": "Decathlon",
+    "homeUrl": "https://decathlon.vn/",
+    "categories": [
+      {
+        "id": 52,
+        "url": "https://decathlon.vn/"
+      },
+      {
+        "id": 53,
+        "url": "https://decathlon.vn/"
+      }
+    ]
+  },
+  {
+    "key": "under-armour",
+    "name": "Under Armour",
+    "homeUrl": "https://underarmour.com/",
+    "categories": [
+      {
+        "id": 52,
+        "url": "https://underarmour.com/"
+      }
+    ]
+  },
+  {
+    "key": "wilson",
+    "name": "Wilson",
+    "homeUrl": "https://wilson.com/",
+    "categories": [
+      {
+        "id": 52,
+        "url": "https://wilson.com/"
+      }
+    ]
+  },
+  {
+    "key": "yonex",
+    "name": "Yonex",
+    "homeUrl": "https://yonex.com/",
+    "categories": [
+      {
+        "id": 52,
+        "url": "https://yonex.com/"
+      }
+    ]
+  },
+  {
+    "key": "li-ning",
+    "name": "Li-Ning",
+    "homeUrl": "https://lining.com.vn/",
+    "categories": [
+      {
+        "id": 52,
+        "url": "https://lining.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "spalding",
+    "name": "Spalding",
+    "homeUrl": "https://spalding.com/",
+    "categories": [
+      {
+        "id": 52,
+        "url": "https://spalding.com/"
+      }
+    ]
+  },
+  {
+    "key": "american-tourister",
+    "name": "American Tourister",
+    "homeUrl": "https://shop.americantourister.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://shop.americantourister.com/"
+      }
+    ]
+  },
+  {
+    "key": "sakos",
+    "name": "SAKOS",
+    "homeUrl": "https://sakos.vn/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://sakos.vn/"
+      }
+    ]
+  },
+  {
+    "key": "lojel",
+    "name": "LOJEL",
+    "homeUrl": "https://lojel.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://lojel.com/"
+      }
+    ]
+  },
+  {
+    "key": "echolac",
+    "name": "Echolac",
+    "homeUrl": "https://echolac.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://echolac.com/"
+      }
+    ]
+  },
+  {
+    "key": "delsey",
+    "name": "Delsey",
+    "homeUrl": "https://us.delsey.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://us.delsey.com/"
+      }
+    ]
+  },
+  {
+    "key": "victorinox",
+    "name": "Victorinox",
+    "homeUrl": "https://victorinox.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://victorinox.com/"
+      }
+    ]
+  },
+  {
+    "key": "naturehike",
+    "name": "Naturehike",
+    "homeUrl": "https://naturehike.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://naturehike.com/"
+      }
+    ]
+  },
+  {
+    "key": "coleman",
+    "name": "Coleman",
+    "homeUrl": "https://coleman.com/",
+    "categories": [
+      {
+        "id": 53,
+        "url": "https://coleman.com/"
+      }
+    ]
+  },
+  {
+    "key": "pigeon",
+    "name": "Pigeon",
+    "homeUrl": "https://pigeon.com.vn/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://pigeon.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "philips-avent",
+    "name": "Philips Avent",
+    "homeUrl": "https://philips.com.vn/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://philips.com.vn/c-m-mo/"
+      }
+    ]
+  },
+  {
+    "key": "chicco",
+    "name": "Chicco",
+    "homeUrl": "https://chiccousa.com/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://chiccousa.com/"
+      }
+    ]
+  },
+  {
+    "key": "combi",
+    "name": "Combi",
+    "homeUrl": "https://combi.com.vn/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://combi.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "joie",
+    "name": "Joie",
+    "homeUrl": "https://joiebaby.com/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://joiebaby.com/"
+      }
+    ]
+  },
+  {
+    "key": "graco",
+    "name": "Graco",
+    "homeUrl": "https://gracobaby.com/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://gracobaby.com/"
+      }
+    ]
+  },
+  {
+    "key": "moony",
+    "name": "Moony",
+    "homeUrl": "https://vn.moony.com/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://vn.moony.com/"
+      }
+    ]
+  },
+  {
+    "key": "merries",
+    "name": "Merries",
+    "homeUrl": "https://kao.com/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://kao.com/vn/merries/"
+      }
+    ]
+  },
+  {
+    "key": "huggies",
+    "name": "Huggies",
+    "homeUrl": "https://huggies.com.vn/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://huggies.com.vn/"
+      }
+    ]
+  },
+  {
+    "key": "pampers",
+    "name": "Pampers",
+    "homeUrl": "https://pampers.com/",
+    "categories": [
+      {
+        "id": 54,
+        "url": "https://pampers.com/"
+      }
+    ]
+  },
+  {
+    "key": "lego",
+    "name": "LEGO",
+    "homeUrl": "https://lego.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://lego.com/"
+      }
+    ]
+  },
+  {
+    "key": "mattel",
+    "name": "Mattel",
+    "homeUrl": "https://shop.mattel.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://shop.mattel.com/"
+      }
+    ]
+  },
+  {
+    "key": "fisher-price",
+    "name": "Fisher-Price",
+    "homeUrl": "https://shop.mattel.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://shop.mattel.com/pages/fisher-price/"
+      }
+    ]
+  },
+  {
+    "key": "hot-wheels",
+    "name": "Hot Wheels",
+    "homeUrl": "https://shop.mattel.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://shop.mattel.com/pages/hot-wheels/"
+      }
+    ]
+  },
+  {
+    "key": "hasbro",
+    "name": "Hasbro",
+    "homeUrl": "https://shop.hasbro.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://shop.hasbro.com/"
+      }
+    ]
+  },
+  {
+    "key": "play-doh",
+    "name": "Play-Doh",
+    "homeUrl": "https://shop.hasbro.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://shop.hasbro.com/en-us/play-doh/"
+      }
+    ]
+  },
+  {
+    "key": "barbie",
+    "name": "Barbie",
+    "homeUrl": "https://shop.mattel.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://shop.mattel.com/pages/barbie/"
+      }
+    ]
+  },
+  {
+    "key": "tomica",
+    "name": "Tomica",
+    "homeUrl": "https://takaratomy.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://takaratomy.com/products/tomica/"
+      }
+    ]
+  },
+  {
+    "key": "schleich",
+    "name": "Schleich",
+    "homeUrl": "https://schleich-s.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://schleich-s.com/"
+      }
+    ]
+  },
+  {
+    "key": "melissa-doug",
+    "name": "Melissa & Doug",
+    "homeUrl": "https://melissaanddoug.com/",
+    "categories": [
+      {
+        "id": 55,
+        "url": "https://melissaanddoug.com/"
+      }
+    ]
+  },
+  {
+    "key": "royal-canin",
+    "name": "Royal Canin",
+    "homeUrl": "https://royalcanin.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://royalcanin.com/vn/"
+      }
+    ]
+  },
+  {
+    "key": "purina",
+    "name": "Purina",
+    "homeUrl": "https://purina.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://purina.com/"
+      }
+    ]
+  },
+  {
+    "key": "pedigree",
+    "name": "Pedigree",
+    "homeUrl": "https://pedigree.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://pedigree.com/"
+      }
+    ]
+  },
+  {
+    "key": "whiskas",
+    "name": "Whiskas",
+    "homeUrl": "https://whiskas.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://whiskas.com/"
+      }
+    ]
+  },
+  {
+    "key": "me-o",
+    "name": "Me-O",
+    "homeUrl": "https://me-o.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://me-o.com/"
+      }
+    ]
+  },
+  {
+    "key": "catsrang",
+    "name": "Catsrang",
+    "homeUrl": "https://catsrang.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://catsrang.com/"
+      }
+    ]
+  },
+  {
+    "key": "josera",
+    "name": "Josera",
+    "homeUrl": "https://josera.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://josera.com/"
+      }
+    ]
+  },
+  {
+    "key": "smartheart",
+    "name": "SmartHeart",
+    "homeUrl": "https://perfectcompanion.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://perfectcompanion.com/"
+      }
+    ]
+  },
+  {
+    "key": "tropiclean",
+    "name": "TropiClean",
+    "homeUrl": "https://tropiclean.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://tropiclean.com/"
+      }
+    ]
+  },
+  {
+    "key": "petkit",
+    "name": "PETKIT",
+    "homeUrl": "https://petkit.com/",
+    "categories": [
+      {
+        "id": 56,
+        "url": "https://petkit.com/"
+      }
+    ]
+  }
+]

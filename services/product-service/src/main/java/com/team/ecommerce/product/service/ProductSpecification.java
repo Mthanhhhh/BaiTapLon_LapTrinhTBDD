@@ -20,7 +20,11 @@ public class ProductSpecification {
             }
             
             if (categoryId != null) {
-                predicates.add(cb.equal(root.get("categoryId"), categoryId));
+                var descendants=query.subquery(Long.class);
+                var category=descendants.from(com.team.ecommerce.product.entity.Category.class);
+                descendants.select(category.get("id")).where(cb.isTrue(category.get("active")),
+                        cb.or(cb.equal(category.get("id"),categoryId),cb.like(category.get("path"),"%/"+categoryId+"/%")));
+                predicates.add(root.get("categoryId").in(descendants));
             }
             
             if (minPrice != null) {

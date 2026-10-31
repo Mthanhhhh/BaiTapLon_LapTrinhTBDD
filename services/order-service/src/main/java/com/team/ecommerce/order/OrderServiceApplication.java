@@ -28,6 +28,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 })
 @EnableTransactionManagement
 @EnableAsync
+@org.springframework.scheduling.annotation.EnableScheduling
 public class OrderServiceApplication {
 
     public static void main(String[] args) {

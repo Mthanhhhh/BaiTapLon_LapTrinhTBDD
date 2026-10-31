@@ -38,12 +38,24 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public PageResponse<ReviewResponse> getReviewsByProduct(Long productId, Pageable pageable) {
+        return getReviewsByProduct(productId,null,pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ReviewResponse> getReviewsByProduct(Long productId,Integer rating,Pageable pageable) {
         if (!productRepository.existsById(productId)) {
             throw new ResourceNotFoundException("Product", "id", productId);
         }
-        Page<Review> reviews = reviewRepository.findByProductId(productId, pageable);
-        // Note: in real app, we would fetch User entity to get userFullName
+        if(rating!=null&&(rating<1||rating>5))throw new BadRequestException("Số sao phải từ 1 đến 5");
+        Page<Review> reviews = rating==null?reviewRepository.findByProductIdAndStatus(productId,"VISIBLE",pageable):reviewRepository.findByProductIdAndRatingAndStatus(productId,rating,"VISIBLE",pageable);
         return PageResponse.from(reviews.map(r -> ReviewResponse.from(r, "User " + r.getUserId())));
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<String,Object> summary(Long productId){
+        if(!productRepository.existsById(productId))throw new ResourceNotFoundException("Product","id",productId);
+        var row=jdbc.queryForMap("SELECT COUNT(*) AS total,COALESCE(ROUND(AVG(rating),2),0) AS average FROM reviews WHERE product_id=? AND status='VISIBLE' AND deleted_at IS NULL",productId);
+        row.put("stars",jdbc.queryForList("SELECT rating,COUNT(*) AS count FROM reviews WHERE product_id=? AND status='VISIBLE' AND deleted_at IS NULL GROUP BY rating ORDER BY rating DESC",productId));return row;
     }
 
     @CacheEvict(value = "products", key = "'id:' + #productId")
@@ -51,11 +63,11 @@ public class ReviewService {
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
 
-        Integer deliveredOrderItem = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM order_db.orders o JOIN order_db.order_items i ON i.order_id=o.id " +
+        var eligibleItems = jdbc.queryForList(
+                "SELECT i.id,i.sku_id FROM order_db.orders o JOIN order_db.order_items i ON i.order_id=o.id " +
                         "WHERE o.id=? AND o.user_id=? AND o.status='DELIVERED' AND i.product_id=?",
-                Integer.class, request.getOrderId(), userId, productId);
-        if (deliveredOrderItem == null || deliveredOrderItem == 0) {
+                request.getOrderId(), userId, productId);
+        if (eligibleItems.isEmpty()) {
             throw new BadRequestException("Chỉ có thể đánh giá sản phẩm thuộc đơn hàng đã giao thành công");
         }
 
@@ -83,8 +95,9 @@ public class ReviewService {
                 .productId(productId)
                 .userId(userId)
                 .orderId(request.getOrderId())
-                .orderItemId(request.getOrderId()) // Assuming same for now, or update request DTO to include orderItemId
-                .reviewerName("User " + userId)
+                .orderItemId(((Number)eligibleItems.get(0).get("id")).longValue())
+                .skuId(((Number)eligibleItems.get(0).get("sku_id")).longValue())
+                .reviewerName(jdbc.queryForObject("SELECT full_name FROM auth_db.users WHERE id=?",String.class,userId))
                 .rating(request.getRating())
                 .comment(request.getComment())
                 .emotion(request.getEmotion())
@@ -101,7 +114,8 @@ public class ReviewService {
         product.setRatingAvg(BigDecimal.valueOf(avgRating != null ? avgRating : 0.0).setScale(2, RoundingMode.HALF_UP));
         product.setRatingCount(ratingCount != null ? ratingCount : 0);
         productRepository.save(product);
+        jdbc.update("UPDATE order_db.order_items SET is_reviewed=1 WHERE id=?", savedReview.getOrderItemId());
 
-        return ReviewResponse.from(savedReview, "User " + userId);
+        return ReviewResponse.from(savedReview, savedReview.getReviewerName());
     }
 }

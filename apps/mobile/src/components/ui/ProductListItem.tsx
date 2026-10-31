@@ -8,7 +8,7 @@ import { ProductCardProps } from './ProductCard';
 import { RemoteImage } from './RemoteImage';
 import { formatVND, formatSoldVi } from '../../utils/formatters';
 
-export const ProductListItem: React.FC<ProductCardProps> = React.memo(({
+export const ProductListItem: React.FC<ProductCardProps> = React.memo(function ProductListItemView({
   id,
   name,
   price,
@@ -17,7 +17,7 @@ export const ProductListItem: React.FC<ProductCardProps> = React.memo(({
   rating,
   soldCount,
   onPress,
-}) => {
+}) {
   const formatPrice = (value: number) => formatVND(value);
 
   const discountPercent = originalPrice && originalPrice > price

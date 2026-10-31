@@ -1,11 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { Platform } from 'react-native';
 import { tokenStorage } from '../utils/tokenStorage';
 
-const apiOrigin = (process.env.EXPO_PUBLIC_API_URL || (
-  Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080'
-)).replace(/\/+$/, '');
+const apiOrigin = (process.env.EXPO_PUBLIC_API_URL || 'https://api-eshop.mtcord.io.vn').replace(/\/+$/, '');
 const baseURL = apiOrigin;
+export const API_BASE_URL = apiOrigin;
 
 export const apiClient = axios.create({
   baseURL,

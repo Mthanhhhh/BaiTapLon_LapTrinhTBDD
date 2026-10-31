@@ -1,0 +1,24 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';
+const credentials=JSON.parse(fs.readFileSync('.tools/shop-catalog-credentials.json'));
+const request=async(path,method='GET',body,token,expected=200)=>{const r=await fetch('http://localhost:8080/api/v1/'+path,{method,signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});const j=await r.json();assert.equal(r.status,expected,path+': '+JSON.stringify(j));return j.data;};
+const login=async email=>(await request('auth/login','POST',{email,password:credentials.password})).accessToken;
+const email='buyer.catalog.practice@eshop.example';
+let b;try{b=await login(email);}catch{await request('auth/register','POST',{email,password:credentials.password,fullName:'Minh Anh',phone:'0909000199'});b=await login(email);}
+const apple=await login('shop.apple@eshop.example'),other=await login('shop.samsung@eshop.example');
+const shop=await request('orders/shop/me','GET',undefined,apple);
+const shops=await request('categories/32/shops');assert.equal(shops.length,10);assert.ok(shops.some(s=>s.id===shop.id));
+const products=await request(`products/shops/${shop.id}/products?size=10`);assert.ok(products.content.length>0);
+const product=await request('products/'+products.content[0].id);const sku=product.variants[0];
+let addresses=await request('addresses','GET',undefined,b);if(!addresses.length)addresses=[await request('addresses','POST',{fullName:'Minh Anh',phone:'0909000199',street:'25 Đường số 4',city:'Hồ Chí Minh',state:'Thủ Đức',country:'VN',isDefault:true},b)];
+const create=async()=>{const cart=await request('cart','GET',undefined,b);assert.equal(cart.items.length,0,'Practice cart must be empty');await request('cart/items','POST',{productId:product.id,variantId:sku.id,quantity:1},b);const quote=await request('promotions/quote','POST',{autoBest:true},b);return request('orders','POST',{addressId:addresses[0].id,paymentMethod:'COD',autoBest:true,quoteHash:quote.quoteHash,idempotencyKey:crypto.randomUUID()},b);};
+const order=await create();assert.equal(order.status,'WAITING_CONFIRMATION');
+await request(`orders/${order.id}/confirm`,'POST',{},other,403);
+const buyerOrders=await request('orders?size=5','GET',undefined,apple);assert.ok(buyerOrders.content.every(o=>o.id!==order.id));
+const shopOrders=await request('orders/shop/orders?size=5','GET',undefined,apple);assert.ok(shopOrders.content.some(o=>o.id===order.id));
+assert.equal((await request(`orders/${order.id}/confirm`,'POST',{},apple)).status,'WAITING_PICKUP');
+assert.equal((await request(`orders/${order.id}/ship`,'POST',{},apple)).status,'SHIPPING');
+assert.equal((await request(`orders/${order.id}/receive`,'POST',{},b)).status,'DELIVERED');
+await request(`products/${product.id}/reviews`,'POST',{orderId:order.id,rating:5,comment:'Mình đã nhận đúng phiên bản đặt mua. Shop chuẩn bị hàng cẩn thận, sẽ dùng thêm rồi cập nhật trải nghiệm.'},b,201);
+const pending=await create();
+fs.writeFileSync('.tools/catalog-practice-flow.json',JSON.stringify({buyerEmail:email,shopEmail:'shop.apple@eshop.example',shopId:shop.id,productId:product.id,completedOrderId:order.id,pendingOrderId:pending.id,pendingOrderNo:pending.orderNo,checks:['COD','owner isolation','buyer/shop order separation','database pagination','confirm','ship','receive','review']},null,2));
+console.log(JSON.stringify({passed:true,shopId:shop.id,completedOrderId:order.id,pendingOrderId:pending.id}));

@@ -51,10 +51,14 @@ async function runSagaTest() {
 
   // 5. Create Order (Triggers stock deduction and publishes OrderCreatedEvent to Kafka)
   console.log('5. Creating Order (POST /api/v1/orders)...');
+  const quoteRes=await axios.post(`${BASE_URL}/promotions/quote`,{autoBest:true},{headers});
   const orderRes = await axios.post(
     `${BASE_URL}/orders`,
     {
       addressId,
+      quoteHash: quoteRes.data.data.quoteHash,
+      idempotencyKey: crypto.randomUUID(),
+      autoBest: true,
       paymentMethod: 'VISA',
       note: 'Kafka Saga Test',
     },
