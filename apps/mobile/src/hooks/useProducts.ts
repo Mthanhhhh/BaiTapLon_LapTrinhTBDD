@@ -126,7 +126,9 @@ export const useProductsInfinite = (params: any = {}) => {
   return useInfiniteQuery({
     queryKey: ['products', params],
     queryFn: async ({ pageParam = 0 }) => {
-      const endpoint = params.categoryId 
+      const endpoint = params.aiSearch && params.keyword && !params.categoryId
+        ? `/api/v1/ai/search`
+        : params.categoryId
         ? `/api/v1/products/category/${params.categoryId}`
         : params.keyword || params.minPrice || params.maxPrice
           ? `/api/v1/products/search`

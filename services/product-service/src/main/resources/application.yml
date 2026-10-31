@@ -35,6 +35,10 @@ spring:
         spring.json.trusted.packages: "*"
 
 app:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_MODEL:gpt-6-astra}
   jwt:
     secret: ${JWT_SECRET:myVeryLongSecretKeyForJwtTokenGenerationAtLeast256BitsLong2024}
     access-token-expiration: 900000

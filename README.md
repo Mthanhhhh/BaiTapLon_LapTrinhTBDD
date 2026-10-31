@@ -41,3 +41,13 @@ OpenAPI Docs: http://localhost:8080/api-docs
 - `src/main/java/com/team/ecommerce`: Chứa source code Java theo layered architecture (controller, service, repository).
 - `src/main/resources/db/migration`: Các file migration Flyway cho database.
 - `infra/docker-compose.yml`: File cấu hình Docker.
+# Tính năng trợ lý AI (tùy chọn)
+
+Product service cung cấp tìm kiếm theo ý nghĩa danh mục và API chat tư vấn sản phẩm. Tìm kiếm vẫn hoạt động khi chưa có khóa AI; ví dụ “điện thoại” sẽ tìm các sản phẩm thuộc danh mục Smartphones. Để bật câu trả lời tạo bởi AI, đặt `OPENAI_API_KEY` trong môi trường chạy `product-service`. Khóa chỉ ở backend, không đưa vào ứng dụng mobile. Có thể chọn model bằng `OPENAI_MODEL`; nếu chưa có khóa hoặc dịch vụ AI tạm thời không dùng được, chat sẽ gợi ý dựa trên sản phẩm trong catalog.
+
+Trên PowerShell, đặt biến môi trường trước khi chạy backend:
+
+```powershell
+$env:OPENAI_API_KEY = "your-api-key"
+$env:OPENAI_MODEL = "gpt-6-astra"
+```

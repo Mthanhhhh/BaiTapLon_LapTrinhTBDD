@@ -20,7 +20,7 @@ spring:
         - id: product-route
           uri: http://${PRODUCT_SERVICE_HOST:localhost}:8084
           predicates:
-            - Path=/api/v1/products/**, /api/v1/categories/**
+            - Path=/api/v1/products/**, /api/v1/categories/**, /api/v1/ai/**
 
         # Route 3: Cart, Order & Voucher APIs
         - id: order-route
