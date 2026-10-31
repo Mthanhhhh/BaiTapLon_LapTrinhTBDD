@@ -18,7 +18,7 @@ interface AuthContextProps {
   loading: boolean;
   login: (data: any) => Promise<void>;
   register: (data: any) => Promise<void>;
-  socialLogin: (data: { provider: string; email: string; fullName?: string; avatarUrl?: string }) => Promise<void>;
+  socialLogin: (data: { provider: string; code: string; redirectUri: string; codeVerifier?: string }) => Promise<void>;
   forgotPassword: (identifier: string) => Promise<any>;
   resetPassword: (data: { identifier: string; otp: string; newPassword: string }) => Promise<any>;
   logout: () => Promise<void>;
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const socialLogin = async (data: { provider: string; email?: string; fullName?: string; avatarUrl?: string; token?: string }) => {
+  const socialLogin = async (data: { provider: string; code: string; redirectUri: string; codeVerifier?: string }) => {
     const response = await apiClient.post('/api/v1/auth/social-login', data);
     const { accessToken, refreshToken } = response.data.data;
     await tokenStorage.setRememberMe(true);

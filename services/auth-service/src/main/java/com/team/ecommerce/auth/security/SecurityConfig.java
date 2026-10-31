@@ -41,7 +41,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()   // THÊM: cho qua request hỏi trước
-                .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/social-login", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/qr/**").permitAll()
+                .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/social-login", "/api/v1/auth/oauth/config", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/qr/**").permitAll()
                 .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/dev/**", "/actuator/**").permitAll()

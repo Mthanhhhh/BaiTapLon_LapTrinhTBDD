@@ -1,3 +1,4 @@
+import {provinceLabel} from '../utils/vietnamShipping';
 import {CartProductImage} from '../components/CartProductImage';
 import { appAlert } from '../utils/appAlert';
 import React, { useEffect, useState } from 'react';
@@ -149,7 +150,7 @@ export default function CheckoutScreen() {
                 {currentAddress.fullName} | {currentAddress.phone}
               </Typography>
               <Typography variant="sm" color="inkSoft" style={{ marginTop: 2 }}>
-                {[currentAddress.street, currentAddress.state, currentAddress.city, currentAddress.country].filter(Boolean).join(', ')}
+                {[currentAddress.street, currentAddress.state, provinceLabel(currentAddress.city), currentAddress.country].filter(Boolean).join(', ')}
               </Typography>
             </View>
           ) : (

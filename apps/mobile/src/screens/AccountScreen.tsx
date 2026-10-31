@@ -1,3 +1,4 @@
+import {provinceLabel} from '../utils/vietnamShipping';
 import { MarketplaceHeader } from '../components/MarketplaceHeader';
 import { useOrders } from '../hooks/useOrders';
 import { appAlert } from '../utils/appAlert';
@@ -170,7 +171,7 @@ export default function AccountScreen() {
         fullName: newFullName.trim(),
         phone: newPhone.trim(),
         street: newStreet.trim(),
-        city: newCity.trim(),
+        city: provinceLabel(newCity),
         state: newState.trim(),
         country: newCountry.trim(),
         zipCode: newZip.trim() || undefined,
@@ -208,10 +209,10 @@ export default function AccountScreen() {
           <TouchableOpacity accessibilityRole="button" onPress={()=>shop?navigation.navigate('Shop',{shopId:shop.id}):openShop.mutate(`${user.fullName} Shop`,{onError:(e:any)=>appAlert.alert('Không thể mở shop',e.message)})} style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="storefront-outline" size={20} color={COLORS.primaryDeep}/><Typography variant="sm" weight="bold" style={{flex:1}}>{shop?`Quản lý ${shop.name}`:'Mở shop và bắt đầu bán hàng'}</Typography><Ionicons name="chevron-forward" size={18} color={COLORS.primaryDeep}/></TouchableOpacity>
         </View>
         <View style={[styles.menuCard,{padding:14,gap:18}]}>
-          <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}><Typography weight="bold">Đơn mua</Typography><TouchableOpacity accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{shopMode:false,status:'ALL'}})}><Typography variant="xs" color="inkSoft">Lịch sử mua hàng ›</Typography></TouchableOpacity></View>
+          <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}><Typography weight="bold">Đơn mua</Typography><TouchableOpacity accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{status:'ALL'}})}><Typography variant="xs" color="inkSoft">Lịch sử mua hàng ›</Typography></TouchableOpacity></View>
           <View style={{flexDirection:'row',justifyContent:'space-between'}}>{([
             ['WAITING_CONFIRMATION','Chờ xác nhận','wallet-outline'],['WAITING_PICKUP','Chờ lấy hàng','cube-outline'],['SHIPPING','Đang giao','car-outline'],['DELIVERED','Đã nhận','star-outline']
-          ] as const).map(([status,label,icon])=>{const count=orders.data?.last?orders.data.content.filter(o=>o.status===status||(status==='WAITING_PICKUP'&&o.status==='PAID')).length:undefined;return <TouchableOpacity key={status} accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{shopMode:false,status}})} style={{alignItems:'center',gap:8,width:'24%'}}><View><Ionicons name={icon} size={27} color={COLORS.primaryDeep}/>{!!count&&<View style={{position:'absolute',top:-6,right:-10,paddingHorizontal:4,borderRadius:9,backgroundColor:COLORS.deal}}><Typography variant="xs" color="surface">{count}</Typography></View>}</View><Typography variant="xs" align="center">{label}</Typography></TouchableOpacity>})}</View>
+          ] as const).map(([status,label,icon])=>{const count=orders.data?.last?orders.data.content.filter(o=>o.status===status||(status==='WAITING_PICKUP'&&o.status==='PAID')).length:undefined;return <TouchableOpacity key={status} accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{status}})} style={{alignItems:'center',gap:8,width:'24%'}}><View><Ionicons name={icon} size={27} color={COLORS.primaryDeep}/>{!!count&&<View style={{position:'absolute',top:-6,right:-10,paddingHorizontal:4,borderRadius:9,backgroundColor:COLORS.deal}}><Typography variant="xs" color="surface">{count}</Typography></View>}</View><Typography variant="xs" align="center">{label}</Typography></TouchableOpacity>})}</View>
         </View>
         <Typography variant="lg" weight="bold">Tiện ích của tôi</Typography>
         {/* Main Menu Options */}
@@ -238,12 +239,12 @@ export default function AccountScreen() {
           <MenuItem
             icon="receipt-outline"
             title="Lịch sử đơn hàng"
-            onPress={() => navigation.navigate('Main', { screen: 'Orders', params:{shopMode:false,status:'ALL'} })}
+            onPress={() => navigation.navigate('Main', { screen: 'Orders', params:{status:'ALL'} })}
           />
           <MenuItem
             icon="card-outline"
             title="Đơn chờ thanh toán"
-            onPress={() => navigation.navigate('Main',{screen:'Orders',params:{shopMode:false,status:'PENDING_PAYMENT'}})}
+            onPress={() => navigation.navigate('Main',{screen:'Orders',params:{status:'PENDING_PAYMENT'}})}
           />
           <MenuItem
             icon="notifications-outline"
@@ -363,7 +364,7 @@ export default function AccountScreen() {
                         {addr.phone}
                       </Typography>
                       <Typography variant="sm" color="ink" style={{ marginTop: 4 }}>
-                        {[addr.street, addr.state, addr.city, addr.country].filter(Boolean).join(', ')}
+                        {[addr.street, addr.state, provinceLabel(addr.city), addr.country].filter(Boolean).join(', ')}
                       </Typography>
                     </View>
 

@@ -1,3 +1,5 @@
+import {useSocialOAuth} from '../hooks/useSocialOAuth';
+import {GoogleMark} from '../components/GoogleMark';
 import { appAlert } from '../utils/appAlert';
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
@@ -16,7 +18,7 @@ import {
 import { AuthContext } from '../context/AuthContext';
 import { Typography, Button, AuroraBackground } from '../components/ui';
 import { COLORS, spacing, radius } from '../theme';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -30,11 +32,6 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  // Social Login Modal State
-  const [socialModalVisible, setSocialModalVisible] = useState(false);
-  const [socialProvider, setSocialProvider] = useState<'google' | 'facebook'>('google');
-  const [customSocialEmail, setCustomSocialEmail] = useState('');
 
   // QR Login State
   const [qrToken, setQrToken] = useState<string | null>(null);
@@ -50,8 +47,10 @@ export default function LoginScreen() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMsg, setForgotMsg] = useState('');
 
-  const { login, socialLogin, forgotPassword, resetPassword } = useContext(AuthContext);
+  const { login, forgotPassword, resetPassword } = useContext(AuthContext);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const oauth=useSocialOAuth(()=>navigation.navigate('Main'));
 
   // Handle QR code polling
   const startQrSession = async () => {
@@ -108,34 +107,6 @@ export default function LoginScreen() {
       navigation.navigate('Main');
     } catch (err: any) {
       setErrorMessage(err.message || 'Email hoặc mật khẩu không chính xác');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const openSocialLoginModal = (provider: 'google' | 'facebook') => {
-    setSocialProvider(provider);
-    setCustomSocialEmail(provider === 'google' ? 'nguyenvana.dev@gmail.com' : 'nguyen.van.a.fb@gmail.com');
-    setSocialModalVisible(true);
-  };
-
-  const executeSocialLogin = async (emailToUse: string, fullName: string, avatarUrl: string) => {
-    setIsLoading(true);
-    setSocialModalVisible(false);
-    setErrorMessage('');
-    try {
-      await socialLogin({
-        provider: socialProvider,
-        email: emailToUse,
-        fullName: fullName,
-        avatarUrl: avatarUrl,
-      });
-      if (Platform.OS === 'web') {
-        alert(`Đăng nhập thành công với tài khoản ${socialProvider === 'google' ? 'Google' : 'Facebook'}!`);
-      }
-      navigation.navigate('Main');
-    } catch (err: any) {
-      setErrorMessage(err.message || `Đăng nhập ${socialProvider} thất bại. Vui lòng kiểm tra kết nối.`);
     } finally {
       setIsLoading(false);
     }
@@ -378,34 +349,17 @@ export default function LoginScreen() {
                   <View style={styles.dividerRow}>
                     <View style={styles.line} />
                     <Typography variant="xs" weight="medium" color="muted" style={styles.orText}>
-                      HOẶC
+                      Hoặc
                     </Typography>
                     <View style={styles.line} />
                   </View>
 
-                  {/* Social Buttons: Facebook & Google */}
                   <View style={styles.socialRow}>
-                    <TouchableOpacity
-                      style={styles.socialBtn}
-                      activeOpacity={0.8}
-                      onPress={() => openSocialLoginModal('facebook')}
-                    >
-                      <Ionicons name="logo-facebook" size={20} color="#1877F2" />
-                      <Typography variant="sm" weight="semiBold" color="ink" style={styles.socialBtnText}>
-                        Facebook
-                      </Typography>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.socialBtn}
-                      activeOpacity={0.8}
-                      onPress={() => openSocialLoginModal('google')}
-                    >
-                      <FontAwesome name="google" size={19} color="#EA4335" />
-                      <Typography variant="sm" weight="semiBold" color="ink" style={styles.socialBtnText}>
-                        Google
-                      </Typography>
-                    </TouchableOpacity>
+                    {(['google','facebook'] as const).map(provider=><TouchableOpacity key={provider} accessibilityRole="button" accessibilityLabel={`Tiếp tục với ${provider==='google'?'Google':'Facebook'}`} style={[styles.socialBtn,!!oauth.busy&&{opacity:0.6}]} activeOpacity={0.8} disabled={isLoading||!!oauth.busy} onPress={()=>oauth.begin(provider)}>
+                      <View style={{position:'absolute',left:16}}>{oauth.busy===provider?<ActivityIndicator size="small" color={COLORS.primaryDeep}/>:provider==='google'?<GoogleMark/>:<Ionicons name="logo-facebook" size={24} color="#1877F2"/>}</View>
+                      <Typography variant="sm" weight="medium" color="ink">Tiếp tục với {provider==='google'?'Google':'Facebook'}</Typography>
+                    </TouchableOpacity>)}
+                    {!!oauth.error&&<Typography variant="sm" color="danger" accessibilityRole="alert">{oauth.error}</Typography>}
                   </View>
 
                   {/* Terms and Privacy */}
@@ -479,121 +433,6 @@ export default function LoginScreen() {
               )}
             </View>
           </ScrollView>
-
-          {/* SOCIAL LOGIN POPUP MODAL (FIXED CENTERED FOR WEB & MOBILE) */}
-          <Modal
-            visible={socialModalVisible}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setSocialModalVisible(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalCard}>
-                <View style={styles.modalHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {socialProvider === 'google' ? (
-                      <FontAwesome name="google" size={20} color="#EA4335" style={{ marginRight: 8 }} />
-                    ) : (
-                      <Ionicons name="logo-facebook" size={22} color="#1877F2" style={{ marginRight: 8 }} />
-                    )}
-                    <Typography variant="md" weight="bold" color="ink">
-                      {socialProvider === 'google' ? 'Đăng nhập với Google' : 'Đăng nhập với Facebook'}
-                    </Typography>
-                  </View>
-                  <TouchableOpacity onPress={() => setSocialModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="close" size={22} color={COLORS.muted} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={{ marginTop: spacing.md }}>
-                  <Typography variant="xs" color="inkSoft" style={{ marginBottom: spacing.sm }}>
-                    Chọn tài khoản để tiếp tục đến <Typography variant="xs" weight="bold" color="ink">E-Shop</Typography>:
-                  </Typography>
-
-                  {/* Suggested Account 1 */}
-                  <TouchableOpacity
-                    style={styles.socialAccountItem}
-                    activeOpacity={0.7}
-                    onPress={() => executeSocialLogin(
-                      socialProvider === 'google' ? 'nguyenvana.dev@gmail.com' : 'nguyenvana.fb@gmail.com',
-                      'Nguyễn Văn A',
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'
-                    )}
-                  >
-                    <View style={styles.avatarCircle}>
-                      <Typography variant="sm" weight="bold" color="primaryDeep">A</Typography>
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Typography variant="sm" weight="bold" color="ink">Nguyễn Văn A</Typography>
-                      <Typography variant="xs" color="inkSoft">
-                        {socialProvider === 'google' ? 'nguyenvana.dev@gmail.com' : 'nguyenvana.fb@gmail.com'}
-                      </Typography>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={COLORS.muted} />
-                  </TouchableOpacity>
-
-                  {/* Suggested Account 2 */}
-                  <TouchableOpacity
-                    style={styles.socialAccountItem}
-                    activeOpacity={0.7}
-                    onPress={() => executeSocialLogin(
-                      socialProvider === 'google' ? 'khachhang.demo@gmail.com' : 'khachhang.demo@facebook.com',
-                      'Khách Hàng Mẫu',
-                      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150'
-                    )}
-                  >
-                    <View style={[styles.avatarCircle, { backgroundColor: COLORS.mint }]}>
-                      <Typography variant="sm" weight="bold" style={{ color: COLORS.mintDeep }}>K</Typography>
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Typography variant="sm" weight="bold" color="ink">Khách Hàng Mẫu</Typography>
-                      <Typography variant="xs" color="inkSoft">
-                        {socialProvider === 'google' ? 'khachhang.demo@gmail.com' : 'khachhang.demo@facebook.com'}
-                      </Typography>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={COLORS.muted} />
-                  </TouchableOpacity>
-
-                  {/* Custom Email Input */}
-                  <View style={styles.customEmailBlock}>
-                    <Typography variant="xs" color="inkSoft" style={{ marginBottom: 6 }}>
-                      Hoặc nhập email {socialProvider === 'google' ? 'Google' : 'Facebook'} của bạn:
-                    </Typography>
-                    <View style={styles.inputContainer}>
-                      <Ionicons name="mail-outline" size={18} color={COLORS.muted} style={{ marginRight: 8 }} />
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder={socialProvider === 'google' ? 'emailcuaban@gmail.com' : 'emailcuaban@facebook.com'}
-                        placeholderTextColor={COLORS.muted}
-                        value={customSocialEmail}
-                        onChangeText={setCustomSocialEmail}
-                        autoCapitalize="none"
-                      />
-                    </View>
-                    <Button
-                      title={`Đăng Nhập Với ${socialProvider === 'google' ? 'Google' : 'Facebook'}`}
-                      fullWidth
-                      loading={isLoading}
-                      onPress={() => {
-                        if (!customSocialEmail.trim()) {
-                          const msg = 'Vui lòng nhập email';
-                          if (Platform.OS === 'web') alert(msg);
-                          else appAlert.alert('Thông báo', msg);
-                          return;
-                        }
-                        executeSocialLogin(
-                          customSocialEmail.trim(),
-                          'Người Dùng E-Shop',
-                          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'
-                        );
-                      }}
-                      style={{ marginTop: spacing.md }}
-                    />
-                  </View>
-                </View>
-              </View>
-            </View>
-          </Modal>
 
           {/* FORGOT PASSWORD MODAL */}
           <Modal
@@ -735,9 +574,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   qrTooltip: {
-    backgroundColor: '#FFF9E8',
+    backgroundColor: COLORS.primarySoft,
     borderWidth: 1,
-    borderColor: '#FBD38D',
+    borderColor: COLORS.border,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: radius.md,
@@ -745,7 +584,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   qrTooltipText: {
-    color: '#DD6B20',
+    color: COLORS.primaryDeep,
     fontSize: 11,
     lineHeight: 14,
     textAlign: 'center',
@@ -761,7 +600,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 5,
     borderBottomColor: 'transparent',
     borderLeftWidth: 6,
-    borderLeftColor: '#FBD38D',
+    borderLeftColor: COLORS.border,
   },
   qrIconContainer: {
     backgroundColor: COLORS.surfaceAlt,
@@ -800,6 +639,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   textInput: {
+    minWidth: 0,
+    flexShrink: 1,
     fontSize: 14,
     color: COLORS.ink,
     padding: 0,
@@ -877,31 +718,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
   },
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  socialBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 44,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: radius.md,
-    backgroundColor: COLORS.surface,
-    gap: spacing.sm,
-    shadowColor: COLORS.ink,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  socialBtnText: {
-    fontSize: 13,
-  },
+  socialRow: {gap:10,marginTop:4},
+  socialBtn: {position:'relative',width:'100%',minHeight:48,paddingVertical:12,paddingHorizontal:42,borderWidth:1,borderColor:COLORS.border,borderRadius:10,backgroundColor:COLORS.surface,alignItems:'center',justifyContent:'center'},
   termsText: {
     textAlign: 'center',
     fontSize: 11,
@@ -1012,31 +830,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-  },
-  socialAccountItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: radius.lg,
-    backgroundColor: COLORS.surfaceAlt,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  avatarCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primarySoft,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  customEmailBlock: {
-    marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   infoBanner: {
     flexDirection: 'row',

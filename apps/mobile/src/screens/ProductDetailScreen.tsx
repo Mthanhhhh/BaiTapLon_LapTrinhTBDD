@@ -1,3 +1,4 @@
+import {provinceLabel} from '../utils/vietnamShipping';
 import { appAlert } from '../utils/appAlert';
 import React, { useState, useRef, useMemo, useContext, useEffect } from 'react';
 import {
@@ -508,7 +509,7 @@ export default function ProductDetailScreen() {
             </Typography>
           </View>
 
-          <View style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,marginTop:10,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="location-outline" size={18} color={COLORS.primaryDeep}/><Typography variant="sm" color="inkSoft">{product.shopLocation||'Xem thông tin giao hàng tại shop'}</Typography></View>
+          <View style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,marginTop:10,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="location-outline" size={18} color={COLORS.primaryDeep}/><Typography variant="sm" color="inkSoft">{provinceLabel(product.shopLocation)||'Xem thông tin giao hàng tại shop'}</Typography></View>
         </View>
 
         {/* Section: Shop Information */}
@@ -521,7 +522,7 @@ export default function ProductDetailScreen() {
               {product.shopName || 'Cửa hàng'}
             </Typography>
             <Typography variant="xs" color="inkSoft" style={{ marginTop: 2 }}>
-              {product.shopLocation || 'Xem thông tin và đánh giá shop'}
+              {provinceLabel(product.shopLocation) || 'Xem thông tin và đánh giá shop'}
             </Typography>
           </View>
           <TouchableOpacity style={styles.viewShopButton} activeOpacity={0.7} disabled={!product.shopId} onPress={() => product.shopId && navigation.push('Shop', { shopId: product.shopId })}>

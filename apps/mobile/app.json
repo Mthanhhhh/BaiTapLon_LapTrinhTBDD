@@ -24,7 +24,9 @@
     "plugins": [
       "expo-font",
       "expo-secure-store",
-      "expo-asset"
-    ]
+      "expo-asset",
+      "expo-web-browser"
+    ],
+    "scheme": "eshop"
   }
 }

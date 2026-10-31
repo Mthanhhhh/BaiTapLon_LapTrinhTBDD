@@ -101,6 +101,10 @@ export const Button: React.FC<ButtonProps> = ({
             <Typography variant={typographyVariant} weight="semiBold" color={getTextColor()}>
               {title}
             </Typography>
+          ) : typeof children === 'string' ? (
+            <Typography variant={typographyVariant} weight="semiBold" color={getTextColor()}>
+              {children}
+            </Typography>
           ) : (
             children
           )}

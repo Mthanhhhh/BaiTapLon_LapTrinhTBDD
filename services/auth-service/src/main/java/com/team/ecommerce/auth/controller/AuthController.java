@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.team.ecommerce.auth.service.SocialOAuthService socialOAuth;
+
+    @GetMapping("/oauth/config")
+    public ApiResponse<java.util.Map<String,Object>> oauthConfig() { return ApiResponse.success(socialOAuth.configuration()); }
 
     @PostMapping("/register")
     public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {

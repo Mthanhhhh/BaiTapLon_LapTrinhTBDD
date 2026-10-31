@@ -37,12 +37,12 @@ export interface ReviewResponse {
 }
 
 // Hook lấy danh sách đơn hàng thực tế
-export const useOrders = (page: number = 0, size: number = 20, shop: boolean = false) => {
+export const useOrders = (page: number = 0, size: number = 20, shop: boolean = false, enabled: boolean = true) => {
   const { user } = useContext(AuthContext);
 
   return useQuery({
     queryKey: ['orders', user?.id, shop, page, size],
-    enabled: !!user,
+    enabled: !!user && enabled,
     queryFn: async (): Promise<PageResponse<OrderResponse>> => {
       const res = await apiClient.get<any>(shop ? '/api/v1/orders/shop/orders' : '/api/v1/orders', {
         params: { page, size, sort: 'createdAt,desc' },

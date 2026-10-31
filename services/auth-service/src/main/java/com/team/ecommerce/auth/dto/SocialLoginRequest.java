@@ -1,19 +1,11 @@
 package com.team.ecommerce.auth.dto;
-
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-
 @Data
 public class SocialLoginRequest {
-    @NotBlank(message = "Nhà cung cấp không được để trống (google/facebook)")
-    private String provider;
-
-    @NotBlank(message = "Email không được để trống")
-    private String email;
-
-    private String fullName;
-    private String avatarUrl;
-    private String providerId;
-    private String token;
+    @NotBlank private String provider;
+    @NotBlank @Size(max=4096) private String code;
+    @NotBlank @Size(max=512) private String redirectUri;
+    @Size(max=128) private String codeVerifier;
 }
-

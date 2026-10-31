@@ -16,6 +16,13 @@ spring:
     open-in-view: false
 
 app:
+  oauth:
+    google-client-id: ${GOOGLE_CLIENT_ID:}
+    google-client-secret: ${GOOGLE_CLIENT_SECRET:}
+    facebook-app-id: ${FACEBOOK_APP_ID:}
+    facebook-app-secret: ${FACEBOOK_APP_SECRET:}
+    facebook-graph-version: ${FACEBOOK_GRAPH_VERSION:v24.0}
+    allowed-redirects: ${OAUTH_ALLOWED_REDIRECTS:http://localhost:8082/oauth/callback}
   jwt:
     secret: ${JWT_SECRET:myVeryLongSecretKeyForJwtTokenGenerationAtLeast256BitsLong2024}
     access-token-expiration: 900000

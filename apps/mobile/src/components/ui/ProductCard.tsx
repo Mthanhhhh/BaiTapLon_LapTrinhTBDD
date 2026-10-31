@@ -5,7 +5,10 @@ import { Typography } from './Typography';
 import { Badge } from './Badge';
 import { Ionicons } from '@expo/vector-icons';
 import { RemoteImage } from './RemoteImage';
-import { formatVND, formatSoldVi, calculateShippingTime } from '../../utils/formatters';
+import { formatVND, formatSoldVi } from '../../utils/formatters';
+import { useDeliveryDestination } from '../DeliveryDestination';
+import { estimateDelivery, provinceLabel } from '../../utils/vietnamShipping';
+import { QuickCartButton } from '../QuickCartButton';
 import { STRINGS } from '../../constants/strings';
 
 export interface ProductCardProps {
@@ -27,13 +30,14 @@ export interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({
+  id,
   name,
   price,
   originalPrice,
   thumbnailUrl,
   rating,
   soldCount,
-  shopLocation = 'TP. Hồ Chí Minh',
+  shopLocation,
   compact = false,
   isShopOwner = false,
   isCheapest = false,
@@ -41,12 +45,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   onEdit,
   onDelete,
 }) => {
+  const {province: destination}=useDeliveryDestination();
+  const delivery=estimateDelivery(shopLocation,destination);
+  const location=provinceLabel(shopLocation);
   const discountPercent =
     originalPrice && originalPrice > price
       ? Math.round((1 - price / originalPrice) * 100)
       : 0;
 
-  const { timeText, isExpress } = calculateShippingTime(shopLocation);
+
 
   return (
     <TouchableOpacity
@@ -107,7 +114,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       {/* Card Content Body */}
       <View style={[styles.content, compact && {paddingVertical:6}]}>
         {/* Name with 2 lines max */}
-        <Typography variant="sm" weight="medium" numberOfLines={2} style={styles.title}>
+        <Typography variant="sm" weight="bold" numberOfLines={2} style={styles.title}>
           {name}
         </Typography>
 
@@ -124,7 +131,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         )}
 
         {/* Price Row: VNĐ formatted */}
-        <View style={styles.priceContainer}>
+        <View style={styles.priceRow}><View style={styles.priceContainer}>
           <Typography variant="md" weight="bold" style={styles.priceText}>
             {formatVND(price)}
           </Typography>
@@ -133,7 +140,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               {formatVND(originalPrice)}
             </Typography>
           )}
-        </View>
+        </View>{!isShopOwner && <QuickCartButton productId={id} name={name}/>}</View>
         {!compact && originalPrice && originalPrice > price ? (
           <Typography variant="xs" weight="medium" color="deal" numberOfLines={1} style={styles.savingText}>
             {STRINGS.SAVING} {formatVND(originalPrice - price)}
@@ -142,44 +149,31 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Rating and Sold count in Vietnamese */}
         <View style={styles.ratingSoldRow}>
-          {rating !== undefined && rating > 0 && (
+          {rating !== undefined && rating > 0 ? (
             <View style={styles.ratingContainer}>
               <Ionicons name="star" size={11} color={COLORS.star} />
               <Typography variant="xs" weight="bold" color="ink" style={styles.ratingText}>
                 {rating.toFixed(1)}
               </Typography>
             </View>
-          )}
-          <Typography variant="xs" color="muted" numberOfLines={1} style={{ flex: 1, textAlign: 'right' }}>
+          ) : <Typography variant="xs" color="muted" style={{fontSize:11}}>Chưa đánh giá</Typography>}
+          <Typography variant="xs" color="muted" numberOfLines={1} style={{ flex: 1, textAlign: 'right', fontSize:11 }}>
             {formatSoldVi(soldCount)}
           </Typography>
         </View>
 
-        {/* Delivery Time & Shop Location Row */}
-        {!compact && <View style={styles.shippingRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <Ionicons
-              name="car-outline"
-              size={12}
-              color={isExpress ? '#2F855A' : COLORS.inkSoft}
-              style={{ marginRight: 3 }}
-            />
-            <Typography
-              variant="xs"
-              style={[styles.shippingText, isExpress && { color: '#2F855A', fontWeight: '600' }]}
-              numberOfLines={1}
-            >
-              {timeText}
-            </Typography>
+        <View style={styles.shippingRow}>
+          <View style={[styles.metaRow,{flex:1.4}]}>
+            <Ionicons name="car-outline" size={11} color="#1D7560" />
+            <Typography variant="xs" accessibilityLabel={delivery?`Giao dự kiến ${delivery.label} đến ${destination}. Ước tính theo khoảng cách, không phải cam kết của hãng vận chuyển.`:destination?'Shop chưa cập nhật tỉnh gửi':'Chọn tỉnh nhận hàng để tính thời gian giao'} weight="semiBold" style={styles.shippingText} numberOfLines={1}>{delivery?`≈ ${delivery.label}`:destination?'Chờ nơi gửi':'Chọn nơi nhận'}</Typography>
           </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="location-outline" size={11} color={COLORS.muted} style={{ marginRight: 2 }} />
+          <View style={[styles.metaRow,{flex:1,justifyContent:'flex-end'}]}>
+            <Ionicons name="location-outline" size={11} color={COLORS.muted} />
             <Typography variant="xs" color="muted" style={styles.locationText} numberOfLines={1}>
-              {shopLocation}
+              {location || 'Chưa có địa chỉ'}
             </Typography>
           </View>
-        </View>}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -245,13 +239,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   content: {
-    paddingVertical: 10,
+    paddingVertical: 5,
     paddingHorizontal: 4,
   },
   title: {
-    minHeight: 40,
-    lineHeight: 20,
-    marginBottom: 6,
+    lineHeight: 18,
+    marginBottom: 3,
     color: COLORS.ink,
   },
   promoTagRow: {
@@ -273,15 +266,17 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
     fontSize: 11,
   },
+  priceRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 3},
   priceContainer: {
+    flexShrink: 1,
     flexDirection: 'column',
     alignItems: 'flex-start',
     marginBottom: 4,
   },
   priceText: {
     color: COLORS.deal,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 23,
   },
   savingText: { fontSize: 11, lineHeight: 17, marginBottom: 6 },
   originalPrice: {
@@ -293,7 +288,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 3,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -303,19 +298,21 @@ const styles = StyleSheet.create({
     marginLeft: 3,
     fontSize: 12,
   },
+  metaRow: {flexDirection: 'row', alignItems: 'center', gap: 3, minWidth: 0},
   shippingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 4,
     paddingTop: 4,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
   shippingText: {
     fontSize: 11,
-    color: COLORS.inkSoft,
+    color: '#1D7560',
   },
   locationText: {
+    flexShrink: 1,
     fontSize: 11,
   },
 });

@@ -1,3 +1,4 @@
+import {provinceLabel} from '../utils/vietnamShipping';
 import React, { useContext, useState } from 'react';
 import { View, SafeAreaView, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -44,10 +45,10 @@ export default function ShopScreen() {
     <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại" onPress={back}><Ionicons name="arrow-back" size={24} color={COLORS.ink}/></TouchableOpacity><Typography variant="lg" weight="bold">Cửa hàng</Typography></View>
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.card}>
-        <View style={styles.titleRow}><Ionicons name="storefront-outline" size={30} color={COLORS.primaryDeep}/><View style={{flex:1}}><Typography variant="xl" weight="bold" role="heading" aria-level={1}>{s.name}</Typography><Typography variant="sm" color="inkSoft">{s.province||'Chưa cập nhật địa điểm'}</Typography></View></View>
+        <View style={styles.titleRow}><Ionicons name="storefront-outline" size={30} color={COLORS.primaryDeep}/><View style={{flex:1}}><Typography variant="xl" weight="bold" role="heading" aria-level={1}>{s.name}</Typography><Typography variant="sm" color="inkSoft">{provinceLabel(s.province)||'Chưa cập nhật địa điểm'}</Typography></View></View>
         {!!s.description&&<Typography variant="sm">{s.description}</Typography>}
         <View style={styles.stats}><Typography variant="sm">{s.productCount} sản phẩm</Typography><Typography variant="sm">Đã bán {s.soldCount}</Typography><Typography variant="sm">{s.reviewCount?`${Number(s.rating).toFixed(1)}/5 · ${s.reviewCount} đánh giá`:'Chưa có đánh giá'}</Typography></View>
-        {own&&<Button variant="outline" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{shopMode:true}})}>Quản lý đơn shop</Button>}
+        {own&&<Button variant="outline" onPress={()=>navigation.navigate('ShopOrders')}>Quản lý đơn shop</Button>}
         {own&&<Button variant="outline" onPress={()=>{setDraft(s.collections.map(c=>({...c,productIds:[...c.productIds]})));setEditError('');setEditing(true);}}>Tùy chỉnh danh mục</Button>}
       </View>
       <View style={styles.row}>{chip('Sản phẩm',tab==='products',()=>setTab('products'))}{chip(`Đánh giá (${s.reviewCount})`,tab==='reviews',()=>setTab('reviews'))}</View>

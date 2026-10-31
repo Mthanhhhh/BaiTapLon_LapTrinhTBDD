@@ -58,13 +58,11 @@ export default function OrdersScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState<OrderTab>('ALL');
   const route = useRoute();
-  useEffect(() => { if ((route.params as {shopMode?:boolean})?.shopMode !== undefined) setIsShopView(!!(route.params as {shopMode?:boolean}).shopMode); }, [route.params]);
   useEffect(() => { const status=(route.params as {status?:string})?.status;if(status && TABS.some(t=>t.id===status))setActiveTab(status as OrderTab); },[route.params]);
-  const [shopMode, setIsShopView] = useState(false);
   const { data: shop } = useShop();
-  const isShopView = !!shop && shopMode;
+  const isShopView = route.name === 'ShopOrders';
 
-  const { data, isLoading, refetch } = useOrders(0, 100, isShopView);
+  const { data, isLoading, refetch } = useOrders(0, 100, isShopView, !isShopView || !!shop);
   const confirmOrderMutation = useConfirmOrder();
   const shipOrderMutation = useShipOrder();
   const receiveOrderMutation = useReceiveOrder();
@@ -519,27 +517,7 @@ export default function OrdersScreen() {
           </Typography>
         </View>
 
-        {/* Nút chuyển đổi giao diện Khách Mua <-> Kênh Shop */}
-        <TouchableOpacity
-          style={[styles.roleSwitchPill, isShopView && styles.roleSwitchPillActive]}
-          activeOpacity={0.8}
-          disabled={!shop}
-          onPress={() => setIsShopView(!isShopView)}
-        >
-          <Ionicons
-            name={isShopView ? 'storefront' : 'person-outline'}
-            size={14}
-            color={isShopView ? '#fff' : COLORS.primaryDeep}
-            style={{ marginRight: 4 }}
-          />
-          <Typography
-            variant="xs"
-            weight="bold"
-            style={{ color: isShopView ? '#fff' : COLORS.primaryDeep }}
-          >
-            {isShopView ? 'Kênh Shop' : 'Khách Mua'}
-          </Typography>
-        </TouchableOpacity>
+        {isShopView&&<TouchableOpacity accessibilityRole="button" accessibilityLabel="Quay lại quản lý shop" onPress={()=>navigation.canGoBack()?navigation.goBack():navigation.navigate('Main',{screen:'Account'})} style={{padding:10}}><Ionicons name="arrow-back" size={22} color={COLORS.primaryDeep}/></TouchableOpacity>}
       </View>
 
       {/* Tabs Phân Loại Trạng Thái Đơn Hàng Chuẩn Shopee */}

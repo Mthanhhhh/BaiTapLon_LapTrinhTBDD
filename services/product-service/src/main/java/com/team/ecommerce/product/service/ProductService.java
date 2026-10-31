@@ -40,11 +40,25 @@ public class ProductService {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public PageResponse<ProductListResponse> recommendations(String keyword,int page,int size) {
-        var paging=org.springframework.data.domain.PageRequest.of(Math.max(0,page),Math.max(1,Math.min(size,50)),org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("ratingAvg"),org.springframework.data.domain.Sort.Order.desc("ratingCount"),org.springframework.data.domain.Sort.Order.desc("soldCount"),org.springframework.data.domain.Sort.Order.desc("id")));
-        String term=keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        // The keyword ranks the full active catalog; it must never filter out other products.
+        var paging=org.springframework.data.domain.PageRequest.of(Math.max(0,page),Math.max(1,Math.min(size,50)));
+        String term=keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
         var result=productRepository.findAll((root,query,cb)->{
             var active=cb.and(cb.equal(root.get("status"),ProductStatus.ACTIVE),cb.isNull(root.get("deletedAt")));
-            return term.isEmpty()?active:cb.and(active,cb.like(cb.lower(root.get("name")),"%"+term.replace("%","\\%").replace("_","\\_")+"%"));
+            if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
+                var ranking=new java.util.ArrayList<jakarta.persistence.criteria.Order>();
+                if (!term.isEmpty()) {
+                    String pattern="%"+term.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";
+                    var related=cb.like(cb.lower(root.<String>get("name")),pattern,'\\');
+                    ranking.add(cb.desc(cb.<Integer>selectCase().when(related,1).otherwise(0)));
+                }
+                ranking.add(cb.desc(root.get("ratingAvg")));
+                ranking.add(cb.desc(root.get("ratingCount")));
+                ranking.add(cb.desc(root.get("soldCount")));
+                ranking.add(cb.desc(root.get("id")));
+                query.orderBy(ranking);
+            }
+            return active;
         },paging);
         return mapToPageResponse(result);
     }

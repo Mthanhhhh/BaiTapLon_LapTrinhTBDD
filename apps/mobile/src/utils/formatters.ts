@@ -1,3 +1,4 @@
+import {estimateDelivery} from './vietnamShipping';
 /**
  * Định dạng tiền tệ Việt Nam (VNĐ)
  * Dữ liệu đồng bộ 100% mệnh giá VNĐ thực tế
@@ -23,44 +24,8 @@ export const formatSoldVi = (count?: number | null): string => {
   return `Đã bán ${count}`;
 };
 
-/**
- * Tính toán thời gian giao hàng ước tính dựa trên vị trí Shop và khách hàng
- * (Mô phỏng đơn vị vận chuyển bên thứ 3 như GHN, Viettel Post, SPX)
- */
-export const calculateShippingTime = (
-  shopLocation?: string | null,
-  userLocation: string = 'TP. Hồ Chí Minh'
-): { timeText: string; isExpress: boolean } => {
-  const shop = (shopLocation || 'TP. Hồ Chí Minh').toLowerCase();
-  const user = userLocation.toLowerCase();
-
-  // Nội thành (cùng thành phố): Nhận trong 24h hoặc ngày mai
-  if (
-    (shop.includes('hồ chí minh') && user.includes('hồ chí minh')) ||
-    (shop.includes('hà nội') && user.includes('hà nội')) ||
-    shop === user
-  ) {
-    return {
-      timeText: 'Ngày mai 10:00',
-      isExpress: true,
-    };
-  }
-
-  // Tuyến liên tỉnh Hà Nội - TP.HCM (Trục Bắc - Nam): 2-3 ngày
-  if (
-    (shop.includes('hà nội') && user.includes('hồ chí minh')) ||
-    (shop.includes('hồ chí minh') && user.includes('hà nội'))
-  ) {
-    return {
-      timeText: 'Giao 2-3 ngày',
-      isExpress: false,
-    };
-  }
-
-  // Các tỉnh thành khác
-  return {
-    timeText: 'Giao 3-4 ngày',
-    isExpress: false,
-  };
+/** Province-level estimate; never assumes a customer's destination. */
+export const calculateShippingTime = (shopLocation?:string|null,userLocation?:string|null) => {
+ const estimate=estimateDelivery(shopLocation,userLocation);
+ return {timeText:estimate?`Dự kiến ${estimate.label}`:'Chọn nơi nhận',isExpress:false};
 };
-

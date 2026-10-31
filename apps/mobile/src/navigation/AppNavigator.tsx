@@ -1,3 +1,5 @@
+import OAuthCallbackScreen from '../screens/OAuthCallbackScreen';
+import OrdersScreen from '../screens/OrdersScreen';
 import CartScreen from '../screens/CartScreen';
 import React, { useContext } from 'react';
 import { NavigationContainer, NavigatorScreenParams, LinkingOptions, DefaultTheme } from '@react-navigation/native';
@@ -18,7 +20,7 @@ import { COLORS } from '../theme/colors';
 export type TabParamList = {
   Home: undefined;
   Search: { keyword?: string; categoryId?: number; categoryName?: string; sort?: string } | undefined;
-  Orders: { shopMode?: boolean; status?: string } | undefined;
+  Orders: { status?: string } | undefined;
   Account: undefined;
   Notifications: undefined;
 };
@@ -27,11 +29,13 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList> | undefined;
   ProductDetail: { productId: number | string };
   Shop: { shopId: number | string };
+  ShopOrders: { status?: string } | undefined;
   Cart: undefined;
   Checkout: undefined;
   Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'MAESTRO' | 'PAYPAL' } | undefined;
   Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;
   Filter: undefined;
+  OAuthCallback: undefined;
   Login: undefined;
   Register: undefined;
 };
@@ -53,11 +57,13 @@ const linking: LinkingOptions<RootStackParamList> = {
       },
       ProductDetail: 'product/:productId',
       Shop: 'shop/:shopId',
+      ShopOrders: 'seller/orders',
       Cart: 'cart',
       Checkout: 'checkout',
       Payment: 'payment/:orderId',
       Success: 'success',
       Filter: 'filter',
+      OAuthCallback: 'oauth/callback',
       Login: 'login',
       Register: 'register',
     },
@@ -81,11 +87,13 @@ export default function AppNavigator() {
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
         <Stack.Screen name="Shop" component={ShopScreen} />
+        <Stack.Screen name="ShopOrders" component={OrdersScreen} />
         <Stack.Screen name="Cart" component={CartScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen name="Payment" component={PaymentScreen} />
         <Stack.Screen name="Success" component={SuccessScreen} />
         <Stack.Screen name="Filter" component={FilterScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="OAuthCallback" component={OAuthCallbackScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
       </Stack.Navigator>

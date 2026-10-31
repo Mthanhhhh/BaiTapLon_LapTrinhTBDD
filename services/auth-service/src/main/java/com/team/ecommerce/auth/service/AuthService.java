@@ -42,6 +42,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final SocialOAuthService socialOAuth;
 
     private final Map<String, OtpEntry> otpCache = new ConcurrentHashMap<>();
     private final Map<String, QrSessionEntry> qrSessions = new ConcurrentHashMap<>();
@@ -92,38 +93,10 @@ public class AuthService {
     }
 
     public AuthResponse socialLogin(SocialLoginRequest request) {
-        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
-        String fullName = request.getFullName();
-        String avatarUrl = request.getAvatarUrl();
-
-        // If client provided an OAuth token, verify directly with Google or Facebook APIs
-        if (request.getToken() != null && !request.getToken().isBlank()) {
-            try {
-                if ("google".equalsIgnoreCase(request.getProvider())) {
-                    Map<String, String> googleProfile = verifyGoogleToken(request.getToken());
-                    if (googleProfile.containsKey("email")) {
-                        email = googleProfile.get("email").trim().toLowerCase();
-                        if (googleProfile.containsKey("name")) fullName = googleProfile.get("name");
-                        if (googleProfile.containsKey("picture")) avatarUrl = googleProfile.get("picture");
-                        log.info("[OAuth2] Verified Google profile for: {}", email);
-                    }
-                } else if ("facebook".equalsIgnoreCase(request.getProvider())) {
-                    Map<String, String> fbProfile = verifyFacebookToken(request.getToken());
-                    if (fbProfile.containsKey("email")) {
-                        email = fbProfile.get("email").trim().toLowerCase();
-                        if (fbProfile.containsKey("name")) fullName = fbProfile.get("name");
-                        if (fbProfile.containsKey("picture")) avatarUrl = fbProfile.get("picture");
-                        log.info("[OAuth2] Verified Facebook profile for: {}", email);
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("[OAuth2] Verification error: {}", e.getMessage());
-            }
-        }
-
-        if (email.isBlank()) {
-            throw new BadRequestException("Không thể xác thực thông tin tài khoản mạng xã hội");
-        }
+        var identity = socialOAuth.exchange(request);
+        String email = identity.email();
+        String fullName = identity.name();
+        String avatarUrl = identity.picture();
 
         User user = userRepository.findByEmailAndDeletedAtIsNull(email).orElse(null);
 
@@ -157,55 +130,6 @@ public class AuthService {
         }
 
         return buildAuthResponse(user);
-    }
-
-    private Map<String, String> verifyGoogleToken(String token) {
-        Map<String, String> profile = new HashMap<>();
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://www.googleapis.com/oauth2/v3/userinfo"))
-                    .header("Authorization", "Bearer " + token)
-                    .timeout(Duration.ofSeconds(4))
-                    .GET()
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode json = mapper.readTree(response.body());
-                if (json.has("email")) profile.put("email", json.get("email").asText());
-                if (json.has("name")) profile.put("name", json.get("name").asText());
-                if (json.has("picture")) profile.put("picture", json.get("picture").asText());
-            }
-        } catch (Exception e) {
-            log.warn("[OAuth2] Google UserInfo query error: {}", e.getMessage());
-        }
-        return profile;
-    }
-
-    private Map<String, String> verifyFacebookToken(String token) {
-        Map<String, String> profile = new HashMap<>();
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=" + token))
-                    .timeout(Duration.ofSeconds(4))
-                    .GET()
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode json = mapper.readTree(response.body());
-                if (json.has("email")) profile.put("email", json.get("email").asText());
-                if (json.has("name")) profile.put("name", json.get("name").asText());
-                if (json.has("picture") && json.get("picture").has("data") && json.get("picture").get("data").has("url")) {
-                    profile.put("picture", json.get("picture").get("data").get("url").asText());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("[OAuth2] Facebook Graph API query error: {}", e.getMessage());
-        }
-        return profile;
     }
 
     public Map<String, Object> forgotPassword(ForgotPasswordRequest request) {
