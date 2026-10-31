@@ -2,6 +2,8 @@
 
 API của nhóm: `https://api-eshop.mtcord.io.vn`. Database và backend chạy trên máy chủ của chủ dự án. Máy thành viên chỉ chạy frontend, không cần Java, Docker, MySQL, Kafka, Redis hoặc Elasticsearch.
 
+Trợ lý AI và tìm kiếm ngữ nghĩa cũng gọi server này. Khóa Gemini (nếu dùng) chỉ đặt trên máy chủ trong `.env.server.local` dưới tên `GEMINI_API_KEY`; không cần gửi khóa cho thành viên. Khi chưa cấu hình khóa, backend vẫn trả gợi ý từ catalog theo cơ chế dự phòng.
+
 ## Lần đầu trên máy thành viên
 
 Cài Git và Node.js 24 LTS (Expo SDK 57 yêu cầu tối thiểu Node 22.13). Sau đó:

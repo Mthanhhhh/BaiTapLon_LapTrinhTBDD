@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,12 +13,17 @@ import AccountScreen from '../screens/AccountScreen';
 
 import SearchScreen from '../screens/SearchScreen';
 import { TabScene } from './TabScene';
+import { useNavigation } from '@react-navigation/native';
+import AIChatWidget from '../components/AIChatWidget';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { user } = useContext(AuthContext);
+  const navigation = useNavigation<any>();
   const { data: inbox } = useNotifications();
   return (
+    <>
     <Tab.Navigator
       initialRouteName="Home"
       screenLayout={({ children, route }) => <TabScene name={route.name}>{children}</TabScene>}
@@ -78,5 +84,7 @@ export default function TabNavigator() {
       <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ tabBarLabel: 'Thông báo', tabBarBadge: inbox?.unread ? (inbox.unread > 99 ? '99+' : inbox.unread) : undefined }} />
       <Tab.Screen name="Account" component={AccountScreen} options={{ tabBarLabel: 'Tài khoản' }} />
     </Tab.Navigator>
+    <AIChatWidget key={user?.id ?? 'guest'} onProductPress={(productId) => navigation.navigate('ProductDetail', { productId })} />
+    </>
   );
 }

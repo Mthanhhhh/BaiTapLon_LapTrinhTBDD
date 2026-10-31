@@ -50,3 +50,15 @@ OpenAPI Docs: http://localhost:8080/api-docs
 ### Catalog shop cho bài trình diễn
 
 Xem [tài khoản shop, nguồn model, dữ liệu lớp học và cách kiểm tra](docs/BRAND_CATALOG.md). Danh sách tài khoản và báo cáo ảnh còn thiếu được xuất vào `.tools/`, không commit mật khẩu.
+
+# Tính năng trợ lý AI (tùy chọn)
+
+Product service cung cấp tìm kiếm theo ý nghĩa danh mục và API chat tư vấn sản phẩm qua Gemini API. Tìm kiếm vẫn hoạt động khi chưa có khóa AI; ví dụ “điện thoại” sẽ tìm các sản phẩm thuộc danh mục Smartphones. Để bật câu trả lời Gemini, đặt `GEMINI_API_KEY` trong môi trường chạy `product-service`. Khóa chỉ ở backend, không đưa vào ứng dụng mobile. Có thể chọn model bằng `GEMINI_MODEL`; nếu chưa có khóa hoặc dịch vụ Gemini tạm thời không dùng được, chat sẽ gợi ý dựa trên sản phẩm trong catalog. Free tier của Gemini có hạn mức và điều khoản xử lý dữ liệu riêng; hãy kiểm tra bảng giá Gemini API trước khi gửi dữ liệu nhạy cảm.
+
+Trên PowerShell, đặt biến môi trường trước khi chạy backend:
+
+```powershell
+$env:GEMINI_API_KEY = "your-gemini-api-key"
+$env:GEMINI_MODEL = "gemini-3.6-flash"
+$env:GEMINI_REQUEST_TIMEOUT_SECONDS = "60"
+```

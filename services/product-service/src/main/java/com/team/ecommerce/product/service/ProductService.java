@@ -29,6 +29,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.text.Normalizer;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -100,6 +102,17 @@ public class ProductService {
 
     @Transactional(value = "productTransactionManager", readOnly = true)
     public PageResponse<ProductListResponse> searchProducts(ProductSearchRequest request, Pageable pageable) {
+        // Category intent should search the catalog category even if the product title
+        // does not contain the user's phrase (for example "điện thoại" -> Samsung S23).
+        Set<Long> semanticCategoryIds = request.getCategoryId() == null
+                ? findSemanticCategoryIds(request.getKeyword()) : Set.of();
+        boolean hasExtraFilters = request.getMinPrice() != null || request.getMaxPrice() != null || request.getMinRating() != null;
+        if (!hasExtraFilters && !semanticCategoryIds.isEmpty() && request.getKeyword() != null
+                && isCategoryIntent(request.getKeyword())) {
+            Page<Product> semanticPage = productRepository.findByCategoryIdInAndDeletedAtIsNullAndStatus(
+                    semanticCategoryIds, ProductStatus.ACTIVE, pageable);
+            if (semanticPage.getTotalElements() > 0) return mapToPageResponse(semanticPage);
+        }
         // Exact catalog results retain database pagination and every selected filter.
         var filters=ProductSpecification.search(request.getKeyword(),request.getCategoryId(),
                 request.getMinPrice(),request.getMaxPrice(),request.getMinRating());
@@ -113,6 +126,49 @@ public class ProductService {
         var fuzzyFilters=ProductSpecification.search(null,request.getCategoryId(),request.getMinPrice(),request.getMaxPrice(),request.getMinRating())
                 .and((root,query,cb)->root.get("id").in(esIds));
         return mapToPageResponse(productRepository.findAll(fuzzyFilters,pageable));
+    }
+
+    private Set<Long> findSemanticCategoryIds(String keyword) {
+        String query = normalize(keyword);
+        if (query.isBlank()) return Set.of();
+        List<String> family = new ArrayList<>();
+        if (containsAny(query, "dien thoai", "smartphone", "phone", "mobile", "iphone", "samsung", "galaxy", "xiaomi", "oppo", "vivo"))
+            family.addAll(List.of("dien thoai", "smartphone", "phone", "mobile", "iphone"));
+        if (containsAny(query, "laptop", "notebook", "macbook")) family.addAll(List.of("laptop", "notebook", "may tinh xach tay"));
+        if (containsAny(query, "tai nghe", "headphone", "earphone", "earbuds", "airpods")) family.addAll(List.of("tai nghe", "headphone", "earphone", "earbuds"));
+        if (containsAny(query, "may tinh bang", "tablet", "ipad")) family.addAll(List.of("may tinh bang", "tablet", "ipad"));
+        if (containsAny(query, "tivi", "television", "smart tv")) family.addAll(List.of("tivi", "television", "smart tv"));
+        if (family.isEmpty()) return Set.of();
+
+        List<Category> all = categoryRepository.findAll();
+        Set<Long> ids = new LinkedHashSet<>();
+        for (Category category : all) {
+            String label = normalize(category.getName() + " " + category.getSlug());
+            if (family.stream().anyMatch(label::contains)) {
+                ids.add(category.getId());
+                String path = category.getPath();
+                if (path != null && !path.isBlank() && !path.equals("/"))
+                    categoryRepository.findByPathStartingWith(path).forEach(child -> ids.add(child.getId()));
+            }
+        }
+        return ids;
+    }
+
+    private boolean isCategoryIntent(String keyword) {
+        String query = normalize(keyword);
+        return containsAny(query, "dien thoai", "smartphone", "phone", "mobile", "laptop", "notebook", "macbook",
+                "tai nghe", "headphone", "earphone", "earbuds", "may tinh bang", "tablet", "tivi", "television");
+    }
+
+    private boolean containsAny(String value, String... terms) {
+        for (String term : terms) if (value.contains(term)) return true;
+        return false;
+    }
+
+    private String normalize(String value) {
+        if (value == null) return "";
+        String decomposed = Normalizer.normalize(value.toLowerCase(Locale.ROOT).replace('đ', 'd'), Normalizer.Form.NFD);
+        return decomposed.replaceAll("\\p{M}+", "").replaceAll("[^a-z0-9 ]", " ").replaceAll("\\s+", " ").trim();
     }
 
     @Transactional(value = "productTransactionManager", readOnly = true)

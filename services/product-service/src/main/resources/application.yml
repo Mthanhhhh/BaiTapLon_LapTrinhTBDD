@@ -35,6 +35,12 @@ spring:
         spring.json.trusted.packages: "*"
 
 app:
+  ai:
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-3.6-flash}
+      connect-timeout-seconds: ${GEMINI_CONNECT_TIMEOUT_SECONDS:10}
+      request-timeout-seconds: ${GEMINI_REQUEST_TIMEOUT_SECONDS:60}
   jwt:
     secret: ${JWT_SECRET:myVeryLongSecretKeyForJwtTokenGenerationAtLeast256BitsLong2024}
     access-token-expiration: 900000

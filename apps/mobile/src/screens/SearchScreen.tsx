@@ -96,6 +96,7 @@ export default function SearchScreen() {
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } = useProductsInfinite({
     keyword: debouncedKeyword,
     categoryId,
+    aiSearch: true,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     sort,
@@ -173,6 +174,9 @@ export default function SearchScreen() {
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Bộ lọc sản phẩm" style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
           <Ionicons name="funnel-outline" size={24} color={COLORS.primaryDeep} />
         </TouchableOpacity>
+      </View>
+      <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xs, backgroundColor: COLORS.surface }}>
+        <Typography variant="xs" color="inkSoft">Tìm theo tên, thương hiệu hoặc danh mục · Ví dụ: “điện thoại”, “laptop”</Typography>
       </View>
 
       {/* Lịch sử tìm kiếm gần đây */}

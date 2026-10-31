@@ -128,7 +128,9 @@ export const useProductsInfinite = (params: any = {}) => {
   return useInfiniteQuery({
     queryKey: ['products', params],
     queryFn: async ({ pageParam = 0 }) => {
-      const endpoint = params.keyword || params.minPrice != null || params.maxPrice != null || params.minRating != null
+      const endpoint = params.aiSearch && params.keyword && !params.categoryId
+        ? `/api/v1/ai/search`
+        : params.keyword || params.minPrice != null || params.maxPrice != null || params.minRating != null
         ? `/api/v1/products/search`
         : params.categoryId ? `/api/v1/products/category/${params.categoryId}` : `/api/v1/products`;
       

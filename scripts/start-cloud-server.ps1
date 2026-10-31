@@ -10,7 +10,7 @@ if(-not(Test-Path -LiteralPath $privateConfig)){
  $rng=[Security.Cryptography.RandomNumberGenerator]::Create();$rng.GetBytes($bytes);$rng.Dispose()
  [IO.File]::WriteAllText($privateConfig,'JWT_SECRET='+[Convert]::ToBase64String($bytes)+[Environment]::NewLine)
 }
-$allowed=@('JWT_SECRET','DB_HOST','DB_PORT','DB_USERNAME','DB_PASSWORD','REDIS_HOST','REDIS_PORT','KAFKA_SERVERS')
+$allowed=@('JWT_SECRET','DB_HOST','DB_PORT','DB_USERNAME','DB_PASSWORD','REDIS_HOST','REDIS_PORT','KAFKA_SERVERS','GEMINI_API_KEY','GEMINI_MODEL','GEMINI_CONNECT_TIMEOUT_SECONDS','GEMINI_REQUEST_TIMEOUT_SECONDS')
 foreach($line in Get-Content -LiteralPath $privateConfig){if($line -match '^([A-Z_]+)=(.*)$' -and $allowed -contains $Matches[1]){[Environment]::SetEnvironmentVariable($Matches[1],$Matches[2].Trim(),'Process')}}
 $oauthFile=Join-Path $repoRoot 'services/auth-service/.env.local'
 $oauthKeys=@('GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','FACEBOOK_APP_ID','FACEBOOK_APP_SECRET','FACEBOOK_GRAPH_VERSION','OAUTH_ALLOWED_REDIRECTS')
