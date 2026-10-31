@@ -651,7 +651,7 @@ export default function HomeScreen() {
             {...item}
             isCheapest={isCheapest}
             isShopOwner={isOwnedByShop}
-            onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+            onPress={() => navigation.navigate('ProductDetail', { productId: item.id, shopMode: isShopMode })}
             onEdit={() => handleOpenEditModal(item)}
             onDelete={() => handleDeleteProduct(item.id)}
           />

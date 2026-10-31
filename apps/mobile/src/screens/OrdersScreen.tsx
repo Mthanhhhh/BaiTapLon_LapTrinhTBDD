@@ -336,10 +336,10 @@ export default function OrdersScreen() {
             </Typography>
           </View>
           <View style={styles.totalRow}>
-            <Typography variant="sm" color="inkSoft" style={{ marginRight: spacing.xs }}>
+            <Typography variant="xs" color="inkSoft" style={styles.totalLabel}>
               Tổng tiền ({item.items?.length || 1} sp):
             </Typography>
-            <Typography variant="md" weight="bold" color="primaryDeep">
+            <Typography variant="md" weight="bold" color="primaryDeep" style={styles.totalAmount}>
               {formatVND(item.total || 0)}
             </Typography>
           </View>
@@ -845,12 +845,15 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
+    minWidth: 0,
     marginLeft: spacing.sm,
   },
   itemPriceQty: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
     marginTop: 4,
   },
   cardSummary: {
@@ -862,8 +865,19 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   totalRow: {
+    flex: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignItems: 'baseline',
+    minWidth: 0,
+  },
+  totalLabel: {
+    marginRight: spacing.xs,
+    flexShrink: 1,
+  },
+  totalAmount: {
+    flexShrink: 1,
   },
   actionRow: {
     flexDirection: 'row',

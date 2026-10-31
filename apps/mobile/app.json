@@ -24,7 +24,14 @@
     "plugins": [
       "expo-font",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép E-Shop truy cập ảnh để đăng sản phẩm lên shop.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }

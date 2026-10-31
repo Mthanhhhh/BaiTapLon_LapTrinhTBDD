@@ -25,9 +25,9 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<TabParamList> | undefined;
-  ProductDetail: { productId: number | string };
+  ProductDetail: { productId: number | string; shopMode?: boolean };
   Shop: { shopId: number | string };
-  SellerCenter: undefined;
+  SellerCenter: { editProductId?: number } | undefined;
   Checkout: undefined;
   Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'MAESTRO' | 'PAYPAL' } | undefined;
   Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;

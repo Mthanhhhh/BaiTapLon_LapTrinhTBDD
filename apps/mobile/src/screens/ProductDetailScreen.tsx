@@ -36,6 +36,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useContentWidth } from '../hooks/useContentWidth';
 import { searchHistory } from '../utils/searchHistory';
 import { formatVND, formatSoldVi, calculateShippingTime } from '../utils/formatters';
+import { useShop } from '../hooks/useShop';
 
 const STANDARD_SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PREFERRED_COLOR_ORDER = ['Red', 'Orange', 'Blue'];
@@ -92,6 +93,7 @@ export default function ProductDetailScreen() {
   const { productId } = route.params || {};
   const numericProductId = Number(productId) || 0;
   const { user } = useContext(AuthContext);
+  const { data: ownedShop } = useShop();
   const contentWidth = useContentWidth();
 
   // Carousel size: 1:1 ratio, matching content frame width (max 480px)
@@ -103,6 +105,7 @@ export default function ProductDetailScreen() {
     isError: isProductError,
     refetch: refetchProduct,
   } = useProductDetail(numericProductId);
+  const canEditProduct = !!route.params?.shopMode && !!product?.shopId && Number(product.shopId) === Number(ownedShop?.id);
 
   const { data: reviewsData, isLoading: isLoadingReviews } = useProductReviews(numericProductId);
   const { mutate: addToCart, isPending: isAdding } = useAddToCart();
@@ -528,6 +531,9 @@ export default function ProductDetailScreen() {
               Xem Shop
             </Typography>
           </TouchableOpacity>
+          {canEditProduct && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Sửa sản phẩm" style={[styles.viewShopButton,{marginLeft:8}]} onPress={()=>navigation.navigate('SellerCenter',{editProductId:product.id})}>
+            <Ionicons name="create-outline" size={18} color={COLORS.primaryDeep}/>
+          </TouchableOpacity>}
         </View>
 
         {/* Section: Variant Trigger Row */}
