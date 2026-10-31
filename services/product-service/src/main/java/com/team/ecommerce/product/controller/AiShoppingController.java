@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,7 +29,8 @@ public class AiShoppingController {
     }
 
     @PostMapping("/chat")
-    public ApiResponse<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
-        return ApiResponse.success(aiShoppingService.chat(request));
+    public ApiResponse<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request,
+            @AuthenticationPrincipal Long userId) {
+        return ApiResponse.success(aiShoppingService.chat(request, userId));
     }
 }

@@ -14,13 +14,15 @@ export default function AIChatWidget({ onProductPress }: { onProductPress: (id: 
   const [visible, setVisible] = useState(false);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', content: 'Chào bạn! Mình có thể giúp tìm sản phẩm, so sánh lựa chọn và gợi ý theo ngân sách. Bạn đang cần tìm gì?' }]);
+  const [slowRequest, setSlowRequest] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', content: 'Chào bạn! Mình có thể tìm và so sánh sản phẩm, hướng dẫn dùng E-Shop, hoặc tra cứu đơn hàng, địa chỉ và shop thuộc tài khoản đang đăng nhập. Bạn cần hỗ trợ gì?' }]);
 
   const send = async (value = text) => {
     const message = value.trim();
     if (!message || sending) return;
     const previous = messages;
     setText(''); setMessages([...previous, { role: 'user', content: message }]); setSending(true);
+    const slowRequestTimer = setTimeout(() => setSlowRequest(true), 8000);
     try {
       const { data } = await apiClient.post('/api/v1/ai/chat', {
         message,
@@ -30,7 +32,7 @@ export default function AIChatWidget({ onProductPress }: { onProductPress: (id: 
       setMessages(current => [...current, { role: 'assistant', content: result.answer, products: result.products || [] }]);
     } catch {
       setMessages(current => [...current, { role: 'assistant', content: 'Mình chưa kết nối được dịch vụ tư vấn lúc này. Bạn thử lại sau ít phút nhé.' }]);
-    } finally { setSending(false); }
+    } finally { clearTimeout(slowRequestTimer); setSlowRequest(false); setSending(false); }
   };
 
   return <>
@@ -42,7 +44,7 @@ export default function AIChatWidget({ onProductPress }: { onProductPress: (id: 
         <View style={styles.panel}>
           <View style={styles.header}>
             <View style={styles.titleIcon}><Ionicons name="sparkles" size={18} color={COLORS.primaryDeep} /></View>
-            <View style={{ flex: 1 }}><Typography weight="bold">Trợ lý mua sắm</Typography><Typography variant="xs" color="inkSoft">Gợi ý dựa trên sản phẩm trong shop</Typography></View>
+            <View style={{ flex: 1 }}><Typography weight="bold">Trợ lý mua sắm</Typography><Typography variant="xs" color="inkSoft">Tìm sản phẩm và hướng dẫn E-Shop</Typography></View>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Đóng chat" onPress={() => setVisible(false)}><Ionicons name="close" size={24} color={COLORS.ink} /></TouchableOpacity>
           </View>
           <ScrollView style={styles.messages} contentContainerStyle={{ gap: 12, paddingVertical: 14 }}>
@@ -54,7 +56,10 @@ export default function AIChatWidget({ onProductPress }: { onProductPress: (id: 
                 <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
               </TouchableOpacity>)}</View>}
             </View>)}
-            {sending && <ActivityIndicator color={COLORS.primaryDeep} style={{ alignSelf: 'flex-start' }} />}
+            {sending && <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator color={COLORS.primaryDeep} />
+              {slowRequest && <Typography variant="xs" color="inkSoft">Trợ lý đang xử lý, có thể mất đến 60 giây…</Typography>}
+            </View>}
           </ScrollView>
           <View style={styles.suggestions}><TouchableOpacity style={styles.chip} onPress={() => send('Tìm điện thoại giúp tôi')}><Typography variant="xs" color="primaryDeep">Tìm điện thoại</Typography></TouchableOpacity><TouchableOpacity style={styles.chip} onPress={() => send('Gợi ý sản phẩm bán chạy')}><Typography variant="xs" color="primaryDeep">Gợi ý bán chạy</Typography></TouchableOpacity></View>
           <View style={styles.composer}><TextInput value={text} onChangeText={setText} onSubmitEditing={() => send()} placeholder="Hỏi về sản phẩm bạn cần..." maxLength={500} returnKeyType="send" style={styles.input} /><TouchableOpacity accessibilityRole="button" accessibilityLabel="Gửi tin nhắn" disabled={!text.trim() || sending} onPress={() => send()} style={[styles.send, (!text.trim() || sending) && { opacity: 0.5 }]}><Ionicons name="send" size={18} color="#fff" /></TouchableOpacity></View>
