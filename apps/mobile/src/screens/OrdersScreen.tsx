@@ -26,6 +26,7 @@ import {
   useReceiveOrder,
   useReturnOrder,
   useCancelOrder,
+  useRejectShopOrder,
   useSubmitReview,
   ReviewRequest,
 } from '../hooks/useOrders';
@@ -68,6 +69,7 @@ export default function OrdersScreen() {
   const receiveOrderMutation = useReceiveOrder();
   const returnOrderMutation = useReturnOrder();
   const cancelOrderMutation = useCancelOrder();
+  const rejectShopOrderMutation = useRejectShopOrder();
   const submitReviewMutation = useSubmitReview();
 
   // Review Modal State
@@ -132,6 +134,16 @@ export default function OrdersScreen() {
         },
       ]
     );
+  };
+
+  const handleRejectShopOrder = (orderId: number) => {
+    appAlert.alert('Từ chối đơn hàng', 'Bạn có chắc muốn từ chối đơn này không? Tồn kho sẽ được hoàn lại.', [
+      { text: 'Quay lại', style: 'cancel' },
+      { text: 'Từ chối đơn', style: 'destructive', onPress: () => rejectShopOrderMutation.mutate(orderId, {
+        onSuccess: () => appAlert.alert('Đã từ chối', 'Đơn đã hủy và tồn kho được hoàn lại.'),
+        onError: (err:any) => appAlert.alert('Lỗi', err.message || 'Không thể từ chối đơn hàng.'),
+      }) },
+    ]);
   };
 
   const handleConfirmOrder = (orderId: number) => {
@@ -323,10 +335,10 @@ export default function OrdersScreen() {
             </Typography>
           </View>
           <View style={styles.totalRow}>
-            <Typography variant="sm" color="inkSoft" style={{ marginRight: spacing.xs }}>
+            <Typography variant="xs" color="inkSoft" style={styles.totalLabel}>
               Tổng tiền ({item.items?.length || 1} sp):
             </Typography>
-            <Typography variant="md" weight="bold" color="primaryDeep">
+            <Typography variant="md" weight="bold" color="primaryDeep" style={styles.totalAmount}>
               {formatVND(item.total || 0)}
             </Typography>
           </View>
@@ -342,8 +354,8 @@ export default function OrdersScreen() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onPress={() => handleCancelOrder(item.id)}
-                    loading={cancelOrderMutation.isPending}
+                    onPress={() => handleRejectShopOrder(item.id)}
+                    loading={rejectShopOrderMutation.isPending}
                     style={styles.actionBtn}
                   >
                     Từ chối đơn
@@ -812,12 +824,15 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
+    minWidth: 0,
     marginLeft: spacing.sm,
   },
   itemPriceQty: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
     marginTop: 4,
   },
   cardSummary: {
@@ -829,8 +844,19 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   totalRow: {
+    flex: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignItems: 'baseline',
+    minWidth: 0,
+  },
+  totalLabel: {
+    marginRight: spacing.xs,
+    flexShrink: 1,
+  },
+  totalAmount: {
+    flexShrink: 1,
   },
   actionRow: {
     flexDirection: 'row',

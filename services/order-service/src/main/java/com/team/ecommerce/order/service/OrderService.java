@@ -22,6 +22,7 @@ import com.team.ecommerce.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,7 @@ public class OrderService {
     private final ProductInternalService productInternalService;
     private final AuthInternalService authInternalService;
     private final EventPublisher eventPublisher;
+    private final JdbcTemplate jdbc;
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
         Cart cart = cartRepository.findByUserIdForUpdate(userId)
@@ -254,6 +256,20 @@ public class OrderService {
         return OrderResponse.from(order, voucherCode);
     }
 
+    public OrderResponse rejectOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        shops.requireOwner(userId, order.getItems());
+        if (order.getStatus() != OrderStatus.WAITING_CONFIRMATION) {
+            throw new BadRequestException("Chỉ có thể từ chối đơn đang chờ xác nhận");
+        }
+        for (OrderItem item : order.getItems()) {
+            productInternalService.restoreStock(item.getProductId(), item.getVariantId(), item.getQuantity());
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        return OrderResponse.from(orderRepository.save(order), null);
+    }
+
     public PageResponse<OrderResponse> getShopOrders(Long userId, Pageable pageable) {
         var orders = orderRepository.findAll().stream().filter(o -> !o.getItems().isEmpty() && o.getItems().stream().allMatch(item -> shops.ownsProduct(userId,item.getProductId()))).map(o -> OrderResponse.from(o,null)).toList();
         int start = (int)Math.min(pageable.getOffset(),orders.size());
@@ -278,9 +294,16 @@ public class OrderService {
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        boolean newlyDelivered = status == OrderStatus.DELIVERED && order.getStatus() != OrderStatus.DELIVERED;
         order.setStatus(status);
         order = orderRepository.save(order);
         shops.notifyBuyer(order);
+        if (newlyDelivered) {
+            for (OrderItem item : order.getItems()) {
+                jdbc.update("UPDATE product_db.products SET sold_count=sold_count+? WHERE id=?", item.getQuantity(), item.getProductId());
+                if (item.getVariantId() != null) jdbc.update("UPDATE product_db.product_skus SET sold_count=sold_count+? WHERE id=? AND product_id=?", item.getQuantity(), item.getVariantId(), item.getProductId());
+            }
+        }
         
         String voucherCode = null;
         if (order.getVoucherId() != null) {

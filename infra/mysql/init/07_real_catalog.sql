@@ -116,6 +116,9 @@ INSERT INTO product_skus (product_id,sku_code,name,price,original_price,stock_qu
 INSERT INTO product_skus (product_id,sku_code,name,price,original_price,stock_quantity,status) VALUES (@pid,'BASEUS-BOWIE-BS2-KEM','Kem',499000,548900,8,'ACTIVE');
 INSERT INTO product_skus (product_id,sku_code,name,price,original_price,stock_quantity,status) VALUES (@pid,'BASEUS-BOWIE-BS2-TR-NG','Trắng',499000,548900,8,'ACTIVE');
 INSERT INTO product_skus (product_id,sku_code,name,price,original_price,stock_quantity,status) VALUES (@pid,'BASEUS-BOWIE-BS2-XANH','Xanh',499000,548900,8,'ACTIVE');
+UPDATE products SET attributes=JSON_SET(attributes,'$.variantImages.Cam',JSON_ARRAY('https://res.cloudinary.com/t4eozcyt/image/upload/v1793302015/eshop-products/headphones/baseus-bowie-bs2/TaiNghe_BaseusBS2_Cam.png')) WHERE id=@pid;
+INSERT INTO product_skus (product_id,sku_code,name,price,original_price,stock_quantity,status) VALUES (@pid,'BASEUS-BOWIE-BS2-CAM','Cam',499000,548900,8,'ACTIVE');
+INSERT INTO inventory_movements (sku_id,delta,stock_after,reason,reference_type,reference_id) SELECT id,8,8,'INITIAL','SEED','BASEUS-BOWIE-BS2-CAM' FROM product_skus WHERE sku_code='BASEUS-BOWIE-BS2-CAM';
 UPDATE products SET status='ACTIVE' WHERE id=@pid;
 INSERT INTO products (shop_id,category_id,name,slug,short_description,description,thumbnail_url,currency,min_price,max_price,original_price,attributes,status) VALUES (2,14,'Tai nghe gaming EDRA EH406 mic dài','edra-eh406','Tai nghe gaming EDRA với micro cần dài.','Tai nghe gaming EDRA với micro cần dài. Thông tin cấu hình và hình ảnh được tổng hợp từ bộ ảnh sản phẩm do chủ dự án cung cấp.','https://res.cloudinary.com/t4eozcyt/image/upload/v1793302026/eshop-products/headphones/edra-eh406/TaiNghe_EDRA_MicDai_EH406.png','VND',599000,599000,658900,'{"optionLabels":[],"variantImages":{},"specifications":{"danhMuc":"Tai nghe","nguonAnh":"Cloudinary"}}','ACTIVE');
 SET @pid=LAST_INSERT_ID();

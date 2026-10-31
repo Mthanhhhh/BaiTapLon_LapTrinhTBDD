@@ -117,9 +117,10 @@ export default function SearchScreen() {
             price={item.price}
             originalPrice={item.originalPrice}
             thumbnailUrl={item.thumbnailUrl}
-            shopLocation={item.shopLocation}
             rating={item.rating}
             soldCount={item.soldCount}
+            shopName={item.shopName}
+            shopLocation={item.shopLocation}
             onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
           />
         </View>

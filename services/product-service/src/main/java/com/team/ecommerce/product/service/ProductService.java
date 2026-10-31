@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ElasticsearchSyncService elasticsearchSyncService;
+    private final JdbcTemplate jdbc;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public PageResponse<ProductListResponse> recommendations(String keyword,int page,int size) {
@@ -89,7 +91,6 @@ public class ProductService {
     }
 
     @Transactional(value = "productTransactionManager", readOnly = true)
-    @Cacheable(value = "products", key = "'id:' + #id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
@@ -159,7 +160,12 @@ public class ProductService {
         return mapToPageResponse(page);
     }
 
-    public ProductResponse createProduct(CreateProductRequest request) {
+    private void requireShopOwner(Long shopId, Long userId) {
+        Integer ownsShop = jdbc.queryForObject("SELECT COUNT(*) FROM product_db.shops WHERE id=? AND owner_user_id=? AND deleted_at IS NULL", Integer.class, shopId, userId);
+        if (ownsShop == null || ownsShop == 0) throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền quản lý shop này");
+    }
+
+    public ProductResponse createProduct(CreateProductRequest request, Long userId) {
         if (!categoryRepository.existsById(request.getCategoryId())) {
             throw new ResourceNotFoundException("Category", "id", request.getCategoryId());
         }
@@ -175,6 +181,7 @@ public class ProductService {
         }
 
         Long sId = request.getShopId() != null ? request.getShopId() : 1L;
+        requireShopOwner(sId, userId);
         Product product = Product.builder()
                 .name(request.getName())
                 .slug(request.getName().toLowerCase().replaceAll("\\s+", "-") + "-" + System.currentTimeMillis())
@@ -210,9 +217,11 @@ public class ProductService {
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }
 
-    public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
+    @CacheEvict(value = "products", key = "'id:' + #id")
+    public ProductResponse updateProduct(Long id, UpdateProductRequest request, Long userId) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+        requireShopOwner(product.getShopId(), userId);
 
         if (request.getCategoryId() != null) {
             if (!categoryRepository.existsById(request.getCategoryId())) {
@@ -229,10 +238,24 @@ public class ProductService {
         if (request.getPrice() != null) {
             product.setMinPrice(request.getPrice());
             product.setMaxPrice(request.getPrice());
+            // Product cards use products.min_price while detail/cart use SKU prices.
+            // Keep both representations in sync when the seller edits a single product price.
+            List<ProductVariant> variants = productVariantRepository.findByProductId(id);
+            variants.forEach(variant -> variant.setPrice(request.getPrice()));
         }
-        if (request.getOriginalPrice() != null) product.setOriginalPrice(request.getOriginalPrice());
+        if (request.getOriginalPrice() != null) {
+            product.setOriginalPrice(request.getOriginalPrice());
+            productVariantRepository.findByProductId(id).forEach(variant -> variant.setOriginalPrice(request.getOriginalPrice()));
+        }
         if (request.getThumbnailUrl() != null) product.setThumbnailUrl(request.getThumbnailUrl());
         if (request.getAttributes() != null) product.setAttributes(request.getAttributes());
+
+        if (request.getStock() != null) {
+            List<ProductVariant> variants = productVariantRepository.findByProductId(id);
+            // The legacy edit form has one stock field; only apply it when the product
+            // has one SKU, so a total stock value is not copied to every variation.
+            if (variants.size() == 1) variants.get(0).setStock(request.getStock());
+        }
 
         if (request.getImages() != null) {
             product.getImages().clear();
@@ -263,9 +286,11 @@ public class ProductService {
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }
 
-    public void deleteProduct(Long id) {
+    @CacheEvict(value = "products", key = "'id:' + #id")
+    public void deleteProduct(Long id, Long userId) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
+        requireShopOwner(product.getShopId(), userId);
         product.setDeletedAt(java.time.LocalDateTime.now());
         productRepository.save(product);
         elasticsearchSyncService.deleteProduct(id);

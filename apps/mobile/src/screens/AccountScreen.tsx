@@ -2,7 +2,7 @@ import {provinceLabel} from '../utils/vietnamShipping';
 import { MarketplaceHeader } from '../components/MarketplaceHeader';
 import { useOrders } from '../hooks/useOrders';
 import { appAlert } from '../utils/appAlert';
-import { useShop, useOpenShop } from '../hooks/useShop';
+import { useShop } from '../hooks/useShop';
 import React, { useContext, useState } from 'react';
 import {
   View,
@@ -65,7 +65,6 @@ export default function AccountScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const { data: shop } = useShop();
-  const openShop = useOpenShop();
   const orders = useOrders(0,100);
 
   // Profile Query & Mutations
@@ -206,7 +205,7 @@ export default function AccountScreen() {
             <View style={{flex:1,gap:4}}><Typography variant="lg" weight="bold">{profile?.fullName||user.fullName}</Typography><Typography variant="xs" color="inkSoft" numberOfLines={1}>{profile?.email||user.email}</Typography><Typography variant="xs" color="primaryDeep">{shop?'Người mua · Chủ shop':'Tài khoản mua sắm'}</Typography></View>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Sửa hồ sơ" onPress={()=>{setEditFullName(profile?.fullName||user.fullName);setEditPhone(profile?.phone||'');setProfileModalVisible(true);}}><Ionicons name="settings-outline" size={24} color={COLORS.primaryDeep}/></TouchableOpacity>
           </View>
-          <TouchableOpacity accessibilityRole="button" onPress={()=>shop?navigation.navigate('Shop',{shopId:shop.id}):openShop.mutate(`${user.fullName} Shop`,{onError:(e:any)=>appAlert.alert('Không thể mở shop',e.message)})} style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="storefront-outline" size={20} color={COLORS.primaryDeep}/><Typography variant="sm" weight="bold" style={{flex:1}}>{shop?`Quản lý ${shop.name}`:'Mở shop và bắt đầu bán hàng'}</Typography><Ionicons name="chevron-forward" size={18} color={COLORS.primaryDeep}/></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" onPress={()=>navigation.navigate('SellerCenter')} style={{flexDirection:'row',alignItems:'center',gap:8,paddingTop:12,borderTopWidth:1,borderColor:COLORS.border}}><Ionicons name="storefront-outline" size={20} color={COLORS.primaryDeep}/><Typography variant="sm" weight="bold" style={{flex:1}}>{shop?`Quản lý ${shop.name}`:'Mở shop và bắt đầu bán hàng'}</Typography><Ionicons name="chevron-forward" size={18} color={COLORS.primaryDeep}/></TouchableOpacity>
         </View>
         <View style={[styles.menuCard,{padding:14,gap:18}]}>
           <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}><Typography weight="bold">Đơn mua</Typography><TouchableOpacity accessibilityRole="button" onPress={()=>navigation.navigate('Main',{screen:'Orders',params:{status:'ALL'}})}><Typography variant="xs" color="inkSoft">Lịch sử mua hàng ›</Typography></TouchableOpacity></View>
@@ -232,10 +231,7 @@ export default function AccountScreen() {
             onPress={() => setAddressModalVisible(true)}
           />
           <MenuItem icon="storefront-outline" title={shop ? `Quản lý shop: ${shop.name}` : 'Mở shop của tôi'}
-            onPress={() => {
-              if (shop) navigation.navigate('Shop', { shopId: shop.id });
-              else openShop.mutate(`${user.fullName} Shop`, { onError: (err: any) => appAlert.alert('Không thể mở shop', err.message) });
-            }} />
+            onPress={() => navigation.navigate('SellerCenter')} />
           <MenuItem
             icon="receipt-outline"
             title="Lịch sử đơn hàng"
