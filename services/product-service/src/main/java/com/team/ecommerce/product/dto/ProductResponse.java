@@ -60,9 +60,9 @@ public class ProductResponse {
         int totalStock = 0;
         if (product.getVariants() != null) {
             variantResponses = product.getVariants().stream()
-                    .map(ProductVariantResponse::from)
+                    .filter(v -> v.getDeletedAt()==null).map(ProductVariantResponse::from)
                     .collect(Collectors.toList());
-            totalStock = product.getVariants().stream().mapToInt(v -> v.getStock()).sum();
+            totalStock = product.getVariants().stream().filter(v -> v.getDeletedAt()==null).mapToInt(v -> v.getStock()).sum();
         }
 
         Long sId = product.getShopId();

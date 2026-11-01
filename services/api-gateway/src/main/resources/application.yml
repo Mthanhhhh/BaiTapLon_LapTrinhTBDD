@@ -13,7 +13,7 @@ spring:
         - id: promotion-websocket
           uri: ws://${ORDER_SERVICE_HOST:localhost}:8085
           predicates:
-            - Path=/ws/promotions
+            - Path=/ws/promotions,/ws/chat
         # Route 1: Auth APIs
         - id: auth-route
           uri: http://${AUTH_SERVICE_HOST:localhost}:8083

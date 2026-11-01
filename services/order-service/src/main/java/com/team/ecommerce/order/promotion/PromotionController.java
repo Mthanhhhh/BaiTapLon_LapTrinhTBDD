@@ -10,6 +10,7 @@ import static com.team.ecommerce.order.promotion.PromotionModels.*;
 @RestController @RequestMapping("/api/v1/promotions") @RequiredArgsConstructor
 public class PromotionController {
  private final PromotionService promotions;private final PromotionEvents events;
+ @PostMapping("/prices") public ApiResponse<?> prices(@AuthenticationPrincipal Long user,@RequestBody Map<String,List<Long>> input){return ApiResponse.success(promotions.productPrices(user,input.get("productIds")));}
  @GetMapping("/catalog") public ApiResponse<?> catalog(@AuthenticationPrincipal Long user){return ApiResponse.success(Map.of("campaigns",user==null?events.cachedCatalog(()->promotions.catalog(null,false,false)):promotions.catalog(user,false,false),"serverTime",Instant.now().toString()));}
  @GetMapping("/wallet") public ApiResponse<?> wallet(@AuthenticationPrincipal Long user){return ApiResponse.success(promotions.catalog(user,true,false));}
  @PostMapping("/{id}/save") public ApiResponse<?> save(@AuthenticationPrincipal Long user,@PathVariable long id){promotions.save(user,id);return ApiResponse.success("Đã lưu mã; lưu mã không giữ lượt sử dụng");}

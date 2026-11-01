@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
+import { emitAuthLogout } from '../utils/authEvents';
 
 const apiOrigin = (process.env.EXPO_PUBLIC_API_URL || 'https://api-eshop.mtcord.io.vn').replace(/\/+$/, '');
 const baseURL = apiOrigin;
@@ -103,9 +104,7 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         await tokenStorage.clearTokens();
         // Fire custom event to notify auth context to logout
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('auth:logout'));
-        }
+        emitAuthLogout();
         return Promise.reject(formatError(refreshError as AxiosError));
       } finally {
         isRefreshing = false;

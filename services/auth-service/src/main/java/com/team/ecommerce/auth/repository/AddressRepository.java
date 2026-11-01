@@ -12,7 +12,11 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
     List<Address> findByUserIdOrderByIsDefaultDesc(Long userId);
     Optional<Address> findByIdAndUserId(Long id, Long userId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId AND a.id <> :addressId")
+    void clearOtherDefaults(Long userId, Long addressId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId")
     void updateIsDefaultByUserId(Long userId);
 }

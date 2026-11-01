@@ -1,7 +1,8 @@
+import {useProductOffer} from '../hooks/useProductOffer';
+import {PurchaseSelector} from '../components/PurchaseSelector';
 import {usePromotionCatalog,useCountdown} from '../hooks/usePromotions';
 import {provinceLabel} from '../utils/vietnamShipping';
-import { appAlert } from '../utils/appAlert';
-import React, { useState, useRef, useMemo, useContext, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,9 +11,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   FlatList,
-  useWindowDimensions,
   Platform,
-  Modal,
   Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,23 +33,14 @@ import {
   ReviewResponse,
   ProductListResponse,
 } from '../hooks/useProducts';
-import { useAddToCart, useCart } from '../hooks/useCart';
-import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../hooks/useCart';
 import { useContentWidth } from '../hooks/useContentWidth';
 import { searchHistory } from '../utils/searchHistory';
-import { formatVND, formatSoldVi, calculateShippingTime } from '../utils/formatters';
+import { formatVND, formatSoldVi } from '../utils/formatters';
 import { useShop } from '../hooks/useShop';
 
 const STANDARD_SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PREFERRED_COLOR_ORDER = ['Red', 'Orange', 'Blue'];
-
-const COLOR_MAP: Record<string, string> = {
-  Red: '#A31F1F',
-  Orange: '#E8380D',
-  Blue: '#4169E1',
-};
-
-const getColorDot = (color: string) => COLOR_MAP[color] || '#9E9E9E';
 
 const EMOTION_ICONS: Record<string, string> = {
   GOOD: 'Hài lòng',
@@ -92,15 +82,15 @@ function formatTimeAgo(dateString?: string): string {
 
 export default function ProductDetailScreen() {
   const route = useRoute<any>();
+  const [purchaseMode,setPurchaseMode]=useState<'cart'|'buy'|null>(route.params?.sheet==='true'?'cart':null);
   const navigation = useNavigation<any>();
   const { productId } = route.params || {};
   const numericProductId = Number(productId) || 0;
-  const { user } = useContext(AuthContext);
+  const listingOffer=useProductOffer(numericProductId);
   const { data: ownedShop } = useShop();
   const promotionCatalog=usePromotionCatalog();
   const promotionClock=useCountdown();
   const contentWidth = useContentWidth();
-  const {height: viewportHeight} = useWindowDimensions();
 
   // Carousel size: 1:1 ratio, matching content frame width (max 480px)
   const carouselSize = contentWidth;
@@ -114,7 +104,6 @@ export default function ProductDetailScreen() {
   const canEditProduct = !!route.params?.shopMode && !!product?.shopId && Number(product.shopId) === Number(ownedShop?.id);
 
   const { data: reviewsData, isLoading: isLoadingReviews } = useProductReviews(numericProductId);
-  const { mutate: addToCart, isPending: isAdding } = useAddToCart();
   const { data: cartData } = useCart();
 
   // Related products query (using categoryId from loaded product)
@@ -135,8 +124,8 @@ export default function ProductDetailScreen() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const carouselRef = useRef<FlatList<string | null>>(null);
-  const [isVariantSheetVisible, setIsVariantSheetVisible] = useState(route.params?.sheet === 'true');
-  const [isBuyNowFlow, setIsBuyNowFlow] = useState(false);
+
+
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -274,10 +263,10 @@ export default function ProductDetailScreen() {
 
   // Calculated discount percentage: Math.round((1 - price / originalPrice) * 100)
   const discountPercent = useMemo(() => {
-    if (!product || !product.originalPrice) return 0;
-    const price = activeVariant?.price ?? product.price;
-    return product.originalPrice > price ? Math.round((1-price/product.originalPrice)*100) : 0;
-  }, [product,activeVariant]);
+    const base=listingOffer.data?.basePrice??product?.originalPrice??product?.price??0;
+    const price=listingOffer.data?.shopPrice??product?.price??0;
+    return base>price?Math.round((1-price/base)*100):0;
+  }, [product,listingOffer.data]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0 && viewableItems[0].index !== undefined) {
@@ -288,46 +277,8 @@ export default function ProductDetailScreen() {
   const currentStock = activeVariant ? activeVariant.stock : (variants.length ? 0 : (product?.stock ?? 0));
   useEffect(()=>{setQuantity(q=>currentStock>0?Math.min(Math.max(1,q),currentStock):1);},[currentStock]);
 
-  const executeAddToCart = (isBuyNow: boolean) => {
-    if (!product || currentStock<=0 || quantity>currentStock || (variants.length>0&&!activeVariant)) return;
-
-    addToCart(
-      {
-        productId: product.id,
-        variantId: activeVariant?.id,
-        quantity,
-      },
-      {
-        onSuccess: () => {
-          setIsVariantSheetVisible(false);
-          if (isBuyNow) {
-            navigation.navigate('Checkout');
-          }
-        },
-        onError: (error: any) => {
-          appAlert.alert('Không thể thêm vào giỏ', error?.message || 'Vui lòng thử lại sau.');
-        },
-      }
-    );
-  };
-
-  const handleAddToCartClick = () => {
-    setIsBuyNowFlow(false);
-    if (variants.length > 1 && !isSingleDefault && (!colorOptions.length || canSplitVariants)) {
-      setIsVariantSheetVisible(true);
-    } else {
-      executeAddToCart(false);
-    }
-  };
-
-  const handleBuyNowClick = () => {
-    setIsBuyNowFlow(true);
-    if (variants.length > 1 && !isSingleDefault && (!colorOptions.length || canSplitVariants)) {
-      setIsVariantSheetVisible(true);
-    } else {
-      executeAddToCart(true);
-    }
-  };
+  const handleAddToCartClick = () => setPurchaseMode('cart');
+  const handleBuyNowClick = () => setPurchaseMode('buy');
 
   // State 1: Skeleton Loading
   if (isProductLoading) {
@@ -374,21 +325,21 @@ export default function ProductDetailScreen() {
   }
 
   const formatPrice = (val: number) => formatVND(val);
-  const description = product.description || 'No description available.';
+  const description = product.description || 'Shop chưa cập nhật mô tả.';
   const isLongDesc = description.length > 160;
   const displayedDesc = isLongDesc && !isDescExpanded ? `${description.slice(0, 160)}...` : description;
 
   const flashCampaign=promotionCatalog.data?.campaigns.find(c=>c.kind==='FLASH'&&c.status==='ACTIVE'&&new Date(c.startsAt).getTime()<=promotionClock.now&&new Date(c.endsAt).getTime()>promotionClock.now&&c.items?.some(i=>i.sku_id===activeVariant?.id&&i.remaining>=quantity&&i.userRemaining>=quantity));
   const flashItem=flashCampaign?.items?.find(i=>i.sku_id===activeVariant?.id);
-  const currentPrice = flashItem?.sale_price ?? activeVariant?.price ?? product.price;
+  const currentPrice = listingOffer.data?.afterVoucher ?? flashItem?.sale_price ?? product.price;
 
   return (
     <View style={styles.container}>
       {/* Main vertical ScrollView wrapping the entire page */}
       <ScrollView
-        aria-hidden={isVariantSheetVisible}
-        accessibilityElementsHidden={isVariantSheetVisible}
-        importantForAccessibility={isVariantSheetVisible?'no-hide-descendants':'auto'}
+
+
+
         bounces={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -461,46 +412,16 @@ export default function ProductDetailScreen() {
           <View style={styles.priceRow}>
             <Typography variant="xxl" weight="bold" color="deal">
               {formatPrice(currentPrice)}
-            </Typography>
-            {product.originalPrice && product.originalPrice > currentPrice && (
-              <Typography variant="md" color="muted" style={styles.originalPrice}>
-                {formatPrice(product.originalPrice)}
-              </Typography>
-            )}
+            </Typography><Typography variant="xs" color="primaryDeep">Giá sau voucher · phân loại rẻ nhất</Typography>
+            {null}
             {discountPercent > 0 && (
               <Badge label={`-${discountPercent}%`} variant="danger" style={{ marginLeft: spacing.sm }} />
             )}
           </View>
 
-          <Typography variant="lg" weight="semiBold" role="heading" aria-level={1} numberOfLines={2} style={styles.productName}>
+          <Typography variant="lg" weight="semiBold" role="heading" aria-level={1} numberOfLines={1} ellipsizeMode="tail" style={styles.productName}>
             {product.name}
           </Typography>
-
-          {colorOptions.length > 0 && (
-            <View style={styles.colorOptionsSection}>
-              <Typography variant="sm" weight="bold" style={styles.colorOptionsTitle}>
-                {optionLabels[0] || 'Màu sắc'}{selectedVisualOption ? `: ${selectedVisualOption}` : ''}
-              </Typography>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorOptionsList}>
-                {colorOptions.map((value) => {
-                  const isSelected = selectedVisualOption === value;
-                  return (
-                    <TouchableOpacity
-                      key={value}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${optionLabels[0] || 'Màu sắc'} ${value}`}
-                      accessibilityState={{ selected: isSelected }}
-                      onPress={() => selectImageVariant(value)}
-                      activeOpacity={0.8}
-                      style={[styles.colorOptionButton, isSelected && styles.colorOptionButtonSelected]}
-                    >
-                      <RemoteImage sourceUrl={variantImageMap?.[value]?.[0]} name={`${product.name} ${value}`} style={styles.colorOptionImage} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
 
           <View style={styles.statsRow}>
             <View style={styles.ratingBox}>
@@ -549,27 +470,7 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* Section: Variant Trigger Row */}
-        {!isSingleDefault && variants.length > 0 && (
-          <TouchableOpacity
-            testID="variant-sheet-trigger"
-            style={styles.sectionRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              setIsBuyNowFlow(false);
-              setIsVariantSheetVisible(true);
-            }}
-          >
-            <View>
-              <Typography variant="sm" weight="bold" style={{ marginBottom: 2 }}>
-                Chọn phân loại hàng
-              </Typography>
-              <Typography variant="sm" color="inkSoft">
-                {activeVariant ? activeVariant.name : 'Chọn màu sắc, kích cỡ, số lượng'}
-              </Typography>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
-          </TouchableOpacity>
-        )}
+        {null}
 
         {/* Section: Description */}
         <View style={styles.section}>
@@ -726,7 +627,7 @@ export default function ProductDetailScreen() {
       </ScrollView>
 
       {/* Fixed Bottom Bar: Cart button + Add to Cart button (soft) + Buy Now button (primary) */}
-      <SafeAreaView aria-hidden={isVariantSheetVisible} accessibilityElementsHidden={isVariantSheetVisible} style={styles.bottomBarContainer}>
+      <SafeAreaView   style={styles.bottomBarContainer}>
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={styles.cartBarBtn}
@@ -759,194 +660,9 @@ export default function ProductDetailScreen() {
             onPress={handleBuyNowClick}
           />
         </View>
-      </SafeAreaView>
+      <PurchaseSelector key={purchaseMode??'closed'} productId={Number(productId)} mode={purchaseMode} onClose={()=>setPurchaseMode(null)}/></SafeAreaView>
 
-      {/* Variant Selection Bottom Sheet Modal (Semi-transparent backdrop shows product page behind) */}
-      <Modal visible={isVariantSheetVisible} animationType="slide" transparent onRequestClose={()=>setIsVariantSheetVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.backdropDismiss}
-            activeOpacity={1}
-            onPress={() => setIsVariantSheetVisible(false)}
-          />
-          <View style={styles.bottomSheet}>
-            {/* Sheet Header: Thumbnail, Price, Stock */}
-            <View style={styles.sheetHeader}>
-              <RemoteImage
-                sourceUrl={product.thumbnailUrl}
-                name={product.name}
-                style={styles.sheetImage}
-                iconSize={32}
-              />
-              <View style={styles.sheetHeaderInfo}>
-                <Typography variant="xl" weight="bold" color="primaryDeep">
-                  {formatPrice(currentPrice)}
-                </Typography>
-                {!!product.originalPrice && product.originalPrice > currentPrice && <Typography variant="sm" color="muted" style={{textDecorationLine:'line-through'}}>{formatPrice(product.originalPrice)}</Typography>}
-                <Typography variant="sm" color="muted">
-                  Kho còn: {currentStock}
-                </Typography>
-              </View>
-              <TouchableOpacity
-                onPress={() => setIsVariantSheetVisible(false)}
-                style={styles.closeBtn}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={24} color={COLORS.ink} />
-              </TouchableOpacity>
-            </View>
 
-            <ScrollView style={{maxHeight:Math.max(180,viewportHeight*0.43)}} showsVerticalScrollIndicator={false}>
-            {/* Split Variants (Color & Size) */}
-            {canSplitVariants ? (
-              <View style={styles.sheetBody}>
-                {/* Color Row with Color Dots */}
-                {colorOptions.length === 0 && <View style={styles.sheetOptionGroup}>
-                  <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                    {optionLabels[0] || 'Tuỳ chọn'}: {selectedColor}
-                  </Typography>
-                  <View style={styles.badgeRow}>
-                    {colors.map((c) => {
-                      const isActive = selectedColor === c;
-                      return (
-                        <TouchableOpacity
-                          key={c}
-                          style={[styles.variantChip, isActive && styles.variantChipActive]}
-                          onPress={() => {setSelectedColor(c);const valid=variants.find(v=>v.name===`${c} / ${selectedSize}`&&v.stock>0);if(!valid){const first=variants.find(v=>v.name.startsWith(`${c} / `)&&v.stock>0);if(first)setSelectedSize(first.name.split(' / ')[1].trim());}}}
-                          activeOpacity={0.8}
-                        >
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={[styles.colorDot, { backgroundColor: getColorDot(c) }]} />
-                            <Typography variant="sm" weight={isActive ? 'bold' : 'regular'} color={isActive ? 'primaryDeep' : 'ink'}>
-                              {c}
-                            </Typography>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>}
-
-                {/* Size Row in standard order XS, S, M, L, XL, XXL */}
-                <View style={styles.sheetOptionGroup}>
-                  <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                    {optionLabels[1] || 'Tuỳ chọn'}: {selectedSize}
-                  </Typography>
-                  <View style={styles.badgeRow}>
-                    {sizes.map((s) => {
-                      const isActive = selectedSize === s;
-                      const combo = variants.find((v) => v.name === `${selectedColor} / ${s}`);
-                      const isOutOfStock = !combo || combo.stock <= 0;
-                      return (
-                        <TouchableOpacity
-                          key={s}
-                          style={[
-                            styles.variantChip,
-                            isActive && styles.variantChipActive,
-                            isOutOfStock && styles.variantChipDisabled,
-                          ]}
-                          disabled={isOutOfStock}
-                          onPress={() => setSelectedSize(s)}
-                          activeOpacity={0.8}
-                        >
-                          <Typography
-                            variant="sm"
-                            weight={isActive ? 'bold' : 'regular'}
-                            color={isOutOfStock ? 'muted' : isActive ? 'primaryDeep' : 'ink'}
-                          >
-                            {s}
-                          </Typography>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              </View>
-            ) : colorOptions.length === 0 && !isSingleDefault && variants.length > 0 ? (
-              /* Single Variant Row */
-              <View style={styles.sheetOptionGroup}>
-                <Typography variant="sm" weight="bold" style={{ marginBottom: spacing.xs }}>
-                  {optionLabels[0] || 'Phân loại hàng'}
-                </Typography>
-                <View style={styles.badgeRow}>
-                  {variants.map((v) => {
-                    const isActive = activeVariant?.id === v.id;
-                    const isOutOfStock = v.stock <= 0;
-                    return (
-                      <TouchableOpacity
-                        key={v.id}
-                        style={[
-                          styles.variantChip,
-                          isActive && styles.variantChipActive,
-                          isOutOfStock && styles.variantChipDisabled,
-                        ]}
-                        disabled={isOutOfStock}
-                        onPress={() => setSelectedVariantId(v.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Typography
-                          variant="sm"
-                          weight={isActive ? 'bold' : 'regular'}
-                          color={isOutOfStock ? 'muted' : isActive ? 'primaryDeep' : 'ink'}
-                        >
-                          {v.name}
-                        </Typography>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-
-            {/* Quantity Selector */}
-            <View style={styles.quantityRow}>
-              <Typography variant="sm" weight="bold">
-                Số lượng
-              </Typography>
-              <View style={styles.quantityBox}>
-                <TouchableOpacity
-                  style={[styles.qtyBtn, quantity <= 1 && styles.qtyBtnDisabled]}
-                  onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <Ionicons name="remove" size={18} color={quantity <= 1 ? COLORS.muted : COLORS.ink} />
-                </TouchableOpacity>
-                <Typography variant="md" weight="semiBold" style={styles.qtyText}>
-                  {quantity}
-                </Typography>
-                <TouchableOpacity
-                  style={[styles.qtyBtn, quantity >= currentStock && styles.qtyBtnDisabled]}
-                  onPress={() => setQuantity(Math.min(currentStock, quantity + 1))}
-                  disabled={quantity >= currentStock || currentStock <= 0}
-                >
-                  <Ionicons name="add" size={18} color={quantity >= currentStock ? COLORS.muted : COLORS.ink} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            </ScrollView>
-            {/* Confirm Button */}
-            <View style={styles.sheetFooter}>
-              <Button
-                title={
-                  isAdding
-                    ? 'Đang xử lý...'
-                    : currentStock <= 0
-                    ? 'Hết hàng'
-                    : isBuyNowFlow
-                    ? 'Mua ngay'
-                    : 'Thêm vào giỏ'
-                }
-                variant="primary"
-                fullWidth
-                size="lg"
-                disabled={isAdding || currentStock <= 0}
-                onPress={() => executeAddToCart(isBuyNowFlow)}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1201,7 +917,7 @@ const styles = StyleSheet.create({
   bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 8,
     paddingVertical: spacing.sm,
     height: 68,
   },
@@ -1229,6 +945,8 @@ const styles = StyleSheet.create({
   },
   bottomActionBtn: {
     flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 6,
     height: 48,
   },
   modalOverlay: {

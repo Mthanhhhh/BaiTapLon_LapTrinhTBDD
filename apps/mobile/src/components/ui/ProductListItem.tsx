@@ -1,3 +1,4 @@
+import {useProductOffer} from '../../hooks/useProductOffer';
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { COLORS, radius, spacing, shadows } from '../../theme';
@@ -18,6 +19,8 @@ export const ProductListItem: React.FC<ProductCardProps> = React.memo(function P
   soldCount,
   onPress,
 }) {
+  const offer=useProductOffer(id);
+  const shownPrice=offer.data?.afterVoucher??price;
   const formatPrice = (value: number) => formatVND(value);
 
   const discountPercent = originalPrice && originalPrice > price
@@ -46,19 +49,15 @@ export const ProductListItem: React.FC<ProductCardProps> = React.memo(function P
         )}
       </View>
       <View style={styles.content}>
-        <Typography variant="sm" weight="medium" numberOfLines={2} style={styles.title}>
+        <Typography variant="sm" weight="medium" numberOfLines={1} ellipsizeMode="tail" style={styles.title}>
           {name}
         </Typography>
         
         <View style={styles.priceContainer}>
           <Typography variant="lg" weight="bold" color="primaryDeep">
-            {formatPrice(price)}
+            {formatPrice(shownPrice)}
           </Typography>
-          {originalPrice && originalPrice > price && (
-            <Typography variant="sm" color="muted" style={styles.originalPrice}>
-              {formatPrice(originalPrice)}
-            </Typography>
-          )}
+          <Typography variant="xs" color="primaryDeep">Giá sau voucher</Typography>
         </View>
 
         <View style={styles.footer}>

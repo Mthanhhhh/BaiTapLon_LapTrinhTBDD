@@ -153,7 +153,7 @@ export default function OrdersScreen() {
         appAlert.alert('Thành công', 'Đã xác nhận đơn hàng! Đơn đã chuyển sang "Chờ lấy hàng".');
       },
       onError: (err: any) => {
-        appAlert.alert('Lỗi', err.response?.data?.message || 'Không thể xác nhận đơn hàng.');
+        appAlert.alert('Lỗi', err.message || 'Không thể xác nhận đơn hàng.');
       },
     });
   };
@@ -304,7 +304,7 @@ export default function OrdersScreen() {
                 style={styles.productThumb}
               />
               <View style={styles.productInfo}>
-                <Typography variant="sm" weight="semiBold" color="ink" numberOfLines={2}>
+                <Typography variant="sm" weight="semiBold" color="ink" numberOfLines={1} ellipsizeMode="tail">
                   {prod.productName}
                 </Typography>
                 {prod.variantName && (
@@ -346,6 +346,7 @@ export default function OrdersScreen() {
           </View>
         </View>
 
+        {<Button size="sm" variant="outline" onPress={()=>navigation.navigate('Inbox',{orderId:item.id})}>{isShopView?'Chat với khách':'Chat với shop'}</Button>}
         {/* Card Action Buttons: Tùy theo vai trò Shop hay Khách Mua */}
         <View style={styles.actionRow}>
           {isShopView ? (

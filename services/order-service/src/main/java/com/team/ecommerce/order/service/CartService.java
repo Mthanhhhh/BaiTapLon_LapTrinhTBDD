@@ -29,6 +29,7 @@ import java.util.Optional;
 @Transactional("orderTransactionManager")
 public class CartService {
 
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductInternalService productInternalService;
@@ -173,7 +174,7 @@ public class CartService {
 
             itemResponses.add(CartItemResponse.builder()
                     .id(item.getId())
-                    .productId(product.getId())
+                    .productId(product.getId()).shopId(product.getShopId()).shopName(jdbc.queryForObject("SELECT name FROM product_db.shops WHERE id=?",String.class,product.getShopId()))
                     .variantId(variant.getId())
                     .productName(product.getName())
                     .variantName(variant.getName())

@@ -28,6 +28,8 @@ export interface AddressPayload {
   state: string;
   country: string;
   zipCode?: string;
+  latitude?: number;
+  longitude?: number;
   isDefault: boolean;
 }
 

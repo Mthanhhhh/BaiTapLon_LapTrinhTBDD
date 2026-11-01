@@ -32,10 +32,18 @@ public class PromotionService {
   BigDecimal amount="PERCENT".equals(type)?base.multiply(value).divide(BigDecimal.valueOf(100),0,RoundingMode.HALF_UP):value;
   if(cap!=null)amount=amount.min(cap);return amount.max(BigDecimal.ZERO).min(base).setScale(0,RoundingMode.HALF_UP);
  }
- public boolean admin(long user){return db.queryForObject("SELECT COUNT(*) FROM auth_db.user_roles ur JOIN auth_db.roles r ON r.id=ur.role_id WHERE ur.user_id=? AND r.code='ADMIN'",Long.class,user)>0;}
+ public boolean admin(long user){return db.queryForObject("SELECT COUNT(*) FROM auth_db.user_roles ur JOIN auth_db.roles r ON r.id=ur.role_id JOIN auth_db.users u ON u.id=ur.user_id WHERE ur.user_id=? AND r.code='ADMIN' AND u.status='ACTIVE' AND u.deleted_at IS NULL",Long.class,user)>0;}
  public Long shop(long user){var r=db.queryForList("SELECT id FROM product_db.shops WHERE owner_user_id=? AND status='ACTIVE' AND deleted_at IS NULL",user);return r.isEmpty()?null:number(r.get(0).get("id"));}
- private void own(long user,Map<String,Object> c){if(c.get("shop_id")==null){if(!admin(user))throw new AccessDeniedException("Chỉ quản trị viên được quản lý chương trình của sàn");}else if(!Objects.equals(shop(user),number(c.get("shop_id"))))throw new AccessDeniedException("Chương trình không thuộc shop của bạn");}
+ private void own(long user,Map<String,Object> c){if(c.get("shop_id")==null){if(!admin(user))throw new AccessDeniedException("Chỉ quản trị viên được quản lý chương trình của sàn");}else if(!admin(user)&&!Objects.equals(shop(user),number(c.get("shop_id"))))throw new AccessDeniedException("Chương trình không thuộc shop của bạn");}
  private Map<String,Object> campaign(long id){var r=db.queryForList("SELECT * FROM promo_campaigns WHERE id=?",id);require(!r.isEmpty(),"Không tìm thấy chương trình");return r.get(0);}
+ private boolean audience(long user,long campaign){
+  var rows=db.queryForList("SELECT audience FROM promo_audience WHERE campaign_id=?",campaign);String type=rows.isEmpty()?"ALL":rows.get(0).get("audience").toString();
+  if("ALL".equals(type))return true;
+  if(user<=0)return false;
+  if("SELECTED".equals(type))return db.queryForObject("SELECT COUNT(*) FROM promo_recipients WHERE campaign_id=? AND user_id=?",Long.class,campaign,user)>0;
+  boolean returning=db.queryForObject("SELECT COUNT(*) FROM orders WHERE user_id=? AND status IN ('DELIVERED','RETURNED')",Long.class,user)>0;
+  return "RETURNING".equals(type)?returning:!returning;
+ }
  private String phase(Map<String,Object> c){Instant now=Instant.now();if(!"ACTIVE".equals(c.get("status")))return "CANCELLED";if(instant(c.get("starts_at")).isAfter(now))return "UPCOMING";if(!instant(c.get("ends_at")).isAfter(now))return "ENDED";return "LIVE";}
  private int used(long user,long id){return db.queryForObject("SELECT COUNT(*) FROM promo_redemptions d JOIN promo_reservations r ON r.order_id=d.order_id WHERE r.user_id=? AND d.campaign_id=? AND r.state<>'RELEASED'",Integer.class,user,id);}
  private BigDecimal budgetLeft(Map<String,Object> c){return money(c.get("budget_total")).subtract(money(c.get("budget_spent"))).subtract(money(c.get("budget_reserved")));}
@@ -46,7 +54,8 @@ public class PromotionService {
   if(manage){Long shopId=shop(user);rows=admin(user)?db.queryForList("SELECT * FROM promo_campaigns ORDER BY id DESC"):shopId==null?List.of():db.queryForList("SELECT * FROM promo_campaigns WHERE shop_id=? ORDER BY id DESC",shopId);}
   else if(wallet){rows=db.queryForList("SELECT c.* FROM promo_campaigns c JOIN promo_wallet w ON w.campaign_id=c.id WHERE w.user_id=? ORDER BY c.ends_at,c.id",user);}
   else rows=db.queryForList("SELECT * FROM promo_campaigns WHERE status='ACTIVE' AND ends_at>UTC_TIMESTAMP(3) ORDER BY starts_at,id");
-  for(var c:rows){c.put("phase",phase(c));c.put("remaining",number(c.get("quota_total"))-number(c.get("quota_used"))-number(c.get("quota_reserved")));c.put("budgetRemaining",budgetLeft(c));
+  if(!manage)rows.removeIf(c->user==null?!"ALL".equals(db.queryForList("SELECT audience FROM promo_audience WHERE campaign_id=?",String.class,c.get("id")).stream().findFirst().orElse("ALL")):!audience(user,number(c.get("id"))));
+  for(var c:rows){c.put("audience",db.queryForList("SELECT audience FROM promo_audience WHERE campaign_id=?",String.class,c.get("id")).stream().findFirst().orElse("ALL"));c.put("phase",phase(c));c.put("remaining",number(c.get("quota_total"))-number(c.get("quota_used"))-number(c.get("quota_reserved")));c.put("budgetRemaining",budgetLeft(c));
    c.put("startsAt",instant(c.get("starts_at")).toString());c.put("endsAt",instant(c.get("ends_at")).toString());
    c.put("saved",user!=null&&db.queryForObject("SELECT COUNT(*) FROM promo_wallet WHERE user_id=? AND campaign_id=?",Integer.class,user,c.get("id"))>0);
    c.put("userUsed",user==null?0:used(user,number(c.get("id"))));
@@ -86,48 +95,81 @@ public class PromotionService {
   org.springframework.jdbc.support.KeyHolder key=new org.springframework.jdbc.support.GeneratedKeyHolder(); final int totalQuota=quota;final Long owner=shopId;
   db.update(connection->{var ps=connection.prepareStatement("INSERT INTO promo_campaigns(name,kind,layer,shop_id,code,discount_type,value,min_order,max_discount,budget_total,quota_total,per_user_limit,stackable,starts_at,ends_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",java.sql.Statement.RETURN_GENERATED_KEYS);
    Object[] values={input.name().trim(),input.kind(),input.layer(),owner,code,flash?"FIXED":input.discountType(),flash?0:money(input.value()),money(input.minOrder()),input.maxDiscount(),money(input.budget()),totalQuota,input.perUserLimit(),!Boolean.FALSE.equals(input.stackable()),Timestamp.from(start),Timestamp.from(end),user};for(int i=0;i<values.length;i++)ps.setObject(i+1,values[i]);return ps;},key);
-  long id=key.getKey().longValue();if(flash)for(var item:input.items())db.update("INSERT INTO promo_flash_items(campaign_id,product_id,sku_id,sale_price,quota_total,per_user_limit) SELECT ?,product_id,id,?,?,? FROM product_db.product_skus WHERE id=?",id,money(item.salePrice()),item.quota(),item.perUserLimit(),item.skuId());
+  long id=key.getKey().longValue();
+  String audience=Objects.toString(input.audience(),"ALL");require(Set.of("ALL","NEW_BUYER","RETURNING","SELECTED").contains(audience),"Nhóm khách không hợp lệ");
+  db.update("INSERT INTO promo_audience(campaign_id,audience) VALUES(?,?)",id,audience);
+  if("SELECTED".equals(audience)){
+   require(input.recipientIds()!=null&&!input.recipientIds().isEmpty()&&input.recipientIds().size()<=1000,"Chọn 1–1.000 người nhận");
+   for(Long recipient:new HashSet<>(input.recipientIds())){require(recipient!=null&&db.queryForObject("SELECT COUNT(*) FROM auth_db.users WHERE id=? AND status='ACTIVE' AND deleted_at IS NULL",Long.class,recipient)>0,"Người nhận không hợp lệ");db.update("INSERT INTO promo_recipients(campaign_id,user_id) VALUES(?,?)",id,recipient);}
+  }
+  if(!flash)db.update("INSERT INTO auth_db.app_notifications(user_id,event_key,type,title,body) SELECT u.id,?,'PROMOTION',?,? FROM auth_db.users u WHERE u.status='ACTIVE' AND u.deleted_at IS NULL AND (?<>'SELECTED' OR EXISTS(SELECT 1 FROM promo_recipients pr WHERE pr.campaign_id=? AND pr.user_id=u.id)) AND (?<>'NEW_BUYER' OR NOT EXISTS(SELECT 1 FROM orders o WHERE o.user_id=u.id AND o.status IN ('DELIVERED','RETURNED'))) AND (?<>'RETURNING' OR EXISTS(SELECT 1 FROM orders o WHERE o.user_id=u.id AND o.status IN ('DELIVERED','RETURNED')))","campaign-"+id,input.name().trim(),"Mã "+code+" · Xem điều kiện trong kho ưu đãi",audience,id,audience,audience);
+  if(flash)for(var item:input.items())db.update("INSERT INTO promo_flash_items(campaign_id,product_id,sku_id,sale_price,quota_total,per_user_limit) SELECT ?,product_id,id,?,?,? FROM product_db.product_skus WHERE id=?",id,money(item.salePrice()),item.quota(),item.perUserLimit(),item.skuId());
   events.enqueue("CAMPAIGN_CREATED",Map.of("campaignId",id));return id;
  }
  public void cancel(long user,long id){var c=campaign(id);own(user,c);db.update("UPDATE promo_campaigns SET status='CANCELLED' WHERE id=?",id);events.enqueue("CAMPAIGN_CANCELLED",Map.of("campaignId",id));}
- public void save(long user,long id){var c=campaign(id);require("VOUCHER".equals(c.get("kind")),"Chỉ lưu voucher vào kho");require(!Set.of("ENDED","CANCELLED").contains(phase(c)),"Mã đã kết thúc");db.update("INSERT IGNORE INTO promo_wallet(user_id,campaign_id) VALUES(?,?)",user,id);}
+ public void save(long user,long id){require(audience(user,id),"Voucher không dành cho tài khoản này");var c=campaign(id);require("VOUCHER".equals(c.get("kind")),"Chỉ lưu voucher vào kho");require(!Set.of("ENDED","CANCELLED").contains(phase(c)),"Mã đã kết thúc");db.update("INSERT IGNORE INTO promo_wallet(user_id,campaign_id) VALUES(?,?)",user,id);}
  public void unsave(long user,long id){db.update("DELETE FROM promo_wallet WHERE user_id=? AND campaign_id=?",user,id);}
- public void remind(long user,long id,boolean enabled){var c=campaign(id);require("UPCOMING".equals(phase(c)),"Chỉ nhắc chương trình chưa bắt đầu");if(enabled)db.update("INSERT IGNORE INTO promo_reminders(user_id,campaign_id) VALUES(?,?)",user,id);else db.update("DELETE FROM promo_reminders WHERE user_id=? AND campaign_id=?",user,id);}
+ public void remind(long user,long id,boolean enabled){require(audience(user,id),"Ưu đãi không dành cho tài khoản này");var c=campaign(id);require("UPCOMING".equals(phase(c)),"Chỉ nhắc chương trình chưa bắt đầu");if(enabled)db.update("INSERT IGNORE INTO promo_reminders(user_id,campaign_id) VALUES(?,?)",user,id);else db.update("DELETE FROM promo_reminders WHERE user_id=? AND campaign_id=?",user,id);}
  public void shipping(long user,BigDecimal fee){Long id=shop(user);if(id==null)throw new AccessDeniedException("Chưa mở shop");require(fee!=null&&fee.signum()>=0&&fee.compareTo(new BigDecimal("1000000"))<=0,"Phí giao hàng không hợp lệ");db.update("INSERT INTO promo_shipping_policy(shop_id,fee) VALUES(?,?) ON DUPLICATE KEY UPDATE fee=VALUES(fee)",id,money(fee));events.enqueue("SHIPPING_CHANGED",Map.of("shopId",id));}
+ public List<Map<String,Object>> productPrices(Long user,List<Long> ids){
+  require(ids!=null&&!ids.isEmpty()&&ids.size()<=60,"Cần 1–60 sản phẩm");var result=new ArrayList<Map<String,Object>>();
+  for(Long id:new LinkedHashSet<>(ids)){
+   var skus=db.queryForList("SELECT s.id FROM product_db.product_skus s JOIN product_db.products p ON p.id=s.product_id WHERE p.id=? AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL AND s.stock_quantity>0 ORDER BY s.price,s.id LIMIT 1",Long.class,id);
+   if(skus.isEmpty())continue;
+   var candidates=new LinkedHashSet<>(skus);candidates.addAll(db.queryForList("SELECT f.sku_id FROM promo_flash_items f JOIN promo_campaigns c ON c.id=f.campaign_id WHERE f.product_id=? AND c.status='ACTIVE' AND c.starts_at<=UTC_TIMESTAMP(3) AND c.ends_at>UTC_TIMESTAMP(3)",Long.class,id));
+   Quote best=null;for(Long sku:candidates)try{Quote q=quote(user==null?0:user,new QuoteInput(List.of(),true,null,sku,1));if(best==null||q.subtotal().subtract(q.discount()).compareTo(best.subtotal().subtract(best.discount()))<0)best=q;}catch(BadRequestException ignored){}
+   if(best!=null){var offer=new LinkedHashMap<String,Object>();offer.put("productId",id);offer.put("skuId",best.lines().get(0).skuId());offer.put("shopPrice",best.subtotal());offer.put("afterVoucher",best.subtotal().subtract(best.discount()));offer.put("basePrice",best.lines().get(0).basePrice());offer.put("applied",best.applied());offer.put("note","Giá cho 1 sản phẩm; phí giao hàng tính riêng. Chỉ gồm mã tài khoản đủ điều kiện.");result.add(offer);}
+  }return result;
+ }
  public Quote quote(long user,QuoteInput input){
-  var items=db.queryForList("SELECT ci.id AS cart_item_id,ci.quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM cart_items ci JOIN carts cart ON cart.id=ci.cart_id JOIN product_db.product_skus s ON s.id=ci.sku_id AND s.product_id=ci.product_id JOIN product_db.products p ON p.id=s.product_id WHERE cart.user_id=? AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY s.id",user);
-  require(!items.isEmpty(),"Giỏ hàng trống hoặc có sản phẩm không còn được bán");
-  require(items.size()==db.queryForObject("SELECT COUNT(*) FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=?",Integer.class,user),"Giỏ hàng có phân loại không hợp lệ");
+  var items=db.queryForList("SELECT ci.id AS cart_item_id,ci.quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM cart_items ci JOIN carts cart ON cart.id=ci.cart_id JOIN product_db.product_skus s ON s.id=ci.sku_id AND s.product_id=ci.product_id JOIN product_db.products p ON p.id=s.product_id WHERE cart.user_id=? AND EXISTS(SELECT 1 FROM product_db.shops sh WHERE sh.id=p.shop_id AND sh.status='ACTIVE' AND sh.deleted_at IS NULL) AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY s.id",user);
+  if(input!=null&&input.skuId()!=null){
+   require(input.cartItemIds()==null,"Chỉ chọn mua ngay hoặc giỏ hàng");
+   int quantity=input.quantity()==null?1:input.quantity();require(quantity>0&&quantity<=99,"Số lượng từ 1 đến 99");
+   items=db.queryForList("SELECT -s.id AS cart_item_id,? AS quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM product_db.product_skus s JOIN product_db.products p ON p.id=s.product_id JOIN product_db.shops sh ON sh.id=p.shop_id WHERE s.id=? AND s.deleted_at IS NULL AND p.deleted_at IS NULL AND p.status='ACTIVE' AND sh.status='ACTIVE' AND sh.deleted_at IS NULL",quantity,input.skuId());
+  }else if(input!=null&&input.cartItemIds()!=null){
+   var ids=new HashSet<>(input.cartItemIds());require(!ids.isEmpty()&&ids.size()<=100,"Chọn 1–100 sản phẩm");items.removeIf(i->!ids.contains(number(i.get("cart_item_id"))));require(items.size()==ids.size(),"Một số dòng giỏ hàng không còn hợp lệ hoặc không thuộc bạn");
+  }else require(items.size()==db.queryForObject("SELECT COUNT(*) FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=?",Integer.class,user),"Giỏ hàng có phân loại không hợp lệ");
+  require(!items.isEmpty(),"Chưa chọn sản phẩm thanh toán");
   long shopId=number(items.get(0).get("shop_id"));require(items.stream().allMatch(i->number(i.get("shop_id"))==shopId),"Vui lòng đặt riêng sản phẩm từng shop");
   var campaigns=db.queryForList("SELECT * FROM promo_campaigns WHERE kind='VOUCHER' AND (shop_id IS NULL OR shop_id=?) ORDER BY id",shopId);
   List<Line> lines=new ArrayList<>();boolean allowVouchers=true;
-  for(var item:items){int qty=(int)number(item.get("quantity"));require(qty>0&&qty<=99&&qty<=number(item.get("stock_quantity")),"Không đủ tồn kho cho "+item.get("name"));BigDecimal base=money(item.get("price")),price=base;Long flashId=null,flashCampaign=null;
+  for(var item:items){int qty=(int)number(item.get("quantity"));require(qty>0&&qty<=99&&qty<=number(item.get("stock_quantity")),"Không đủ tồn kho cho "+item.get("name"));BigDecimal base=money(item.get("price")),price=base;
+   var sales=db.queryForList("SELECT discount_percent FROM commerce_product_sales WHERE product_id=? AND starts_at<=UTC_TIMESTAMP(3) AND ends_at>UTC_TIMESTAMP(3)",item.get("product_id"));
+   if(!sales.isEmpty())price=base.subtract(discount("PERCENT",new BigDecimal(sales.get(0).get("discount_percent").toString()),null,base));
+   Long flashId=null,flashCampaign=null;
    var offers=db.queryForList("SELECT f.*,c.budget_total,c.budget_reserved,c.budget_spent,c.stackable FROM promo_flash_items f JOIN promo_campaigns c ON c.id=f.campaign_id WHERE f.sku_id=? AND c.status='ACTIVE' AND c.starts_at<=UTC_TIMESTAMP(3) AND c.ends_at>UTC_TIMESTAMP(3) ORDER BY f.id",item.get("sku_id"));
    for(var f:offers){int prior=db.queryForObject("SELECT COALESCE(SUM(fr.quantity),0) FROM promo_flash_reservations fr JOIN promo_reservations r ON r.order_id=fr.order_id WHERE fr.flash_item_id=? AND r.user_id=? AND r.state<>'RELEASED'",Integer.class,f.get("id"),user);BigDecimal saving=base.subtract(money(f.get("sale_price"))).multiply(BigDecimal.valueOf(qty));
-    if(number(f.get("quota_total"))-number(f.get("quota_reserved"))-number(f.get("quota_used"))>=qty&&prior+qty<=number(f.get("per_user_limit"))&&saving.signum()>0&&saving.compareTo(budgetLeft(f))<=0){price=money(f.get("sale_price"));flashId=number(f.get("id"));flashCampaign=number(f.get("campaign_id"));allowVouchers&=flag(f.get("stackable"));break;}}
+    if(number(f.get("quota_total"))-number(f.get("quota_reserved"))-number(f.get("quota_used"))>=qty&&prior+qty<=number(f.get("per_user_limit"))&&saving.signum()>0&&money(f.get("sale_price")).compareTo(price)<0&&saving.compareTo(budgetLeft(f))<=0){price=money(f.get("sale_price"));flashId=number(f.get("id"));flashCampaign=number(f.get("campaign_id"));allowVouchers&=flag(f.get("stackable"));break;}}
    lines.add(new Line(number(item.get("cart_item_id")),number(item.get("product_id")),number(item.get("sku_id")),shopId,item.get("name").toString(),Objects.toString(item.get("variant_name"),""),Objects.toString(item.get("thumbnail_url"),""),qty,base,price,flashId,flashCampaign));
   }
   BigDecimal subtotal=lines.stream().map(Line::subtotal).reduce(BigDecimal.ZERO,BigDecimal::add),original=lines.stream().map(l->l.basePrice().multiply(BigDecimal.valueOf(l.quantity()))).reduce(BigDecimal.ZERO,BigDecimal::add);
   var feeRows=db.queryForList("SELECT fee FROM promo_shipping_policy WHERE shop_id=?",shopId);BigDecimal shipping=feeRows.isEmpty()?BigDecimal.ZERO:money(feeRows.get(0).get("fee"));
   List<Map<String,Object>> eligible=new ArrayList<>(),descriptions=new ArrayList<>();Set<String> requested=new HashSet<>();if(input!=null&&input.codes()!=null)for(String code:input.codes())if(code!=null&&!code.isBlank())requested.add(code.trim().toUpperCase(Locale.ROOT));
-  for(var c:campaigns){String reason=!"LIVE".equals(phase(c))?"Chưa bắt đầu hoặc đã kết thúc":!available(c)?"Đã hết lượt hoặc ngân sách":used(user,number(c.get("id")))>=number(c.get("per_user_limit"))?"Bạn đã dùng hết lượt":subtotal.compareTo(money(c.get("min_order")))<0?"Chưa đạt đơn tối thiểu "+money(c.get("min_order")) :!allowVouchers?"Flash sale không cộng thêm voucher":"";
+  for(var c:campaigns){
+   if(input!=null&&input.virtualSpent()!=null)c.put("budget_reserved",money(c.get("budget_reserved")).add(input.virtualSpent().getOrDefault(number(c.get("id")),BigDecimal.ZERO)));
+   if(input!=null&&input.virtualUsed()!=null)c.put("quota_reserved",number(c.get("quota_reserved"))+input.virtualUsed().getOrDefault(number(c.get("id")),0));
+   String reason=input!=null&&input.excluded()!=null&&input.excluded().contains(number(c.get("id")))?"Mã đã được chọn cho đơn shop trước":!audience(user,number(c.get("id")))?"Voucher không dành cho tài khoản này":!"LIVE".equals(phase(c))?"Chưa bắt đầu hoặc đã kết thúc":!available(c)?"Đã hết lượt hoặc ngân sách":used(user,number(c.get("id")))>=number(c.get("per_user_limit"))?"Bạn đã dùng hết lượt":subtotal.compareTo(money(c.get("min_order")))<0?"Chưa đạt đơn tối thiểu "+money(c.get("min_order")) :!allowVouchers?"Flash sale không cộng thêm voucher":"";
    var desc=new LinkedHashMap<>(c);redact(desc);desc.put("eligible",reason.isEmpty());desc.put("reason",reason);descriptions.add(desc);if(reason.isEmpty())eligible.add(c);}
   boolean auto=input==null||!Boolean.FALSE.equals(input.autoBest());
   if(!auto){for(String code:requested)require(eligible.stream().anyMatch(c->code.equals(c.get("code"))),"Mã "+code+" không đủ điều kiện hoặc không tồn tại");eligible=eligible.stream().filter(c->requested.contains(c.get("code"))).toList();require(eligible.size()<=3,"Tối đa một mã cho mỗi loại");require(eligible.stream().map(c->c.get("layer")).distinct().count()==eligible.size(),"Chỉ dùng một mã mỗi loại");}
   List<Map<String,Object>> selected=best(eligible,subtotal,shipping,auto);if(!auto)require(selected.size()==eligible.size(),"Các mã không được cộng dồn hoặc đã hết ngân sách");
   List<Applied> applied=new ArrayList<>();BigDecimal net=subtotal,shipDiscount=BigDecimal.ZERO,cut=BigDecimal.ZERO;
   for(var c:selected){BigDecimal amount=discount(c.get("discount_type").toString(),money(c.get("value")),c.get("max_discount")==null?null:money(c.get("max_discount")),"SHIPPING".equals(c.get("layer"))?shipping:net);if("SHIPPING".equals(c.get("layer")))shipDiscount=amount;else{net=net.subtract(amount);cut=cut.add(amount);}applied.add(new Applied(number(c.get("id")),c.get("code").toString(),c.get("name").toString(),c.get("layer").toString(),amount));}
-  BigDecimal tax=net.multiply(new BigDecimal("0.10")).setScale(0,RoundingMode.HALF_UP),fees=shipping.subtract(shipDiscount),total=net.add(tax).add(fees);
+  var policy=db.queryForList("SELECT vat_percent FROM commerce_finance_policy WHERE shop_id=?",shopId);
+  BigDecimal vatRate=policy.isEmpty()?BigDecimal.ZERO:new BigDecimal(policy.get(0).get("vat_percent").toString());
+  BigDecimal vatIncluded=com.team.ecommerce.order.service.CommerceFinanceService.includedVat(subtotal.subtract(applied.stream().filter(a->"SHOP".equals(a.layer())).map(Applied::amount).reduce(BigDecimal.ZERO,BigDecimal::add)),vatRate);
+  BigDecimal tax=BigDecimal.ZERO,fees=shipping.subtract(shipDiscount),total=net.add(fees);
   String hash=hash(user,lines,applied,shipping,tax,total);
-  return new Quote(lines,original,subtotal,original.subtract(subtotal),cut,shipping,shipDiscount,fees,tax,total,applied,descriptions,hash,Instant.now().toString());
+  return new Quote(lines,original,subtotal,original.subtract(subtotal),cut,shipping,shipDiscount,fees,tax,total,applied,descriptions,hash,Instant.now().toString(),vatIncluded,vatRate);
  }
  List<Map<String,Object>> best(List<Map<String,Object>> candidates,BigDecimal subtotal,BigDecimal shipping,boolean auto){
-  List<Map<String,Object>> answer=List.of();BigDecimal bestTotal=subtotal.multiply(new BigDecimal("1.1")).setScale(0,RoundingMode.HALF_UP).add(shipping);
+  List<Map<String,Object>> answer=List.of();BigDecimal bestTotal=subtotal.add(shipping);
   List<Map<String,Object>> a=new ArrayList<>(),b=new ArrayList<>(),c=new ArrayList<>();a.add(null);b.add(null);c.add(null);
   for(var v:candidates){if("SHOP".equals(v.get("layer")))a.add(v);else if("PLATFORM".equals(v.get("layer")))b.add(v);else c.add(v);}
   for(var shop:a)for(var platform:b)for(var freight:c){List<Map<String,Object>> combo=new ArrayList<>();if(shop!=null)combo.add(shop);if(platform!=null)combo.add(platform);if(freight!=null)combo.add(freight);if(combo.size()>1&&combo.stream().anyMatch(v->!flag(v.get("stackable"))))continue;if(!auto&&combo.size()!=candidates.size())continue;
    BigDecimal net=subtotal,fee=shipping;boolean ok=true;for(var v:combo){BigDecimal amount=discount(v.get("discount_type").toString(),money(v.get("value")),v.get("max_discount")==null?null:money(v.get("max_discount")),"SHIPPING".equals(v.get("layer"))?fee:net);if(amount.signum()<=0||amount.compareTo(budgetLeft(v))>0){ok=false;break;}if("SHIPPING".equals(v.get("layer")))fee=fee.subtract(amount);else net=net.subtract(amount);}
-   BigDecimal total=net.add(net.multiply(new BigDecimal("0.10")).setScale(0,RoundingMode.HALF_UP)).add(fee);if(ok&&(total.compareTo(bestTotal)<0||!auto&&combo.size()==candidates.size())){answer=combo;bestTotal=total;}
+   BigDecimal total=net.add(fee);if(ok&&(total.compareTo(bestTotal)<0||!auto&&combo.size()==candidates.size())){answer=combo;bestTotal=total;}
   }return answer;
  }
  private String hash(long user,List<Line> lines,List<Applied> applied,BigDecimal shipping,BigDecimal tax,BigDecimal total){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(List.of(user,lines,applied,shipping,tax,total))));}catch(Exception e){throw new IllegalStateException(e);}}
@@ -137,7 +179,7 @@ public class PromotionService {
   for(var a:quote.applied()){costs.merge(a.id(),a.amount(),BigDecimal::add);quantities.put(a.id(),1);}
   for(var l:quote.lines())if(l.flashItemId()!=null){costs.merge(l.flashCampaignId(),l.saving(),BigDecimal::add);quantities.merge(l.flashCampaignId(),l.quantity(),Integer::sum);}
   for(var entry:costs.entrySet()){long id=entry.getKey();var c=db.queryForMap("SELECT * FROM promo_campaigns WHERE id=? FOR UPDATE",id);
-   if("VOUCHER".equals(c.get("kind")))require(used(user,id)<number(c.get("per_user_limit")),"Bạn đã dùng hết lượt voucher");
+   if("VOUCHER".equals(c.get("kind"))){require(audience(user,id),"Voucher không dành cho tài khoản này");require(used(user,id)<number(c.get("per_user_limit")),"Bạn đã dùng hết lượt voucher");}
    String q=cod?"quota_used":"quota_reserved",budget=cod?"budget_spent":"budget_reserved";int quantity=quantities.get(id);
    require(db.update("UPDATE promo_campaigns SET "+q+"="+q+"+?,"+budget+"="+budget+"+? WHERE id=? AND status='ACTIVE' AND starts_at<=UTC_TIMESTAMP(3) AND ends_at>UTC_TIMESTAMP(3) AND quota_used+quota_reserved+?<=quota_total AND budget_spent+budget_reserved+?<=budget_total",quantity,entry.getValue(),id,quantity,entry.getValue())==1,"Ưu đãi vừa hết lượt/ngân sách. Vui lòng tính lại đơn");
    db.update("INSERT INTO promo_redemptions(order_id,campaign_id,discount_amount) VALUES(?,?,?)",order,id,entry.getValue());

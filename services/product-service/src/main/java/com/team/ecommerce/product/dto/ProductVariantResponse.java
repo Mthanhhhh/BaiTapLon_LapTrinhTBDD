@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ProductVariantResponse {
     private Long id;
+    private Long version;
     private String name;
     private String sku;
     private BigDecimal price;
@@ -22,7 +23,7 @@ public class ProductVariantResponse {
     public static ProductVariantResponse from(ProductVariant variant) {
         if (variant == null) return null;
         return ProductVariantResponse.builder()
-                .id(variant.getId())
+                .id(variant.getId()).version(variant.getVersion())
                 .name(variant.getName())
                 .sku(variant.getSku())
                 .price(variant.getPrice())

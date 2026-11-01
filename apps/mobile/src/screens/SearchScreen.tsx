@@ -1,3 +1,6 @@
+import {useQuery} from '@tanstack/react-query';
+import {apiClient} from '../api/client';
+import {CategoryStrip} from '../components/CategoryStrip';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import React, { useState, useEffect, useRef } from 'react';
@@ -29,6 +32,8 @@ export default function SearchScreen() {
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   
   const [sort, setSort] = useState(initialSort); 
+  const [province,setProvince]=useState(''),[brandId,setBrandId]=useState<number>(),[minRating,setMinRating]=useState<number>();
+  const options=useQuery<any>({queryKey:['filterOptions'],queryFn:async()=>(await apiClient.get('/api/v1/products/filter-options')).data.data});
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
@@ -96,7 +101,8 @@ export default function SearchScreen() {
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } = useProductsInfinite({
     keyword: debouncedKeyword,
     categoryId,
-    aiSearch: true,
+    aiSearch: false,
+    province:province||undefined,brandId,minRating,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     sort,
@@ -179,6 +185,7 @@ export default function SearchScreen() {
         <Typography variant="xs" color="inkSoft">Tìm theo tên, thương hiệu hoặc danh mục · Ví dụ: “điện thoại”, “laptop”</Typography>
       </View>
 
+      {!keyword&&!categoryId&&<CategoryStrip/>}
       {/* Lịch sử tìm kiếm gần đây */}
       {recentKeywords.length > 0 && !keyword && (
         <View style={styles.historyContainer}>
@@ -332,14 +339,14 @@ export default function SearchScreen() {
               </View>
             </View>
 
-            <View style={styles.sheetFooter}>
+            <ScrollView style={{maxHeight:280}} contentContainerStyle={{gap:10,padding:12}}><Typography weight="bold">Nơi bán</Typography><ScrollView horizontal contentContainerStyle={{gap:6}}><Button size="sm" variant={!province?'primary':'outline'} onPress={()=>setProvince('')}>Tất cả</Button>{options.data?.provinces.map((p:string)=><Button key={p} size="sm" variant={province===p?'primary':'outline'} onPress={()=>setProvince(p)}>{p}</Button>)}</ScrollView><Typography weight="bold">Thương hiệu</Typography><ScrollView horizontal contentContainerStyle={{gap:6}}><Button size="sm" variant={!brandId?'primary':'outline'} onPress={()=>setBrandId(undefined)}>Tất cả</Button>{options.data?.brands.map((b:any)=><Button key={b.id} size="sm" variant={brandId===b.id?'primary':'outline'} onPress={()=>setBrandId(b.id)}>{b.name}</Button>)}</ScrollView><Typography weight="bold">Đánh giá</Typography><View style={{flexDirection:'row',gap:6}}>{[undefined,4,3,2].map(r=><Button key={r??'all'} size="sm" variant={minRating===r?'primary':'outline'} onPress={()=>setMinRating(r)}>{r?`Từ ${r} sao`:'Tất cả'}</Button>)}</View><Button variant="outline" onPress={()=>{setIsFilterVisible(false);navigation.navigate('Categories');}}>Chọn theo danh mục</Button></ScrollView><View style={styles.sheetFooter}>
               <Button
                 title="Thiết lập lại"
                 variant="outline"
                 style={{ flex: 1, marginRight: spacing.sm }}
                 onPress={() => {
                   setMinPrice('');
-                  setMaxPrice('');
+                  setMaxPrice('');setProvince('');setBrandId(undefined);setMinRating(undefined);
                 }}
               />
               <Button

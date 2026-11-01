@@ -50,6 +50,11 @@ public class Order extends BaseEntity {
 
     @Column(name = "tax_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal tax;
+    @Column(name="tax_rate", precision=5, scale=4)
+    private BigDecimal taxRate;
+    @Column(name="paid_at") private java.time.LocalDateTime paidAt;
+    @Column(name="shipped_at") private java.time.LocalDateTime shippedAt;
+    @Column(name="delivered_at") private java.time.LocalDateTime deliveredAt;
 
     @Column(name = "service_fee", precision = 12, scale = 2)
     @Builder.Default

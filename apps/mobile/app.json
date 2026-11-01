@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "E-Shop",
-    "slug": "mobile",
+    "slug": "eshop-tbdd",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,6 +36,12 @@
         }
       ]
     ],
-    "scheme": "eshop"
+    "scheme": "eshop",
+    "owner": "mthanh",
+    "extra": {
+      "eas": {
+        "projectId": "5e32b975-5db9-4c80-ae84-2c726df8335a"
+      }
+    }
   }
 }

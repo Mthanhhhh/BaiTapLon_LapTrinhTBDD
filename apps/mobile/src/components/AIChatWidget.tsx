@@ -52,7 +52,7 @@ export default function AIChatWidget({ onProductPress }: { onProductPress: (id: 
               <Typography variant="sm">{item.content}</Typography>
               {!!item.products?.length && <View style={{ marginTop: 10, gap: 8 }}>{item.products.map(product => <TouchableOpacity key={product.id} style={styles.product} onPress={() => { setVisible(false); onProductPress(product.id); }}>
                 <RemoteImage sourceUrl={product.thumbnailUrl} name={product.name} style={styles.productImage} />
-                <View style={{ flex: 1 }}><Typography variant="xs" weight="semiBold" numberOfLines={2}>{product.name}</Typography><Typography variant="xs" color="primaryDeep" weight="bold">{formatVND(product.price)}</Typography></View>
+                <View style={{ flex: 1 }}><Typography variant="xs" weight="semiBold" numberOfLines={1} ellipsizeMode="tail">{product.name}</Typography><Typography variant="xs" color="primaryDeep" weight="bold">{formatVND(product.price)}</Typography></View>
                 <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
               </TouchableOpacity>)}</View>}
             </View>)}

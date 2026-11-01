@@ -24,6 +24,8 @@ public class ReviewResponse {
     private String userFullName;
     private Long orderId;
     private int rating;
+    private String sellerReply;
+    private LocalDateTime sellerRepliedAt;
     private String comment;
     private String emotion;
     private List<String> tags;
@@ -60,7 +62,7 @@ public class ReviewResponse {
                 .emotion(review.getEmotion())
                 .tags(tagList)
                 .imageUrls(imageList)
-                .createdAt(review.getCreatedAt())
+                .createdAt(review.getCreatedAt()).sellerReply(review.getSellerReply()).sellerRepliedAt(review.getSellerRepliedAt())
                 .build();
     }
 }

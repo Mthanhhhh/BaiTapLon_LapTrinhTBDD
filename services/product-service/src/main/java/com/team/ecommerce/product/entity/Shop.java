@@ -6,4 +6,6 @@ public class Shop {
  @Id private Long id;
  private String name;
  private String province;
+ private String status;
+ private java.time.LocalDateTime deletedAt;
 }

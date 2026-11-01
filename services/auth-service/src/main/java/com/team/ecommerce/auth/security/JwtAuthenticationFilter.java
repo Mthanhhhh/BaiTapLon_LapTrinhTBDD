@@ -20,6 +20,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final org.springframework.jdbc.core.JdbcTemplate accountStatusJdbc;
     private final CustomUserDetailsService userDetailsService;
 
     @Override
@@ -31,6 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
                 Long userId = jwtProvider.getUserIdFromToken(jwt);
+                if (accountStatusJdbc.queryForObject("SELECT COUNT(*) FROM auth_db.users WHERE id=? AND status='ACTIVE' AND deleted_at IS NULL", Long.class, userId) == 0) { response.setStatus(401); response.setContentType("application/json"); response.getWriter().write("{\"message\":\"Tài khoản đang bị khóa\"}"); return; }
                 String email = jwtProvider.getEmailFromToken(jwt);
                 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);

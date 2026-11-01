@@ -98,11 +98,11 @@ export const Button: React.FC<ButtonProps> = ({
         <View style={styles.content}>
           {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
           {title ? (
-            <Typography variant={typographyVariant} weight="semiBold" color={getTextColor()}>
+            <Typography variant={typographyVariant} weight="semiBold" color={getTextColor()} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{flexShrink:1}}>
               {title}
             </Typography>
           ) : typeof children === 'string' ? (
-            <Typography variant={typographyVariant} weight="semiBold" color={getTextColor()}>
+            <Typography variant={typographyVariant} weight="semiBold" color={getTextColor()} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{flexShrink:1}}>
               {children}
             </Typography>
           ) : (
@@ -127,6 +127,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   content: {
+    minWidth: 0,
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

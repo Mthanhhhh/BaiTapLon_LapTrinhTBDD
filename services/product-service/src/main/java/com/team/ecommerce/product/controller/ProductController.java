@@ -20,6 +20,7 @@ public class ProductController {
     private final com.team.ecommerce.product.service.ElasticsearchSyncService elasticsearchSyncService;
 
     @PostMapping("/sync-elasticsearch")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> syncElasticsearch() {
         elasticsearchSyncService.ensureIndexExists();
         elasticsearchSyncService.bulkSyncAllProducts();
@@ -55,6 +56,9 @@ public class ProductController {
     public ApiResponse<PageResponse<ProductListResponse>> getProductsByCategory(@PathVariable Long categoryId, Pageable pageable) {
         return ApiResponse.success(productService.getProductsByCategory(categoryId, pageable));
     }
+
+    @GetMapping("/filter-options")
+    public ApiResponse<?> filterOptions(){return ApiResponse.success(productService.filterOptions());}
 
     @GetMapping("/{id}")
     public ApiResponse<ProductResponse> getProductById(@PathVariable Long id) {

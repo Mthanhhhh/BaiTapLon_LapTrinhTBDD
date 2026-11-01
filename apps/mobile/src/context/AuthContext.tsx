@@ -1,4 +1,5 @@
 import { searchHistory } from '../utils/searchHistory';
+import { onAuthLogout } from '../utils/authEvents';
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient, AppError } from '../api/client';
 import { tokenStorage } from '../utils/tokenStorage';
@@ -73,14 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       queryClient.clear();
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('auth:logout', handleLogoutEvent);
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('auth:logout', handleLogoutEvent);
-      }
-    };
+    return onAuthLogout(handleLogoutEvent);
   }, []);
 
   const login = async (data: any) => {

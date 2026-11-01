@@ -22,6 +22,8 @@ public class AddressService {
 
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
+    private final AddressRegions addressRegions;
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
 
     public List<AddressResponse> getAddresses(Long userId) {
         return addressRepository.findByUserIdOrderByIsDefaultDesc(userId).stream()
@@ -30,9 +32,11 @@ public class AddressService {
     }
 
     public AddressResponse addAddress(Long userId, AddressRequest request) {
-        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        addressRegions.validate(request);
+        User user = userRepository.lockAddressOwner(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
+        if (addressRepository.findByUserIdOrderByIsDefaultDesc(userId).isEmpty()) request.setDefault(true);
         if (request.isDefault()) {
             addressRepository.updateIsDefaultByUserId(userId);
         }
@@ -43,9 +47,9 @@ public class AddressService {
                 .phone(request.getPhone())
                 .street(request.getStreet())
                 .city(request.getCity())
-                .state(request.getState())
+                .state(request.getState()).ward(request.getState())
                 .country(toCountryCode(request.getCountry()))
-                .zipCode(request.getZipCode())
+                .zipCode(request.getZipCode()).latitude(request.getLatitude()).longitude(request.getLongitude())
                 .isDefault(request.isDefault())
                 .build();
 
@@ -54,11 +58,13 @@ public class AddressService {
     }
 
     public AddressResponse updateAddress(Long userId, Long addressId, AddressRequest request) {
+        addressRegions.validate(request);
+        userRepository.lockAddressOwner(userId);
         Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
 
         if (request.isDefault() && !address.isDefault()) {
-            addressRepository.updateIsDefaultByUserId(userId);
+            addressRepository.clearOtherDefaults(userId, addressId);
         }
 
         address.setFullName(request.getFullName());
@@ -66,25 +72,38 @@ public class AddressService {
         address.setStreet(request.getStreet());
         address.setCity(request.getCity());
         address.setState(request.getState());
+        address.setWard(request.getState());
         address.setCountry(toCountryCode(request.getCountry()));
         address.setZipCode(request.getZipCode());
-        address.setDefault(request.isDefault());
+        address.setLatitude(request.getLatitude());
+        address.setLongitude(request.getLongitude());
+        address.setDefault(request.isDefault() || address.isDefault());
 
         address = addressRepository.save(address);
         return AddressResponse.from(address);
     }
 
     public void deleteAddress(Long userId, Long addressId) {
+        userRepository.lockAddressOwner(userId);
         Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
         addressRepository.delete(address);
+        addressRepository.flush();
+        entityManager.clear();
+        var remaining = addressRepository.findByUserIdOrderByIsDefaultDesc(userId);
+        if (!remaining.isEmpty() && remaining.stream().noneMatch(Address::isDefault)) {
+            Address next = remaining.get(0);
+            next.setDefault(true);
+            addressRepository.saveAndFlush(next);
+        }
     }
 
     public AddressResponse setDefaultAddress(Long userId, Long addressId) {
+        userRepository.lockAddressOwner(userId);
         Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
 
-        addressRepository.updateIsDefaultByUserId(userId);
+        addressRepository.clearOtherDefaults(userId, addressId);
         address.setDefault(true);
         
         address = addressRepository.save(address);

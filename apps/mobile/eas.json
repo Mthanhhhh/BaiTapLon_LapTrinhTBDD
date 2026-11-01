@@ -2,12 +2,23 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://api-eshop.mtcord.io.vn" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api-eshop.mtcord.io.vn"
+      }
     },
     "production": {
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://api-eshop.mtcord.io.vn" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api-eshop.mtcord.io.vn"
+      }
     }
+  },
+  "cli": {
+    "appVersionSource": "local"
   }
 }

@@ -26,11 +26,14 @@ public class Address extends BaseEntity {
     private String city;
     @Column(name = "district", nullable = false)
     private String state;
+    private String ward;
     @Column(name = "country_code", nullable = false, length = 2)
     private String country;
 
     @Column(name = "postal_code")
     private String zipCode;
+    private Double latitude;
+    private Double longitude;
 
     @Column(name = "is_default")
     @Builder.Default

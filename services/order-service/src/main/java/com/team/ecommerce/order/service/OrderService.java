@@ -49,32 +49,78 @@ public class OrderService {
     private final AuthInternalService authInternalService;
     private final EventPublisher eventPublisher;
     private final JdbcTemplate jdbc;
+    private final CommerceFinanceService finance;
     private final com.team.ecommerce.order.promotion.PromotionService promotions;
     private final com.team.ecommerce.order.promotion.PromotionEvents promotionEvents;
+
+    public record CheckoutGroup(java.util.List<Long> cartItemIds,Long skuId,Integer quantity,java.util.List<Long> excluded,com.team.ecommerce.order.promotion.PromotionModels.Quote quote) {}
+    public record BasketQuote(java.util.List<CheckoutGroup> groups,String quoteHash,java.math.BigDecimal total) {}
+    public BasketQuote quoteBasket(Long user,com.team.ecommerce.order.promotion.PromotionModels.QuoteInput input){
+        if(input==null||(input.skuId()!=null&&input.cartItemIds()!=null))throw new BadRequestException("Chỉ chọn mua ngay hoặc giỏ hàng");
+        var scopes=new java.util.ArrayList<java.util.List<Long>>();
+        if(input.skuId()==null){
+            if(input.cartItemIds()==null||input.cartItemIds().isEmpty()||input.cartItemIds().size()>100)throw new BadRequestException("Chọn 1–100 dòng giỏ hàng");
+            var rows=jdbc.queryForList("SELECT i.id,p.shop_id FROM cart_items i JOIN carts c ON c.id=i.cart_id JOIN product_db.products p ON p.id=i.product_id WHERE c.user_id=? ORDER BY p.shop_id,i.id",user);
+            var byShop=new java.util.LinkedHashMap<Long,java.util.List<Long>>();
+            for(var row:rows)if(input.cartItemIds().contains(((Number)row.get("id")).longValue()))byShop.computeIfAbsent(((Number)row.get("shop_id")).longValue(),key->new java.util.ArrayList<>()).add(((Number)row.get("id")).longValue());
+            if(byShop.values().stream().mapToInt(java.util.List::size).sum()!=new java.util.HashSet<>(input.cartItemIds()).size())throw new BadRequestException("Giỏ hàng đã thay đổi");
+            scopes.addAll(byShop.values());
+        }else scopes.add(null);
+        if(scopes.size()>10)throw new BadRequestException("Tối đa 10 shop mỗi lần thanh toán");
+        var groups=new java.util.ArrayList<CheckoutGroup>();var excluded=new java.util.ArrayList<Long>();var spent=new java.util.HashMap<Long,BigDecimal>();var uses=new java.util.HashMap<Long,Integer>();
+        for(var ids:scopes){
+            var before=java.util.List.copyOf(excluded);
+            var codes=input.codes();
+            if(ids!=null&&codes!=null){long shop=jdbc.queryForObject("SELECT p.shop_id FROM cart_items i JOIN product_db.products p ON p.id=i.product_id WHERE i.id=?",Long.class,ids.get(0));var applicable=jdbc.queryForList("SELECT code FROM promo_campaigns WHERE shop_id IS NULL OR shop_id=?",String.class,shop);codes=codes.stream().filter(code->applicable.contains(code)&&!jdbc.queryForList("SELECT id FROM promo_campaigns WHERE code=?",Long.class,code).stream().anyMatch(excluded::contains)).toList();}
+            var quote=promotions.quote(user,new com.team.ecommerce.order.promotion.PromotionModels.QuoteInput(codes,input.autoBest(),ids,input.skuId(),input.quantity(),before,spent,uses));
+            groups.add(new CheckoutGroup(ids,input.skuId(),input.quantity(),before,quote));
+            for(var applied:quote.applied()){
+                spent.merge(applied.id(),applied.amount(),BigDecimal::add);uses.merge(applied.id(),1,Integer::sum);
+                var counts=jdbc.queryForMap("SELECT per_user_limit,(SELECT COUNT(*) FROM promo_redemptions d JOIN promo_reservations r ON r.order_id=d.order_id WHERE d.campaign_id=c.id AND r.user_id=? AND r.state<>'RELEASED') AS used FROM promo_campaigns c WHERE id=?",user,applied.id());
+                if(((Number)counts.get("used")).intValue()+uses.get(applied.id())>=((Number)counts.get("per_user_limit")).intValue())excluded.add(applied.id());
+            }
+        }
+        if(Boolean.FALSE.equals(input.autoBest())&&input.codes()!=null){var applied=groups.stream().flatMap(g->g.quote().applied().stream()).map(a->a.code()).collect(java.util.stream.Collectors.toSet());for(String code:input.codes())if(!applied.contains(code.trim().toUpperCase(java.util.Locale.ROOT)))throw new BadRequestException("Mã "+code+" không áp dụng cho sản phẩm đã chọn");}
+        String hash=groups.stream().map(group->group.quote().quoteHash()).collect(java.util.stream.Collectors.joining("."));
+        return new BasketQuote(groups,hash,groups.stream().map(group->group.quote().total()).reduce(BigDecimal.ZERO,BigDecimal::add));
+    }
+    public java.util.List<OrderResponse> createBasket(Long user,CreateOrderRequest request){
+        var previous=orderRepository.findByIdempotencyKey(user+":"+request.getIdempotencyKey()+"_0");
+        if(previous.isPresent()){var result=new java.util.ArrayList<OrderResponse>();for(int i=0;i<10;i++){var row=orderRepository.findByIdempotencyKey(user+":"+request.getIdempotencyKey()+"_"+i);if(row.isEmpty())break;result.add(OrderResponse.from(row.get(),null));}return result;}
+        promotionEvents.throttle(user);
+        var draft=quoteBasket(user,new com.team.ecommerce.order.promotion.PromotionModels.QuoteInput(request.getVoucherCodes(),request.getAutoBest(),request.getCartItemIds(),request.getSkuId(),request.getQuantity()));
+        if(!draft.quoteHash().equals(request.getQuoteHash()))throw new BadRequestException("Giá hoặc ưu đãi đã thay đổi. Hãy tính lại đơn.");
+        var orders=new java.util.ArrayList<OrderResponse>();int index=0;
+        for(var group:draft.groups()){
+            CreateOrderRequest part=new CreateOrderRequest();part.setAddressId(request.getAddressId());part.setPaymentMethod(request.getPaymentMethod());part.setNote(request.getNote());part.setCartItemIds(group.cartItemIds());part.setSkuId(group.skuId());part.setQuantity(group.quantity());part.setAutoBest(false);part.setVoucherCodes(group.quote().applied().stream().map(a->a.code()).toList());part.setExcluded(group.excluded());part.setQuoteHash(group.quote().quoteHash());part.setIdempotencyKey(request.getIdempotencyKey()+"_"+index++);part.setBatchInternal(true);orders.add(createOrder(user,part));
+        }return orders;
+    }
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
         String method=java.util.Objects.toString(request.getPaymentMethod(),"").trim().toUpperCase(java.util.Locale.ROOT);
         if(!java.util.Set.of("COD","VISA","MAESTRO","PAYPAL").contains(method))throw new BadRequestException("Phương thức thanh toán không được hỗ trợ");
         request.setPaymentMethod(method);
+        if(request.getSkuId()!=null)jdbc.update("INSERT IGNORE INTO carts(user_id) VALUES(?)",userId);
         Cart cart = cartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new BadRequestException("Cart is empty"));
 
         String key=userId+":"+request.getIdempotencyKey();
         var previous=orderRepository.findByIdempotencyKey(key);
         if(previous.isPresent())return OrderResponse.from(previous.get(),null);
-        promotionEvents.throttle(userId);
+        if(!request.isBatchInternal())promotionEvents.throttle(userId);
         List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
-        if (cartItems.isEmpty()) {
+        if(request.getCartItemIds()!=null)cartItems=cartItems.stream().filter(i->request.getCartItemIds().contains(i.getId())).toList();
+        if (cartItems.isEmpty() && request.getSkuId()==null) {
             throw new BadRequestException("Cart is empty");
         }
 
-        shops.requireSingleShop(cartItems);
+        if(request.getSkuId()==null)shops.requireSingleShop(cartItems);
 
         AddressInternalDTO address = authInternalService.getAddressByIdAndUserId(request.getAddressId(), userId);
 
         java.util.List<String> codes=request.getVoucherCodes();
         if((codes==null||codes.isEmpty())&&request.getVoucherCode()!=null&&!request.getVoucherCode().isBlank())codes=List.of(request.getVoucherCode());
-        var quote=promotions.quote(userId,new com.team.ecommerce.order.promotion.PromotionModels.QuoteInput(codes,request.getAutoBest()));
+        var quote=promotions.quote(userId,new com.team.ecommerce.order.promotion.PromotionModels.QuoteInput(codes,request.getAutoBest(),request.getCartItemIds(),request.getSkuId(),request.getQuantity(),request.getExcluded(),null,null));
         if(!quote.quoteHash().equals(request.getQuoteHash()))throw new BadRequestException("Giá hoặc ưu đãi đã thay đổi. Vui lòng cập nhật bảng tính tiền trước khi đặt.");
         BigDecimal subtotal=quote.subtotal(),discount=quote.discount(),tax=quote.tax(),fees=BigDecimal.ZERO,total=quote.total();
         Long voucherId=null;String appliedVoucherCode=quote.applied().stream().map(a->a.code()).collect(java.util.stream.Collectors.joining(", "));
@@ -94,7 +140,7 @@ public class OrderService {
                 .status(initialStatus)
                 .subtotal(subtotal)
                 .discount(discount)
-                .tax(tax)
+                .tax(tax).taxRate(quote.vatPercent().movePointLeft(2))
                 .fees(fees)
                 .shippingFee(quote.fees())
                 .total(total)
@@ -121,8 +167,9 @@ public class OrderService {
         // One InnoDB transaction covers order, promotion counters and SKU stock across schemas.
         orderRepository.flush();
         promotions.reserve(userId,order.getId(),quote,initialStatus==OrderStatus.WAITING_CONFIRMATION);
+        finance.snapshot(order.getId(),quote);
 
-        cartItemRepository.deleteAllByCartIdInBulk(cart.getId());
+        if(request.getSkuId()==null)for(var purchased:quote.lines())cartItemRepository.deleteById(purchased.cartItemId());
 
         promotionEvents.enqueue("ORDER_CREATED",java.util.Map.of("orderId",order.getId(),"userId",userId,"total",total,"paymentMethod",request.getPaymentMethod()));
 
@@ -205,7 +252,7 @@ public class OrderService {
     }
 
     public PageResponse<OrderResponse> getShopOrders(Long userId, Pageable pageable) {
-        return PageResponse.from(orderRepository.findShopOrders(userId,pageable).map(o->OrderResponse.from(o,null)));
+        return PageResponse.from(orderRepository.findShopOrders(userId,org.springframework.data.domain.PageRequest.of(pageable.getPageNumber(),pageable.getPageSize())).map(o->OrderResponse.from(o,null)));
     }
 
     public OrderResponse transition(Long userId, Long orderId, OrderStatus target) {
@@ -219,6 +266,10 @@ public class OrderService {
             expected = target == OrderStatus.DELIVERED ? OrderStatus.SHIPPING : OrderStatus.DELIVERED;
         }
         if (order.getStatus()!=expected) throw new BadRequestException("Trạng thái đơn hàng không hợp lệ");
+        if(target==OrderStatus.RETURNED){
+            if(jdbc.queryForObject("SELECT COUNT(*) FROM order_returns WHERE order_id=? AND status<>'REJECTED'",Long.class,orderId)>0)throw new BadRequestException("Đơn đã có yêu cầu trả hàng.");
+            for(OrderItem item:order.getItems())jdbc.update("INSERT INTO order_returns(order_id,order_item_id,user_id,reason,description,status) VALUES(?,?,?,'OTHER',?,'REQUESTED')",orderId,item.getId(),userId,"Khách yêu cầu trả toàn đơn; chờ shop kiểm tra và liên hệ xác nhận lý do.");
+        }
         return updateOrderStatus(orderId,target);
     }
 
@@ -229,8 +280,15 @@ public class OrderService {
             if(order.getStatus()==status)return OrderResponse.from(order,null);
             if(order.getStatus()!=OrderStatus.PENDING_PAYMENT)throw new BadRequestException("Đơn không còn chờ thanh toán");
             promotions.commit(orderId);
+            order.setPaymentStatus("PAID");
+            order.setPaidAt(java.time.LocalDateTime.now());
         }
         boolean newlyDelivered = status == OrderStatus.DELIVERED && order.getStatus() != OrderStatus.DELIVERED;
+        if(status==OrderStatus.SHIPPING)order.setShippedAt(java.time.LocalDateTime.now());
+        if(newlyDelivered){
+            order.setDeliveredAt(java.time.LocalDateTime.now());
+            if("COD".equals(order.getPaymentMethod())){order.setPaymentStatus("PAID");order.setPaidAt(java.time.LocalDateTime.now());}
+        }
         order.setStatus(status);
         order = orderRepository.save(order);
         shops.notifyBuyer(order);
@@ -238,7 +296,7 @@ public class OrderService {
         if (newlyDelivered) {
             for (OrderItem item : order.getItems()) {
                 jdbc.update("UPDATE product_db.products SET sold_count=sold_count+? WHERE id=?", item.getQuantity(), item.getProductId());
-                if (item.getVariantId() != null) jdbc.update("UPDATE product_db.product_skus SET sold_count=sold_count+? WHERE id=? AND product_id=?", item.getQuantity(), item.getVariantId(), item.getProductId());
+                if (item.getVariantId() != null) jdbc.update("UPDATE product_db.product_skus SET sold_count=sold_count+?,version=COALESCE(version,0)+1 WHERE id=? AND product_id=?", item.getQuantity(), item.getVariantId(), item.getProductId());
             }
         }
         

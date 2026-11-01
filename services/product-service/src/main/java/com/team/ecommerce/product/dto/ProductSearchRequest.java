@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 public class ProductSearchRequest {
     private String keyword;
     private Long categoryId;
+    private Long brandId;
+    private String province;
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private Integer minRating;

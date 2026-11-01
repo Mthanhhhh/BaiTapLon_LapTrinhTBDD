@@ -1,0 +1,16 @@
+import React,{useContext,useState} from 'react';
+import {View,ScrollView,Modal} from 'react-native';
+import {useNavigation,useRoute} from '@react-navigation/native';
+import {useQueryClient} from '@tanstack/react-query';
+import {AuthContext} from '../context/AuthContext';
+import {useUserAddresses,useDeleteAddress,useSetDefaultAddress} from '../hooks/useProfile';
+import {AddressResponse} from '../hooks/useCart';
+import {MarketplaceHeader} from '../components/MarketplaceHeader';
+import DeliveryAddressForm from '../components/DeliveryAddressForm';
+import {Typography,Button} from '../components/ui';
+import {COLORS} from '../theme';
+import {appAlert} from '../utils/appAlert';
+export default function AddressBookScreen(){
+ const {user}=useContext(AuthContext),n=useNavigation<any>(),route=useRoute<any>(),cache=useQueryClient();const q=useUserAddresses(),remove=useDeleteAddress(),defaults=useSetDefaultAddress();const [editing,setEditing]=useState<AddressResponse|null|undefined>(),[error,setError]=useState('');
+ return <View style={{flex:1}}><MarketplaceHeader back title="Địa chỉ nhận hàng"/><ScrollView contentContainerStyle={{padding:14,gap:12}}>{!user?<Button onPress={()=>n.navigate('Login')}>Đăng nhập</Button>:<><Button onPress={()=>setEditing(null)}>Thêm địa chỉ mới</Button>{!!error&&<Typography color="danger">{error}</Typography>}{q.data?.map(a=><View key={a.id} style={{padding:14,gap:9,borderWidth:1,borderColor:COLORS.border,borderRadius:14,backgroundColor:COLORS.surface}}><Typography weight="bold">{a.fullName} · {a.phone}</Typography><Typography variant="sm">{[a.street,a.state,a.city].filter(Boolean).join(', ')}</Typography>{a.isDefault&&<Typography variant="xs" color="primaryDeep">Địa chỉ mặc định</Typography>}<View style={{flexDirection:'row',gap:6,flexWrap:'wrap'}}>{route.params?.select&&<Button size="sm" onPress={()=>{cache.setQueryData(['checkoutAddress',user.id],a.id);n.goBack();}}>Giao đến đây</Button>}<Button size="sm" variant="outline" onPress={()=>setEditing(a)}>Sửa</Button>{!a.isDefault&&<Button size="sm" variant="outline" onPress={()=>defaults.mutate(a.id,{onError:(e:any)=>setError(e.message)})}>Đặt mặc định</Button>}<Button size="sm" variant="ghost" onPress={()=>appAlert.alert('Xóa địa chỉ','Bạn muốn xóa địa chỉ này?',[{text:'Giữ lại',style:'cancel'},{text:'Xóa',style:'destructive',onPress:()=>remove.mutate(a.id,{onError:(e:any)=>setError(e.message)})}])}>Xóa</Button></View></View>)}{q.isError&&<Button onPress={()=>q.refetch()}>Tải lại danh sách</Button>}</>}</ScrollView><Modal visible={editing!==undefined} transparent animationType="slide" onRequestClose={()=>setEditing(undefined)}><View style={{flex:1,backgroundColor:'#17172B66',justifyContent:'center',padding:12}}><View style={{backgroundColor:COLORS.surface,borderRadius:18,padding:18,maxHeight:'92%',gap:12}}><View style={{flexDirection:'row',justifyContent:'space-between'}}><Typography weight="bold">{editing?'Sửa địa chỉ':'Thêm địa chỉ'}</Typography><Button size="sm" variant="ghost" onPress={()=>setEditing(undefined)}>Đóng</Button></View>{editing!==undefined&&<DeliveryAddressForm initial={editing??undefined} firstAddress={!q.data?.length} onSaved={()=>setEditing(undefined)}/>}</View></View></Modal></View>;
+}

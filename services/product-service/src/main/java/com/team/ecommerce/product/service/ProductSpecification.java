@@ -9,11 +9,18 @@ import java.util.List;
 
 public class ProductSpecification {
     public static Specification<Product> search(String keyword, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Integer minRating) {
+        return search(keyword,categoryId,minPrice,maxPrice,minRating,null,null);
+    }
+    public static Specification<Product> search(String keyword,Long categoryId,java.math.BigDecimal minPrice,java.math.BigDecimal maxPrice,Integer minRating,Long brandId,String province) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             
             predicates.add(cb.isNull(root.get("deletedAt")));
             predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
+            var activeShops=query.subquery(Long.class);
+            var shop=activeShops.from(com.team.ecommerce.product.entity.Shop.class);
+            activeShops.select(shop.get("id")).where(cb.equal(shop.get("status"),"ACTIVE"),cb.isNull(shop.get("deletedAt")));
+            predicates.add(root.get("shopId").in(activeShops));
             
             if (keyword != null && !keyword.trim().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"));
@@ -27,6 +34,11 @@ public class ProductSpecification {
                 predicates.add(root.get("categoryId").in(descendants));
             }
             
+            if(brandId!=null)predicates.add(cb.equal(root.get("brandId"),brandId));
+            if(province!=null&&!province.isBlank()){
+                var locations=query.subquery(Long.class);var seller=locations.from(com.team.ecommerce.product.entity.Shop.class);
+                locations.select(seller.get("id")).where(cb.equal(seller.get("province"),province));predicates.add(root.get("shopId").in(locations));
+            }
             if (minPrice != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("minPrice"), minPrice));
             }

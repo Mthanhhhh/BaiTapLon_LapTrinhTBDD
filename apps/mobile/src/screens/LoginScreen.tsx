@@ -47,10 +47,11 @@ export default function LoginScreen() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMsg, setForgotMsg] = useState('');
 
-  const { login, forgotPassword, resetPassword } = useContext(AuthContext);
+  const { user, login, forgotPassword, resetPassword } = useContext(AuthContext);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const oauth=useSocialOAuth(()=>navigation.navigate('Main'));
+  useEffect(()=>{if(user&&!user.roles.some(r=>r==='ADMIN'||r==='ROLE_ADMIN'))navigation.navigate('Main');},[user,navigation]);
+  const oauth=useSocialOAuth(()=>{});
 
   // Handle QR code polling
   const startQrSession = async () => {
@@ -104,7 +105,6 @@ export default function LoginScreen() {
 
     try {
       await login({ email: identifier.trim(), password, rememberMe });
-      navigation.navigate('Main');
     } catch (err: any) {
       setErrorMessage(err.message || 'Email hoặc mật khẩu không chính xác');
     } finally {

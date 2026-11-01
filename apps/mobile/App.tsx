@@ -1,12 +1,14 @@
+import {ChatLive} from './src/hooks/useChat';
 import {PromotionLiveProvider} from './src/hooks/usePromotions';
 import { NotificationToast } from './src/components/NotificationToast';
 import { WebFontFaces } from './src/components/ui/WebFontFaces';
-import React from 'react';
+import React,{useContext} from 'react';
+import {isAdmin} from './src/utils/roles';
 import { StyleSheet, View, Platform } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { COLORS } from './src/theme/colors';
@@ -37,17 +39,15 @@ export default function App() {
     <SafeAreaProvider style={styles.webContainer}>
       <StatusBar style="dark" />
       <QueryClientProvider client={queryClient}>
-        <AuthProvider><PromotionLiveProvider>
-          <View style={styles.appFrame}>
-            <WebFontFaces />
-            <WaveBackdrop />
-            <View style={styles.appContent}><AppNavigator /><NotificationToast /></View>
-          </View>
-        </PromotionLiveProvider></AuthProvider>
+        <AuthProvider><PromotionLiveProvider><ChatLive>
+          <AppSurface />
+        </ChatLive></PromotionLiveProvider></AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
 }
+
+function AppSurface(){const {user}=useContext(AuthContext);const admin=isAdmin(user);return <SafeAreaView edges={['top','left','right']} style={[styles.appFrame,admin&&{maxWidth:1120,backgroundColor:COLORS.surfaceAlt}]}><WebFontFaces/>{!admin&&<WaveBackdrop/>}<View style={styles.appContent}><AppNavigator/>{!admin&&<NotificationToast/>}</View></SafeAreaView>;}
 
 const styles = StyleSheet.create({
   appContent: { flex: 1, zIndex: 1 },
@@ -63,6 +63,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.bg,
     position: 'relative',
+    paddingTop: Platform.OS === 'web' ? 0 : 4,
     ...(Platform.OS === 'web' && {
       minHeight: '100vh',
       borderLeftWidth: 1,

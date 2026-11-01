@@ -13,10 +13,13 @@ public class AddressRequest {
     private String street;
     @NotBlank(message = "Vui lòng nhập tỉnh hoặc thành phố")
     private String city;
-    @NotBlank(message = "Vui lòng nhập quận hoặc huyện")
+    @NotBlank(message = "Vui lòng chọn phường hoặc xã")
     private String state;
     @NotBlank(message = "Vui lòng nhập quốc gia")
     private String country;
     private String zipCode;
+    private Double latitude;
+    private Double longitude;
+    @com.fasterxml.jackson.annotation.JsonProperty("isDefault")
     private boolean isDefault;
 }

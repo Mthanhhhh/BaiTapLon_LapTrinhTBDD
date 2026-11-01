@@ -5,7 +5,7 @@ import {estimateDelivery} from './vietnamShipping';
  */
 export const formatVND = (value?: number | null): string => {
   if (value === undefined || value === null || isNaN(value)) return '0₫';
-  return `${Math.round(value).toLocaleString('vi-VN')}₫`;
+  return `${(Math.round(value)||0).toLocaleString('vi-VN')}₫`;
 };
 
 /**

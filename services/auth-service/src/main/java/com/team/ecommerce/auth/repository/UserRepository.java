@@ -12,6 +12,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE (u.email = :identifier OR u.phone = :identifier) AND u.deletedAt IS NULL")
     Optional<User> findByIdentifier(@org.springframework.data.repository.query.Param("identifier") String identifier);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> lockAddressOwner(@org.springframework.data.repository.query.Param("id") Long id);
+
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
     Optional<User> findByIdAndDeletedAtIsNull(Long id);

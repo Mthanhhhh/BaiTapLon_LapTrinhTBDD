@@ -20,6 +20,7 @@ export interface ProductListResponse {
 }
 
 export interface ProductVariantResponse {
+  version?: number;
   id: number;
   name: string;
   sku: string;
@@ -63,6 +64,8 @@ export interface CategoryResponse {
 }
 
 export interface ReviewResponse {
+  sellerReply?: string;
+  sellerRepliedAt?: string;
   id: number;
   productId: number;
   userId: number;
@@ -130,7 +133,7 @@ export const useProductsInfinite = (params: any = {}) => {
     queryFn: async ({ pageParam = 0 }) => {
       const endpoint = params.aiSearch && params.keyword && !params.categoryId
         ? `/api/v1/ai/search`
-        : params.keyword || params.minPrice != null || params.maxPrice != null || params.minRating != null
+        : params.brandId || params.province || params.keyword || params.minPrice != null || params.maxPrice != null || params.minRating != null
         ? `/api/v1/products/search`
         : params.categoryId ? `/api/v1/products/category/${params.categoryId}` : `/api/v1/products`;
       

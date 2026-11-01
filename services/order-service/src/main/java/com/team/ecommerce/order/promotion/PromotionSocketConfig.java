@@ -7,8 +7,8 @@ import org.springframework.data.redis.listener.*;
 import org.springframework.web.socket.config.annotation.*;
 @Configuration @EnableWebSocket @RequiredArgsConstructor
 public class PromotionSocketConfig implements WebSocketConfigurer {
- private final PromotionEvents events;
+ private final PromotionEvents events;private final com.team.ecommerce.order.service.ChatSocket chat;
  @Value("${app.promotions.allowed-origins:http://localhost:8082,http://localhost:8087}") private String origins;
- @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry){registry.addHandler(events,"/ws/promotions").setAllowedOrigins(origins.split(","));}
+ @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry){registry.addHandler(events,"/ws/promotions").setAllowedOrigins(origins.split(","));registry.addHandler(chat,"/ws/chat").setAllowedOrigins(origins.split(","));}
  @Bean RedisMessageListenerContainer promotionPubSub(RedisConnectionFactory factory){var container=new RedisMessageListenerContainer();container.setConnectionFactory(factory);container.addMessageListener((message,pattern)->events.broadcast(),new ChannelTopic("eshop:promotions"));return container;}
 }

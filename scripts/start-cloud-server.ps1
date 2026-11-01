@@ -1,4 +1,4 @@
-param([switch]$Restart)
+param([switch]$Restart,[ValidateSet('auth-service','product-service','order-service','payment-service','api-gateway')][string[]]$Service)
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path $PSScriptRoot -Parent
 $logRoot=Join-Path $repoRoot '.tools/cloud-server'
@@ -23,6 +23,7 @@ if(-not $ready){throw 'Docker Desktop is not ready. Open Docker Desktop, then ru
 foreach($container in @('ecommerce-mysql','ecommerce-redis','ecommerce-kafka','ecommerce-elasticsearch')){docker start $container | Out-Null;if($LASTEXITCODE -ne 0){throw "Could not start $container. Existing volumes were not changed."}}
 $javaExe=(Get-Command java).Source
 $services=@(@{Name='auth-service';Port=8083;Heap='320m'},@{Name='product-service';Port=8084;Heap='512m'},@{Name='order-service';Port=8085;Heap='512m'},@{Name='payment-service';Port=8086;Heap='320m'},@{Name='api-gateway';Port=8080;Heap='256m'})
+if($Service){$services=@($services | Where-Object {$Service -contains $_.Name})}
 foreach($svc in $services){
  $jar=Join-Path $repoRoot "services/$($svc.Name)/target/$($svc.Name)-0.0.1-SNAPSHOT.jar"
  if(-not(Test-Path -LiteralPath $jar)){throw "Build missing: $($svc.Name). Build its Maven package first."}

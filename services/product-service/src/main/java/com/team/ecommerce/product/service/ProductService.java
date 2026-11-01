@@ -43,26 +43,38 @@ public class ProductService {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public java.util.Map<String,Object> filterOptions(){return java.util.Map.of("provinces",jdbc.queryForList("SELECT DISTINCT s.province FROM shops s JOIN products p ON p.shop_id=s.id WHERE s.status='ACTIVE' AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.province IS NOT NULL AND s.province<>'' ORDER BY s.province",String.class),"brands",jdbc.queryForList("SELECT DISTINCT b.id,b.name FROM brands b JOIN products p ON p.brand_id=b.id WHERE p.deleted_at IS NULL AND p.status='ACTIVE' ORDER BY b.name"));}
+
     public PageResponse<ProductListResponse> recommendations(String keyword,int page,int size) {
+        return recommendations(keyword,page,size,java.util.List.of());
+    }
+    public PageResponse<ProductListResponse> recommendations(String keyword,int page,int size,java.util.List<Long> aiRanking) {
         // The keyword ranks the full active catalog; it must never filter out other products.
         var paging=org.springframework.data.domain.PageRequest.of(Math.max(0,page),Math.max(1,Math.min(size,50)));
-        String term=keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        var terms=java.util.Arrays.stream(java.util.Objects.toString(keyword,"").split("\\|")).map(String::trim).filter(t->!t.isBlank()).limit(5).toList();
+        var semantic=terms.stream().map(this::findSemanticCategoryIds).toList();
         var result=productRepository.findAll((root,query,cb)->{
             var active=cb.and(cb.equal(root.get("status"),ProductStatus.ACTIVE),cb.isNull(root.get("deletedAt")));
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
                 var ranking=new java.util.ArrayList<jakarta.persistence.criteria.Order>();
-                if (!term.isEmpty()) {
-                    String pattern="%"+term.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";
-                    var related=cb.like(cb.lower(root.<String>get("name")),pattern,'\\');
-                    ranking.add(cb.desc(cb.<Integer>selectCase().when(related,1).otherwise(0)));
+                if(!aiRanking.isEmpty()){var aiPriority=cb.<Integer>selectCase();for(int i=0;i<aiRanking.size();i++)aiPriority.when(cb.equal(root.get("id"),aiRanking.get(i)),aiRanking.size()-i);ranking.add(cb.desc(aiPriority.otherwise(0)));}
+                jakarta.persistence.criteria.Expression<Integer> priority=cb.literal(0);
+                for(int i=0;i<terms.size();i++){
+                    String pattern="%"+terms.get(i).toLowerCase(java.util.Locale.ROOT)+"%";
+                    var related=cb.like(cb.lower(root.<String>get("name")),pattern);
+                    if(!semantic.get(i).isEmpty())related=cb.or(related,root.get("categoryId").in(semantic.get(i)));
+                    priority=cb.sum(priority,cb.<Integer>selectCase().when(related,(5-i)*100).otherwise(0));
                 }
+                if(!terms.isEmpty())ranking.add(cb.desc(priority));
+                var weighted=cb.quot(cb.sum(cb.prod(root.<Number>get("ratingAvg"),root.<Number>get("ratingCount")),84),cb.sum(root.<Number>get("ratingCount"),20));
+                ranking.add(cb.desc(weighted));
                 ranking.add(cb.desc(root.get("ratingAvg")));
                 ranking.add(cb.desc(root.get("ratingCount")));
                 ranking.add(cb.desc(root.get("soldCount")));
                 ranking.add(cb.desc(root.get("id")));
                 query.orderBy(ranking);
             }
-            return active;
+            return cb.and(active,ProductSpecification.search(null,null,null,null,null).toPredicate(root,query,cb));
         },paging);
         return mapToPageResponse(result);
     }
@@ -106,7 +118,7 @@ public class ProductService {
         // does not contain the user's phrase (for example "điện thoại" -> Samsung S23).
         Set<Long> semanticCategoryIds = request.getCategoryId() == null
                 ? findSemanticCategoryIds(request.getKeyword()) : Set.of();
-        boolean hasExtraFilters = request.getMinPrice() != null || request.getMaxPrice() != null || request.getMinRating() != null;
+        boolean hasExtraFilters = request.getBrandId()!=null || (request.getProvince()!=null&&!request.getProvince().isBlank()) || request.getMinPrice() != null || request.getMaxPrice() != null || request.getMinRating() != null;
         if (!hasExtraFilters && !semanticCategoryIds.isEmpty() && request.getKeyword() != null
                 && isCategoryIntent(request.getKeyword())) {
             Page<Product> semanticPage = productRepository.findByCategoryIdInAndDeletedAtIsNullAndStatus(
@@ -115,7 +127,7 @@ public class ProductService {
         }
         // Exact catalog results retain database pagination and every selected filter.
         var filters=ProductSpecification.search(request.getKeyword(),request.getCategoryId(),
-                request.getMinPrice(),request.getMaxPrice(),request.getMinRating());
+                request.getMinPrice(),request.getMaxPrice(),request.getMinRating(),request.getBrandId(),request.getProvince());
         Page<Product> page=productRepository.findAll(filters,pageable);
         if(page.getTotalElements()>0 || request.getKeyword()==null || request.getKeyword().isBlank())return mapToPageResponse(page);
         // Typo fallback still uses Elasticsearch, then applies category descendants, price and rating in SQL.
@@ -123,7 +135,7 @@ public class ProductService {
                 request.getMinPrice()==null?null:request.getMinPrice().doubleValue(),
                 request.getMaxPrice()==null?null:request.getMaxPrice().doubleValue(),10000);
         if(esIds.isEmpty())return mapToPageResponse(page);
-        var fuzzyFilters=ProductSpecification.search(null,request.getCategoryId(),request.getMinPrice(),request.getMaxPrice(),request.getMinRating())
+        var fuzzyFilters=ProductSpecification.search(null,request.getCategoryId(),request.getMinPrice(),request.getMaxPrice(),request.getMinRating(),request.getBrandId(),request.getProvince())
                 .and((root,query,cb)->root.get("id").in(esIds));
         return mapToPageResponse(productRepository.findAll(fuzzyFilters,pageable));
     }
@@ -184,7 +196,7 @@ public class ProductService {
     }
 
     private void requireShopOwner(Long shopId, Long userId) {
-        Integer ownsShop = jdbc.queryForObject("SELECT COUNT(*) FROM product_db.shops WHERE id=? AND owner_user_id=? AND deleted_at IS NULL", Integer.class, shopId, userId);
+        Integer ownsShop = jdbc.queryForObject("SELECT COUNT(*) FROM product_db.shops WHERE id=? AND owner_user_id=? AND status='ACTIVE' AND deleted_at IS NULL", Integer.class, shopId, userId);
         if (ownsShop == null || ownsShop == 0) throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền quản lý shop này");
     }
 
@@ -245,6 +257,7 @@ public class ProductService {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));
         requireShopOwner(product.getShopId(), userId);
+        if(product.getStatus()==ProductStatus.BANNED)throw new BadRequestException("Sản phẩm đang bị quản trị khóa bán.");
 
         if (request.getCategoryId() != null) {
             if (!categoryRepository.existsById(request.getCategoryId())) {
@@ -255,10 +268,10 @@ public class ProductService {
 
         if (request.getName() != null) {
             product.setName(request.getName());
-            product.setSlug(request.getName().toLowerCase().replaceAll("\\s+", "-"));
+            product.setSlug(request.getName().toLowerCase().replaceAll("\\s+", "-")+"-"+id);
         }
         if (request.getDescription() != null) product.setDescription(request.getDescription());
-        if (request.getPrice() != null) {
+        if (request.getPrice() != null && request.getVariants()==null) {
             product.setMinPrice(request.getPrice());
             product.setMaxPrice(request.getPrice());
             // Product cards use products.min_price while detail/cart use SKU prices.
@@ -273,7 +286,7 @@ public class ProductService {
         if (request.getThumbnailUrl() != null) product.setThumbnailUrl(request.getThumbnailUrl());
         if (request.getAttributes() != null) product.setAttributes(request.getAttributes());
 
-        if (request.getStock() != null) {
+        if (request.getStock() != null && request.getVariants()==null) {
             List<ProductVariant> variants = productVariantRepository.findByProductId(id);
             // The legacy edit form has one stock field; only apply it when the product
             // has one SKU, so a total stock value is not copied to every variation.
@@ -281,30 +294,33 @@ public class ProductService {
         }
 
         if (request.getImages() != null) {
-            product.getImages().clear();
-            for (int i = 0; i < request.getImages().size(); i++) {
-                product.getImages().add(com.team.ecommerce.product.entity.ProductImage.builder()
-                        .url(request.getImages().get(i))
-                        .sortOrder(i)
-                        .build());
-            }
+            if(request.getImages().size()>30||request.getImages().stream().anyMatch(url->url==null||!url.startsWith("https://")||url.length()>500))throw new BadRequestException("Thư viện ảnh cần URL HTTPS hợp lệ, tối đa 30 ảnh.");
+            jdbc.update("DELETE FROM product_db.product_images WHERE product_id=?",id);
+            for(int i=0;i<request.getImages().size();i++)jdbc.update("INSERT INTO product_db.product_images(product_id,url,sort_order,is_primary) VALUES(?,?,?,?)",id,request.getImages().get(i),i,i==0);
         }
 
         if (request.getVariants() != null) {
-            product.getVariants().clear();
-            for (ProductVariantRequest vr : request.getVariants()) {
-                ProductVariant variant = ProductVariant.builder()
-                        .product(product)
-                        .name(vr.getName())
-                        .sku(vr.getSku())
-                        .price(vr.getPrice())
-                        .stock(vr.getStock())
-                        .build();
-                product.getVariants().add(variant);
+            if(request.getVariants().isEmpty()||request.getVariants().size()>100)throw new BadRequestException("Cần 1–100 phân loại.");
+            var previous=new java.util.ArrayList<>(product.getVariants());
+            var retained=new java.util.HashSet<Long>();
+            var names=new java.util.HashSet<String>();
+            for(ProductVariantRequest vr:request.getVariants()){
+                if(vr.getName()==null||vr.getName().isBlank()||!names.add(vr.getName().trim())||vr.getPrice()==null||vr.getPrice().signum()<=0||vr.getStock()<0)throw new BadRequestException("Kiểm tra tên, giá và tồn kho phân loại.");
+                ProductVariant variant=vr.getId()==null?previous.stream().filter(v->v.getName().equals(vr.getName().trim())).findFirst().orElse(null):previous.stream().filter(v->v.getId().equals(vr.getId())).findFirst().orElseThrow(()->new BadRequestException("Phân loại không thuộc sản phẩm."));
+                if(variant==null){variant=ProductVariant.builder().product(product).sku("SELLER-"+id+"-"+java.util.UUID.randomUUID().toString().substring(0,8)).name(vr.getName().trim()).price(vr.getPrice()).originalPrice(vr.getPrice()).stock(vr.getStock()).build();product.getVariants().add(variant);}
+                else {
+                    if(vr.getVersion()!=null&&!java.util.Objects.equals(vr.getVersion(),variant.getVersion()))throw new BadRequestException("Giá hoặc tồn kho vừa thay đổi. Hãy tải lại sản phẩm trước khi sửa.");
+                    retained.add(variant.getId());variant.setName(vr.getName().trim());variant.setPrice(vr.getPrice());variant.setStock(vr.getStock());
+                }
             }
+            for(ProductVariant old:previous)if(!retained.contains(old.getId()))old.setDeletedAt(java.time.LocalDateTime.now());
+            var active=product.getVariants().stream().filter(v->v.getDeletedAt()==null).toList();
+            product.setMinPrice(active.stream().map(ProductVariant::getPrice).min(java.math.BigDecimal::compareTo).orElseThrow());
+            product.setMaxPrice(active.stream().map(ProductVariant::getPrice).max(java.math.BigDecimal::compareTo).orElseThrow());
         }
+        if(product.getThumbnailUrl()==null||!product.getThumbnailUrl().startsWith("https://"))throw new BadRequestException("Cần ảnh bìa HTTPS hợp lệ.");
 
-        Product savedProduct = productRepository.save(product);
+        Product savedProduct = productRepository.saveAndFlush(product);
         elasticsearchSyncService.syncProduct(savedProduct);
         return ProductResponse.from(savedProduct, getCategoryName(savedProduct.getCategoryId()));
     }

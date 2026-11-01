@@ -1,3 +1,4 @@
+import {isAdmin} from '../utils/roles';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
 import { apiClient } from '../api/client';
@@ -16,6 +17,8 @@ export type OrderStatus =
 export interface CartItemResponse {
   id: number;
   productId: number;
+  shopId?: number;
+  shopName?: string;
   productName: string;
   productImage: string | null;
   variantId?: number | null;
@@ -41,6 +44,8 @@ export interface AddressResponse {
   state?: string;
   country: string;
   zipCode?: string;
+  latitude?: number;
+  longitude?: number;
   isDefault: boolean;
 }
 
@@ -111,7 +116,7 @@ export const useCart = () => {
 
   return useQuery<CartResponse>({
     queryKey: cartKey(user?.id),
-    enabled: !!user,
+    enabled: !!user&&!isAdmin(user),
     queryFn: async () => {
       const { data } = await apiClient.get('/api/v1/cart');
       return data.data as CartResponse;
@@ -195,6 +200,9 @@ export const useCreateOrder = () => {
   return useMutation({
     mutationFn: async (payload: {
       addressId: number;
+      cartItemIds?:number[];
+      skuId?:number;
+      quantity?:number;
       voucherCode?: string;
       voucherCodes?: string[];
       autoBest?: boolean;

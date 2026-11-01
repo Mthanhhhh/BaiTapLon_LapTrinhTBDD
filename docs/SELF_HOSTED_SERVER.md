@@ -18,6 +18,14 @@ Khi thay bản build hoặc cấu hình cần khởi động lại:
 .\scripts\start-cloud-server.ps1 -Restart
 ```
 
+Sau khi thêm/thay khóa Gemini trong `.env.server.local`, chỉ cần nạp lại product-service:
+
+```powershell
+.\scripts\start-cloud-server.ps1 -Restart -Service product-service
+```
+
+Khóa được đọc khi service khởi động; sửa file không tự cập nhật tiến trình đang chạy. `.env.example` chỉ chứa tên biến và giá trị mẫu, không điền khóa thật vào file này.
+
 Script đọc OAuth từ `services/auth-service/.env.local`, đọc cấu hình dùng chung từ `.env.server.local`, chạy lần lượt năm JAR và đợi health check. Lần đầu tạo khóa JWT riêng, sau đó giữ ổn định qua các lần chạy. File khóa bị Git bỏ qua; cần giữ lại khi sao lưu/chuyển server. Sau khi đổi khóa, thiết bị cũ đăng nhập lại một lần. Không đưa khóa, database password hoặc tunnel token vào APK.
 
 Log nằm trong `.tools/cloud-server/`. Không khởi động lại bằng các lệnh Java rời thiếu biến môi trường, vì có thể làm các service dùng khóa xác thực khác nhau.

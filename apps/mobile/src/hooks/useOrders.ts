@@ -45,7 +45,7 @@ export const useOrders = (page: number = 0, size: number = 20, shop: boolean = f
     enabled: !!user && enabled,
     queryFn: async (): Promise<PageResponse<OrderResponse>> => {
       const res = await apiClient.get<any>(shop ? '/api/v1/orders/shop/orders' : '/api/v1/orders', {
-        params: { page, size, sort: 'createdAt,desc' },
+        params: { page, size, ...(shop?{}:{sort:'createdAt,desc'}) },
       });
       return res.data.data as PageResponse<OrderResponse>;
     },

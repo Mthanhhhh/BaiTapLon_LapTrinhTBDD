@@ -24,10 +24,15 @@ public class OrderController {
     public ApiResponse<java.util.Map<String,Object>> shop(@AuthenticationPrincipal Long userId) { return ApiResponse.success(shops.mine(userId)); }
 
     @PostMapping("/shop/me")
-    public ApiResponse<java.util.Map<String,Object>> openShop(@AuthenticationPrincipal Long userId, @RequestBody java.util.Map<String,String> body) { return ApiResponse.success(shops.open(userId, body.get("name"), body.get("description"), body.get("province"))); }
+    public ApiResponse<java.util.Map<String,Object>> openShop(@AuthenticationPrincipal Long userId, @RequestBody java.util.Map<String,String> body) { return ApiResponse.success(shops.register(userId,body)); }
 
     @GetMapping("/shop/orders")
     public ApiResponse<PageResponse<OrderResponse>> shopOrders(@AuthenticationPrincipal Long userId, Pageable pageable) { return ApiResponse.success(orderService.getShopOrders(userId, pageable)); }
+
+    @PostMapping("/basket/quote")
+    public ApiResponse<?> basketQuote(@AuthenticationPrincipal Long userId,@RequestBody com.team.ecommerce.order.promotion.PromotionModels.QuoteInput input){return ApiResponse.success(orderService.quoteBasket(userId,input));}
+    @PostMapping("/basket")
+    public ApiResponse<?> basket(@AuthenticationPrincipal Long userId,@Valid @RequestBody CreateOrderRequest input){return ApiResponse.success(orderService.createBasket(userId,input));}
 
     @PostMapping
     public ApiResponse<OrderResponse> createOrder(@AuthenticationPrincipal Long userId, @Valid @RequestBody CreateOrderRequest request) {

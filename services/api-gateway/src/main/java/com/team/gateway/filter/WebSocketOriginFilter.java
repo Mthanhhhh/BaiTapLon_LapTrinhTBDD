@@ -17,7 +17,7 @@ public class WebSocketOriginFilter implements GlobalFilter, Ordered {
     private String origins;
 
     @Override public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        if ("/ws/promotions".equals(exchange.getRequest().getURI().getPath())) {
+        if (java.util.Set.of("/ws/promotions","/ws/chat").contains(exchange.getRequest().getURI().getPath())) {
             String origin=exchange.getRequest().getHeaders().getOrigin();
             // Native clients have no Origin; this channel only carries public invalidation/time.
             if (origin!=null && Arrays.stream(origins.split(",")).map(String::trim).noneMatch(origin::equals)) {

@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 public class ShopController {
     private final JdbcTemplate jdbc;
 
-    public record ShopProfileInput(String name, String description, String province) {}
+    public record ShopProfileInput(String name, String description, String province,String logoUrl,String bannerUrl,Map<String,String> businessProfile) {}
     public record SkuInput(String name, String skuCode, BigDecimal price, BigDecimal originalPrice, Integer stock, List<String> images) {}
     public record ShopProductInput(String name, String description, Long categoryId, BigDecimal price,
                                    BigDecimal originalPrice, Integer stock, String thumbnailUrl,
@@ -27,11 +27,12 @@ public class ShopController {
     @GetMapping("/me")
     public ApiResponse<Map<String,Object>> mine(@AuthenticationPrincipal Long userId) {
         var rows = jdbc.queryForList("SELECT id,owner_user_id AS ownerUserId,name,description,province,status,logo_url AS logoUrl,banner_url AS bannerUrl FROM shops WHERE owner_user_id=? AND deleted_at IS NULL", userId);
+        if(!rows.isEmpty()){var row=rows.get(0);var profiles=jdbc.queryForList("SELECT profile_json FROM shop_business_profiles WHERE shop_id=?",String.class,row.get("id"));if(!profiles.isEmpty())try{row.put("businessProfile",new ObjectMapper().readValue(profiles.get(0),Map.class));}catch(Exception ignored){row.put("businessProfile",Map.of());}}
         return ApiResponse.success(rows.isEmpty() ? null : rows.get(0));
     }
 
     private void requireOwner(Long shopId, Long userId) {
-        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM shops WHERE id=? AND owner_user_id=? AND deleted_at IS NULL", Integer.class, shopId, userId);
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM shops WHERE id=? AND owner_user_id=? AND status='ACTIVE' AND deleted_at IS NULL", Integer.class, shopId, userId);
         if (count == null || count == 0) throw new AccessDeniedException("Shop belongs to another user");
     }
 
@@ -41,6 +42,10 @@ public class ShopController {
         requireOwner(id, userId);
         if (input.name() == null || input.name().isBlank() || input.name().length() > 150) throw new BadRequestException("Tên shop không hợp lệ");
         jdbc.update("UPDATE shops SET name=?,description=?,province=? WHERE id=?", input.name().trim(), input.description(), input.province(), id);
+        if(input.businessProfile()!=null){var p=input.businessProfile();if(!p.getOrDefault("phone","").matches("(?:0|\\+84)[0-9]{9,10}")||p.getOrDefault("contactName","").isBlank()||p.getOrDefault("ward","").isBlank()||p.getOrDefault("street","").isBlank())throw new BadRequestException("Kiểm tra người liên hệ, điện thoại và địa chỉ lấy hàng.");for(var value:p.values())if(value!=null&&value.length()>3000)throw new BadRequestException("Thông tin quá dài.");try{jdbc.update("INSERT INTO shop_business_profiles(shop_id,profile_json) VALUES(?,?) ON DUPLICATE KEY UPDATE profile_json=VALUES(profile_json)",id,new ObjectMapper().writeValueAsString(p));}catch(Exception e){throw new BadRequestException("Thông tin shop không hợp lệ.");}}
+        for(String url:List.of(Objects.toString(input.logoUrl(),""),Objects.toString(input.bannerUrl(),"")))if(!url.isBlank()&&!url.startsWith("https://"))throw new BadRequestException("Ảnh cần URL HTTPS.");
+        if(input.logoUrl()!=null)jdbc.update("UPDATE shops SET logo_url=? WHERE id=?",input.logoUrl(),id);
+        if(input.bannerUrl()!=null)jdbc.update("UPDATE shops SET banner_url=? WHERE id=?",input.bannerUrl(),id);
         return ApiResponse.success(shop(id));
     }
 
@@ -68,6 +73,7 @@ public class ShopController {
         List<String> gallery=input.images()==null?new ArrayList<>():input.images().stream().filter(u->u!=null&&!u.isBlank()).distinct().collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         for(List<String> urls:variantImages.values())for(String url:urls)if(!gallery.contains(url))gallery.add(url);
         String image=input.thumbnailUrl(); if((image==null||image.isBlank())&&!gallery.isEmpty())image=gallery.get(0);
+        if(image==null||!image.startsWith("https://"))throw new BadRequestException("Cần ảnh bìa HTTPS trước khi đăng bán.");
         String attributes;
         try { attributes=new ObjectMapper().writeValueAsString(Map.of("optionLabels",List.of("Phân loại"),"variantImages",variantImages)); }
         catch(com.fasterxml.jackson.core.JsonProcessingException e){ throw new BadRequestException("Không thể lưu thư viện ảnh sản phẩm"); }
@@ -86,7 +92,7 @@ public class ShopController {
     public ApiResponse<Map<String,Object>> changeProductStatus(@PathVariable Long shopId, @PathVariable Long productId, @AuthenticationPrincipal Long userId, @RequestParam String status) {
         requireOwner(shopId,userId);
         if (!List.of("ACTIVE","HIDDEN","DRAFT").contains(status)) throw new BadRequestException("Trạng thái sản phẩm không hợp lệ");
-        int changed=jdbc.update("UPDATE products SET status=? WHERE id=? AND shop_id=? AND deleted_at IS NULL",status,productId,shopId);
+        int changed=jdbc.update("UPDATE products SET status=? WHERE id=? AND shop_id=? AND status<>'BANNED' AND deleted_at IS NULL",status,productId,shopId);
         if(changed==0)throw new ResourceNotFoundException("Product","id",productId);
         return ApiResponse.success(jdbc.queryForMap("SELECT id,name,status FROM products WHERE id=?",productId));
     }

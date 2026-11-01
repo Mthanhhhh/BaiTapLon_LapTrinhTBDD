@@ -22,6 +22,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final org.springframework.jdbc.core.JdbcTemplate accountStatusJdbc;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -32,12 +33,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
                 Long userId = jwtProvider.getUserIdFromToken(jwt);
+                if (accountStatusJdbc.queryForObject("SELECT COUNT(*) FROM auth_db.users WHERE id=? AND status='ACTIVE' AND deleted_at IS NULL", Long.class, userId) == 0) { response.setStatus(401); response.setContentType("application/json"); response.getWriter().write("{\"message\":\"Tài khoản đang bị khóa\"}"); return; }
                 String role = jwtProvider.getRoleFromToken(jwt);
                 
-                List<SimpleGrantedAuthority> authorities = role != null 
-                        ? List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        : Collections.emptyList();
-                
+                List<SimpleGrantedAuthority> authorities = accountStatusJdbc.query("SELECT r.code FROM auth_db.user_roles ur JOIN auth_db.roles r ON r.id=ur.role_id WHERE ur.user_id=?",(rs,row)->new SimpleGrantedAuthority("ROLE_"+rs.getString(1)),userId);
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

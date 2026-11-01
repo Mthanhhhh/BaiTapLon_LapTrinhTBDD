@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductVariantRequest {
+    private Long id;
+    private Long version;
     @NotBlank(message = "Variant name is required")
     private String name;
 

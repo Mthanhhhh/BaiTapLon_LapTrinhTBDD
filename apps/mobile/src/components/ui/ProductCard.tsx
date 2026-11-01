@@ -1,3 +1,4 @@
+import {useProductOffer} from '../../hooks/useProductOffer';
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { COLORS, radius, spacing, shadows } from '../../theme';
@@ -45,13 +46,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(function Produ
   onEdit,
   onDelete,
 }) {
+  const offer=useProductOffer(id);
+  const shownPrice=offer.data?.afterVoucher??price;
+  const shopPrice=offer.data?.shopPrice??price;
   const {province: destination}=useDeliveryDestination();
   const delivery=estimateDelivery(shopLocation,destination);
   const location=provinceLabel(shopLocation);
-  const discountPercent =
-    originalPrice && originalPrice > price
-      ? Math.round((1 - price / originalPrice) * 100)
-      : 0;
+  const basePrice=offer.data?.basePrice??originalPrice??price;
+  const discountPercent=basePrice>shopPrice?Math.round((1-shopPrice/basePrice)*100):0;
 
 
 
@@ -59,7 +61,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(function Produ
     <TouchableOpacity
       style={[styles.container, shadows.sm]}
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${formatVND(price)}`}
+      accessibilityLabel={`${name}, ${formatVND(shownPrice)}`}
       activeOpacity={0.9}
       onPress={onPress}
     >
@@ -114,7 +116,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(function Produ
       {/* Card Content Body */}
       <View style={[styles.content, compact && {paddingVertical:6}]}>
         {/* Name with 2 lines max */}
-        <Typography variant="sm" weight="bold" numberOfLines={2} style={styles.title}>
+        <Typography variant="sm" weight="bold" numberOfLines={1} ellipsizeMode="tail" style={styles.title}>
           {name}
         </Typography>
 
@@ -133,19 +135,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(function Produ
         {/* Price Row: VNĐ formatted */}
         <View style={styles.priceRow}><View style={styles.priceContainer}>
           <Typography variant="md" weight="bold" style={styles.priceText}>
-            {formatVND(price)}
+            {formatVND(shownPrice)}
           </Typography>
-          {originalPrice && originalPrice > price && (
-            <Typography variant="xs" color="muted" style={styles.originalPrice}>
-              {formatVND(originalPrice)}
-            </Typography>
-          )}
+          <Typography variant="xs" color="primaryDeep" numberOfLines={1}>{offer.data?'Giá sau voucher':'Giá shop'}</Typography>
+
         </View>{!isShopOwner && <QuickCartButton productId={id} name={name}/>}</View>
-        {!compact && originalPrice && originalPrice > price ? (
-          <Typography variant="xs" weight="medium" color="deal" numberOfLines={1} style={styles.savingText}>
-            {STRINGS.SAVING} {formatVND(originalPrice - price)}
-          </Typography>
-        ) : null}
 
         {/* Rating and Sold count in Vietnamese */}
         <View style={styles.ratingSoldRow}>
@@ -243,6 +237,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   title: {
+    height: 18,
+    maxHeight: 18,
+    overflow: 'hidden',
     lineHeight: 18,
     marginBottom: 3,
     color: COLORS.ink,

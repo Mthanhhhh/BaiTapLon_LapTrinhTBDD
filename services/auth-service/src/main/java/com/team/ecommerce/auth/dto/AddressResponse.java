@@ -15,6 +15,9 @@ public class AddressResponse {
     private String state;
     private String country;
     private String zipCode;
+    private Double latitude;
+    private Double longitude;
+    @com.fasterxml.jackson.annotation.JsonProperty("isDefault")
     private boolean isDefault;
 
     public static AddressResponse from(Address address) {
@@ -26,7 +29,7 @@ public class AddressResponse {
                 .city(address.getCity())
                 .state(address.getState())
                 .country(countryName(address.getCountry()))
-                .zipCode(address.getZipCode())
+                .zipCode(address.getZipCode()).latitude(address.getLatitude()).longitude(address.getLongitude())
                 .isDefault(address.isDefault())
                 .build();
     }

@@ -1,3 +1,8 @@
+import {isAdmin} from '../utils/roles';
+import ShopSetupScreen from '../screens/ShopSetupScreen';
+import ChatScreen from '../screens/ChatScreen';
+import AddressBookScreen from '../screens/AddressBookScreen';
+import CommerceOperationsScreen from '../screens/CommerceOperationsScreen';
 import PromotionsScreen from '../screens/PromotionsScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import ReviewsScreen from '../screens/ReviewsScreen';
@@ -39,9 +44,14 @@ export type RootStackParamList = {
   Categories: {categoryId?:number}|undefined;
   Reviews: {productId:number};
   PromotionManage: undefined;
+  AddressBook: {select?:boolean}|undefined;
+  Inbox: {shopId?:number;orderId?:number;conversationId?:number}|undefined;
+  AdminCenter: undefined;
+  SellerAnalytics: undefined;
   Cart: undefined;
   SellerCenter: { editProductId?: number } | undefined;
-  Checkout: undefined;
+  ShopSetup: {edit?:boolean}|undefined;
+  Checkout: {cartItemIds?:number[];skuId?:number;quantity?:number}|undefined;
   Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'MAESTRO' | 'PAYPAL' } | undefined;
   Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;
   Filter: undefined;
@@ -72,8 +82,13 @@ const linking: LinkingOptions<RootStackParamList> = {
       Categories: 'categories',
       Reviews: 'product/:productId/reviews',
       PromotionManage: 'seller/promotions',
+      Inbox: 'messages',
+      AddressBook: 'addresses',
+      AdminCenter: 'admin',
+      SellerAnalytics: 'seller/analytics',
       Cart: 'cart',
       SellerCenter: 'seller',
+      ShopSetup: 'seller/setup',
       Checkout: 'checkout',
       Payment: 'payment/:orderId',
       Success: 'success',
@@ -88,6 +103,7 @@ const linking: LinkingOptions<RootStackParamList> = {
 export default function AppNavigator() {
   const { user, loading } = useContext(AuthContext);
 
+  const admin=isAdmin(user);
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -97,8 +113,9 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer linking={linking} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent', card: COLORS.surface, text: COLORS.ink, border: COLORS.border, primary: COLORS.primaryDeep } }}>
+    <NavigationContainer key={admin?'admin':'market'} linking={admin?{prefixes:['/','eshop://'],config:{screens:{AdminCenter:'admin',PromotionManage:'admin/promotions'}}}:linking} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent', card: COLORS.surface, text: COLORS.ink, border: COLORS.border, primary: COLORS.primaryDeep } }}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {admin?<><Stack.Screen name="AdminCenter" component={CommerceOperationsScreen}/><Stack.Screen name="PromotionManage" component={PromotionManageScreen}/></>:<>
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
         <Stack.Screen name="Shop" component={ShopScreen} />
@@ -107,6 +124,10 @@ export default function AppNavigator() {
         <Stack.Screen name="Categories" component={CategoriesScreen} />
         <Stack.Screen name="Reviews" component={ReviewsScreen} />
         <Stack.Screen name="PromotionManage" component={PromotionManageScreen} />
+        <Stack.Screen name="Inbox" component={ChatScreen} />
+        <Stack.Screen name="AddressBook" component={AddressBookScreen} />
+        <Stack.Screen name="AdminCenter" component={CommerceOperationsScreen} />
+        <Stack.Screen name="SellerAnalytics" component={CommerceOperationsScreen} />
         <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="SellerCenter" component={SellerCenterScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
@@ -116,6 +137,8 @@ export default function AppNavigator() {
         <Stack.Screen name="OAuthCallback" component={OAuthCallbackScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="ShopSetup" component={ShopSetupScreen}/>
+        </>}
       </Stack.Navigator>
     </NavigationContainer>
   );
