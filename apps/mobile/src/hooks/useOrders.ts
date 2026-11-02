@@ -98,8 +98,8 @@ export const useReceiveOrder = () => {
 export const useReturnOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (orderId: number): Promise<OrderResponse> => {
-      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/return`);
+    mutationFn: async ({orderId,reason}: {orderId:number;reason:string}): Promise<OrderResponse> => {
+      const { data } = await apiClient.post(`/api/v1/orders/${orderId}/return`,{reason});
       return data.data as OrderResponse;
     },
     onSuccess: () => {

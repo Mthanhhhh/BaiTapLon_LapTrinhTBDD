@@ -113,15 +113,24 @@ public class PromotionService {
  public void shipping(long user,BigDecimal fee){Long id=shop(user);if(id==null)throw new AccessDeniedException("Chưa mở shop");require(fee!=null&&fee.signum()>=0&&fee.compareTo(new BigDecimal("1000000"))<=0,"Phí giao hàng không hợp lệ");db.update("INSERT INTO promo_shipping_policy(shop_id,fee) VALUES(?,?) ON DUPLICATE KEY UPDATE fee=VALUES(fee)",id,money(fee));events.enqueue("SHIPPING_CHANGED",Map.of("shopId",id));}
  public List<Map<String,Object>> productPrices(Long user,List<Long> ids){
   require(ids!=null&&!ids.isEmpty()&&ids.size()<=60,"Cần 1–60 sản phẩm");var result=new ArrayList<Map<String,Object>>();
+  var reads=new PriceReadContext();
   for(Long id:new LinkedHashSet<>(ids)){
    var skus=db.queryForList("SELECT s.id FROM product_db.product_skus s JOIN product_db.products p ON p.id=s.product_id WHERE p.id=? AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL AND s.stock_quantity>0 ORDER BY s.price,s.id LIMIT 1",Long.class,id);
    if(skus.isEmpty())continue;
    var candidates=new LinkedHashSet<>(skus);candidates.addAll(db.queryForList("SELECT f.sku_id FROM promo_flash_items f JOIN promo_campaigns c ON c.id=f.campaign_id WHERE f.product_id=? AND c.status='ACTIVE' AND c.starts_at<=UTC_TIMESTAMP(3) AND c.ends_at>UTC_TIMESTAMP(3)",Long.class,id));
-   Quote best=null;for(Long sku:candidates)try{Quote q=quote(user==null?0:user,new QuoteInput(List.of(),true,null,sku,1));if(best==null||q.subtotal().subtract(q.discount()).compareTo(best.subtotal().subtract(best.discount()))<0)best=q;}catch(BadRequestException ignored){}
+   Quote best=null;for(Long sku:candidates)try{Quote q=quote(user==null?0:user,new QuoteInput(List.of(),true,null,sku,1),reads);if(best==null||q.subtotal().subtract(q.discount()).compareTo(best.subtotal().subtract(best.discount()))<0)best=q;}catch(BadRequestException ignored){}
    if(best!=null){var offer=new LinkedHashMap<String,Object>();offer.put("productId",id);offer.put("skuId",best.lines().get(0).skuId());offer.put("shopPrice",best.subtotal());offer.put("afterVoucher",best.subtotal().subtract(best.discount()));offer.put("basePrice",best.lines().get(0).basePrice());offer.put("applied",best.applied());offer.put("note","Giá cho 1 sản phẩm; phí giao hàng tính riêng. Chỉ gồm mã tài khoản đủ điều kiện.");result.add(offer);}
   }return result;
  }
- public Quote quote(long user,QuoteInput input){
+ // Per-request only: reuse reference reads across listing SKUs, never across buyers or checkout calls.
+ static final class PriceReadContext {
+  private final Map<String,Object> values=new HashMap<>();
+  @SuppressWarnings("unchecked")
+  <T> T read(String key,java.util.function.Supplier<T> loader){return (T)values.computeIfAbsent(key,k->loader.get());}
+ }
+ private <T> T read(PriceReadContext context,String key,java.util.function.Supplier<T> loader){return context==null?loader.get():context.read(key,loader);}
+ public Quote quote(long user,QuoteInput input){return quote(user,input,null);}
+ private Quote quote(long user,QuoteInput input,PriceReadContext reads){
   var items=db.queryForList("SELECT ci.id AS cart_item_id,ci.quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM cart_items ci JOIN carts cart ON cart.id=ci.cart_id JOIN product_db.product_skus s ON s.id=ci.sku_id AND s.product_id=ci.product_id JOIN product_db.products p ON p.id=s.product_id WHERE cart.user_id=? AND EXISTS(SELECT 1 FROM product_db.shops sh WHERE sh.id=p.shop_id AND sh.status='ACTIVE' AND sh.deleted_at IS NULL) AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY s.id",user);
   if(input!=null&&input.skuId()!=null){
    require(input.cartItemIds()==null,"Chỉ chọn mua ngay hoặc giỏ hàng");
@@ -132,7 +141,7 @@ public class PromotionService {
   }else require(items.size()==db.queryForObject("SELECT COUNT(*) FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=?",Integer.class,user),"Giỏ hàng có phân loại không hợp lệ");
   require(!items.isEmpty(),"Chưa chọn sản phẩm thanh toán");
   long shopId=number(items.get(0).get("shop_id"));require(items.stream().allMatch(i->number(i.get("shop_id"))==shopId),"Vui lòng đặt riêng sản phẩm từng shop");
-  var campaigns=db.queryForList("SELECT * FROM promo_campaigns WHERE kind='VOUCHER' AND (shop_id IS NULL OR shop_id=?) ORDER BY id",shopId);
+  var campaigns=read(reads,"campaigns:"+shopId,()->db.queryForList("SELECT * FROM promo_campaigns WHERE kind='VOUCHER' AND (shop_id IS NULL OR shop_id=?) ORDER BY id",shopId));
   List<Line> lines=new ArrayList<>();boolean allowVouchers=true;
   for(var item:items){int qty=(int)number(item.get("quantity"));require(qty>0&&qty<=99&&qty<=number(item.get("stock_quantity")),"Không đủ tồn kho cho "+item.get("name"));BigDecimal base=money(item.get("price")),price=base;
    var sales=db.queryForList("SELECT discount_percent FROM commerce_product_sales WHERE product_id=? AND starts_at<=UTC_TIMESTAMP(3) AND ends_at>UTC_TIMESTAMP(3)",item.get("product_id"));
@@ -144,19 +153,19 @@ public class PromotionService {
    lines.add(new Line(number(item.get("cart_item_id")),number(item.get("product_id")),number(item.get("sku_id")),shopId,item.get("name").toString(),Objects.toString(item.get("variant_name"),""),Objects.toString(item.get("thumbnail_url"),""),qty,base,price,flashId,flashCampaign));
   }
   BigDecimal subtotal=lines.stream().map(Line::subtotal).reduce(BigDecimal.ZERO,BigDecimal::add),original=lines.stream().map(l->l.basePrice().multiply(BigDecimal.valueOf(l.quantity()))).reduce(BigDecimal.ZERO,BigDecimal::add);
-  var feeRows=db.queryForList("SELECT fee FROM promo_shipping_policy WHERE shop_id=?",shopId);BigDecimal shipping=feeRows.isEmpty()?BigDecimal.ZERO:money(feeRows.get(0).get("fee"));
+  var feeRows=read(reads,"shipping:"+shopId,()->db.queryForList("SELECT fee FROM promo_shipping_policy WHERE shop_id=?",shopId));BigDecimal shipping=feeRows.isEmpty()?BigDecimal.ZERO:money(feeRows.get(0).get("fee"));
   List<Map<String,Object>> eligible=new ArrayList<>(),descriptions=new ArrayList<>();Set<String> requested=new HashSet<>();if(input!=null&&input.codes()!=null)for(String code:input.codes())if(code!=null&&!code.isBlank())requested.add(code.trim().toUpperCase(Locale.ROOT));
   for(var c:campaigns){
    if(input!=null&&input.virtualSpent()!=null)c.put("budget_reserved",money(c.get("budget_reserved")).add(input.virtualSpent().getOrDefault(number(c.get("id")),BigDecimal.ZERO)));
    if(input!=null&&input.virtualUsed()!=null)c.put("quota_reserved",number(c.get("quota_reserved"))+input.virtualUsed().getOrDefault(number(c.get("id")),0));
-   String reason=input!=null&&input.excluded()!=null&&input.excluded().contains(number(c.get("id")))?"Mã đã được chọn cho đơn shop trước":!audience(user,number(c.get("id")))?"Voucher không dành cho tài khoản này":!"LIVE".equals(phase(c))?"Chưa bắt đầu hoặc đã kết thúc":!available(c)?"Đã hết lượt hoặc ngân sách":used(user,number(c.get("id")))>=number(c.get("per_user_limit"))?"Bạn đã dùng hết lượt":subtotal.compareTo(money(c.get("min_order")))<0?"Chưa đạt đơn tối thiểu "+money(c.get("min_order")) :!allowVouchers?"Flash sale không cộng thêm voucher":"";
+   String reason=input!=null&&input.excluded()!=null&&input.excluded().contains(number(c.get("id")))?"Mã đã được chọn cho đơn shop trước":!read(reads,"audience:"+c.get("id"),()->audience(user,number(c.get("id"))))?"Voucher không dành cho tài khoản này":!"LIVE".equals(phase(c))?"Chưa bắt đầu hoặc đã kết thúc":!available(c)?"Đã hết lượt hoặc ngân sách":read(reads,"used:"+c.get("id"),()->used(user,number(c.get("id"))))>=number(c.get("per_user_limit"))?"Bạn đã dùng hết lượt":subtotal.compareTo(money(c.get("min_order")))<0?"Chưa đạt đơn tối thiểu "+money(c.get("min_order")) :!allowVouchers?"Flash sale không cộng thêm voucher":"";
    var desc=new LinkedHashMap<>(c);redact(desc);desc.put("eligible",reason.isEmpty());desc.put("reason",reason);descriptions.add(desc);if(reason.isEmpty())eligible.add(c);}
   boolean auto=input==null||!Boolean.FALSE.equals(input.autoBest());
   if(!auto){for(String code:requested)require(eligible.stream().anyMatch(c->code.equals(c.get("code"))),"Mã "+code+" không đủ điều kiện hoặc không tồn tại");eligible=eligible.stream().filter(c->requested.contains(c.get("code"))).toList();require(eligible.size()<=3,"Tối đa một mã cho mỗi loại");require(eligible.stream().map(c->c.get("layer")).distinct().count()==eligible.size(),"Chỉ dùng một mã mỗi loại");}
   List<Map<String,Object>> selected=best(eligible,subtotal,shipping,auto);if(!auto)require(selected.size()==eligible.size(),"Các mã không được cộng dồn hoặc đã hết ngân sách");
   List<Applied> applied=new ArrayList<>();BigDecimal net=subtotal,shipDiscount=BigDecimal.ZERO,cut=BigDecimal.ZERO;
   for(var c:selected){BigDecimal amount=discount(c.get("discount_type").toString(),money(c.get("value")),c.get("max_discount")==null?null:money(c.get("max_discount")),"SHIPPING".equals(c.get("layer"))?shipping:net);if("SHIPPING".equals(c.get("layer")))shipDiscount=amount;else{net=net.subtract(amount);cut=cut.add(amount);}applied.add(new Applied(number(c.get("id")),c.get("code").toString(),c.get("name").toString(),c.get("layer").toString(),amount));}
-  var policy=db.queryForList("SELECT vat_percent FROM commerce_finance_policy WHERE shop_id=?",shopId);
+  var policy=read(reads,"vat:"+shopId,()->db.queryForList("SELECT vat_percent FROM commerce_finance_policy WHERE shop_id=?",shopId));
   BigDecimal vatRate=policy.isEmpty()?BigDecimal.ZERO:new BigDecimal(policy.get(0).get("vat_percent").toString());
   BigDecimal vatIncluded=com.team.ecommerce.order.service.CommerceFinanceService.includedVat(subtotal.subtract(applied.stream().filter(a->"SHOP".equals(a.layer())).map(Applied::amount).reduce(BigDecimal.ZERO,BigDecimal::add)),vatRate);
   BigDecimal tax=BigDecimal.ZERO,fees=shipping.subtract(shipDiscount),total=net.add(fees);

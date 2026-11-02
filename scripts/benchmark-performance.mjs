@@ -1,0 +1,4 @@
+import fs from 'node:fs';import crypto from 'node:crypto';
+const results=[];
+for(const origin of ['http://127.0.0.1:8080','https://api-eshop.mtcord.io.vn'])for(const [path,body] of [['/api/v1/ai/recommendations',{keywords:[],sessionId:crypto.randomUUID(),page:0,size:20}],['/api/v1/promotions/prices',{productIds:[109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128]}],['/api/v1/products?size=20',null]]){const samples=[];for(let i=0;i<3;i++){const start=performance.now();const r=await fetch(origin+path,{signal:AbortSignal.timeout(20000),method:body?'POST':'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const bytes=(await r.text()).length;samples.push({ms:Math.round(performance.now()-start),status:r.status,bytes});}results.push({origin,path,samples});console.log(JSON.stringify(results.at(-1)));}
+fs.writeFileSync(process.argv[2] || '.tools/performance-api.json',JSON.stringify(results,null,2));

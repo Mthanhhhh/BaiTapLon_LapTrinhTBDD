@@ -3,9 +3,9 @@ import {apiClient} from '../api/client';
 import {CategoryStrip} from '../components/CategoryStrip';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Platform, ScrollView } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, spacing, radius } from '../theme';
 import { Typography, ProductCard, ProductListItem, Button } from '../components/ui';
@@ -16,6 +16,7 @@ import { searchHistory } from '../utils/searchHistory';
 
 export default function SearchScreen() {
   const { user } = useContext(AuthContext);
+  const focused = useIsFocused();
   const previousUser = useRef(user?.id);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -33,7 +34,7 @@ export default function SearchScreen() {
   
   const [sort, setSort] = useState(initialSort); 
   const [province,setProvince]=useState(''),[brandId,setBrandId]=useState<number>(),[minRating,setMinRating]=useState<number>();
-  const options=useQuery<any>({queryKey:['filterOptions'],queryFn:async()=>(await apiClient.get('/api/v1/products/filter-options')).data.data});
+  const options=useQuery<any>({queryKey:['filterOptions'],staleTime:300000,queryFn:async()=>(await apiClient.get('/api/v1/products/filter-options')).data.data});
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
@@ -106,15 +107,15 @@ export default function SearchScreen() {
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     sort,
-  });
+  }, {enabled:focused});
 
-  const products = data?.pages.flatMap(page => page.content) || [];
+  const products = useMemo(() => data?.pages.flatMap(page => page.content) ?? [], [data]);
 
   const handleSortChange = (newSort: string) => {
     setSort(newSort);
   };
 
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = useCallback(({ item }: { item: any }) => {
     if (layout === 'grid') {
       return (
         <View style={{ width: '48%' }}>
@@ -145,7 +146,7 @@ export default function SearchScreen() {
         onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
       />
     );
-  };
+  }, [layout,navigation]);
 
   const renderFooter = () => {
     if (isFetchingNextPage) {
@@ -294,17 +295,19 @@ export default function SearchScreen() {
         <FlatList
           key={layout} 
           data={products}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
+          keyExtractor={item => String(item.id)}
           renderItem={renderItem}
           numColumns={layout === 'grid' ? 2 : 1}
           columnWrapperStyle={layout === 'grid' ? styles.row : undefined}
           contentContainerStyle={styles.listContent}
           onEndReached={() => {
-            if (hasNextPage) fetchNextPage();
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
           windowSize={5}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
         />
       )}
 

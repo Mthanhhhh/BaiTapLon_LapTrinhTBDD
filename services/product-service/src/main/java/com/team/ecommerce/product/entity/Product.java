@@ -23,7 +23,7 @@ public class Product extends BaseEntity {
     @Column(name = "shop_id", nullable = false)
     private Long shopId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="shop_id",insertable=false,updatable=false)
     private Shop shop;
 
@@ -129,6 +129,7 @@ public class Product extends BaseEntity {
     @Builder.Default
     private List<ProductImage> images = new ArrayList<>();
 
+    @org.hibernate.annotations.BatchSize(size = 32)
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ProductVariant> variants = new ArrayList<>();

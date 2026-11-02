@@ -1,6 +1,9 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+// Native SecureStore is read once per session; browser storage stays live across tabs.
+let accessTokenRead: Promise<string | null> | undefined;
+
 const ACCESS_TOKEN_KEY = 'ACCESS_TOKEN';
 const REFRESH_TOKEN_KEY = 'REFRESH_TOKEN';
 const REMEMBER_ME_KEY = 'REMEMBER_ME';
@@ -13,6 +16,7 @@ export const tokenStorage = {
     } else {
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      accessTokenRead = Promise.resolve(accessToken);
     }
   },
 
@@ -36,7 +40,13 @@ export const tokenStorage = {
     if (Platform.OS === 'web') {
       return localStorage.getItem(ACCESS_TOKEN_KEY);
     }
-    return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    if (!accessTokenRead) {
+      accessTokenRead = SecureStore.getItemAsync(ACCESS_TOKEN_KEY).catch(error => {
+        accessTokenRead = undefined;
+        throw error;
+      });
+    }
+    return accessTokenRead;
   },
 
   async getRefreshToken() {
@@ -47,6 +57,7 @@ export const tokenStorage = {
   },
 
   async clearTokens() {
+    accessTokenRead = Promise.resolve(null);
     if (Platform.OS === 'web') {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(REFRESH_TOKEN_KEY);

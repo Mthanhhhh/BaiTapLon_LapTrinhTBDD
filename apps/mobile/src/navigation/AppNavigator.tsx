@@ -52,7 +52,7 @@ export type RootStackParamList = {
   SellerCenter: { editProductId?: number } | undefined;
   ShopSetup: {edit?:boolean}|undefined;
   Checkout: {cartItemIds?:number[];skuId?:number;quantity?:number}|undefined;
-  Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'MAESTRO' | 'PAYPAL' } | undefined;
+  Payment: { orderId: number; total: number; orderNumber?: string; method?: 'VISA' | 'DOMESTIC' | 'MAESTRO' | 'PAYPAL' } | undefined;
   Success: { orderId: number; amount: number; paymentMethod?: string; cardLastFour?: string; transactionId?: string } | undefined;
   Filter: undefined;
   OAuthCallback: undefined;

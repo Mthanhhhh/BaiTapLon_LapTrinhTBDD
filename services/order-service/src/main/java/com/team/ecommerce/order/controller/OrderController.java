@@ -74,8 +74,11 @@ public class OrderController {
         return ApiResponse.success("Order delivered successfully", orderService.transition(userId, id, OrderStatus.DELIVERED));
     }
 
+    @GetMapping("/{id}/return")
+    public ApiResponse<?> returnDetails(@AuthenticationPrincipal Long userId,@PathVariable Long id){return ApiResponse.success(orderService.returnDetails(userId,id));}
+
     @PostMapping("/{id}/return")
-    public ApiResponse<OrderResponse> returnOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id) {
-        return ApiResponse.success("Order return requested", orderService.transition(userId, id, OrderStatus.RETURNED));
+    public ApiResponse<OrderResponse> returnOrder(@AuthenticationPrincipal Long userId, @PathVariable Long id, @RequestBody java.util.Map<String,String> input) {
+        return ApiResponse.success("Order return requested", orderService.requestReturn(userId, id, input.get("reason")));
     }
 }

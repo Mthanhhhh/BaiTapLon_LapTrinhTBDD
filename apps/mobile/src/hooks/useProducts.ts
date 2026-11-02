@@ -82,6 +82,7 @@ export interface ReviewResponse {
 export const useCategories = () => {
   return useQuery<CategoryResponse[]>({
     queryKey: ['categories'],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data } = await apiClient.get('/api/v1/categories');
       return data.data; // List<CategoryResponse>
@@ -127,10 +128,11 @@ export const useHomeBanner = () => {
   });
 };
 
-export const useProductsInfinite = (params: any = {}) => {
+export const useProductsInfinite = (params: any = {}, options: {enabled?:boolean} = {}) => {
   return useInfiniteQuery({
     queryKey: ['products', params],
-    queryFn: async ({ pageParam = 0 }) => {
+    enabled: options.enabled ?? true,
+    queryFn: async ({ pageParam = 0, signal }) => {
       const endpoint = params.aiSearch && params.keyword && !params.categoryId
         ? `/api/v1/ai/search`
         : params.brandId || params.province || params.keyword || params.minPrice != null || params.maxPrice != null || params.minRating != null
@@ -154,6 +156,7 @@ export const useProductsInfinite = (params: any = {}) => {
 
       const { data } = await apiClient.get(endpoint, {
         params: queryParams,
+        signal,
       });
       return data.data; // PageResponse
     },

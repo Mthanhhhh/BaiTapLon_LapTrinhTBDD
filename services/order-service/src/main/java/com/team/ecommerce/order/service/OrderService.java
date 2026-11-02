@@ -98,7 +98,7 @@ public class OrderService {
 
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
         String method=java.util.Objects.toString(request.getPaymentMethod(),"").trim().toUpperCase(java.util.Locale.ROOT);
-        if(!java.util.Set.of("COD","VISA","MAESTRO","PAYPAL").contains(method))throw new BadRequestException("Phương thức thanh toán không được hỗ trợ");
+        if(!java.util.Set.of("COD","VISA","DOMESTIC").contains(method))throw new BadRequestException("Phương thức thanh toán không được hỗ trợ");
         request.setPaymentMethod(method);
         if(request.getSkuId()!=null)jdbc.update("INSERT IGNORE INTO carts(user_id) VALUES(?)",userId);
         Cart cart = cartRepository.findByUserIdForUpdate(userId)
@@ -255,7 +255,25 @@ public class OrderService {
         return PageResponse.from(orderRepository.findShopOrders(userId,org.springframework.data.domain.PageRequest.of(pageable.getPageNumber(),pageable.getPageSize())).map(o->OrderResponse.from(o,null)));
     }
 
+    public java.util.Map<String,Object> returnDetails(Long userId,Long orderId){
+        Order order=orderRepository.findById(orderId).orElseThrow(()->new ResourceNotFoundException("Order","id",orderId));
+        if(!order.getUserId().equals(userId))throw new org.springframework.security.access.AccessDeniedException("Đơn không thuộc tài khoản.");
+        var rows=jdbc.queryForList("SELECT status,description AS reason,resolved_at AS resolvedAt FROM order_returns WHERE order_id=? ORDER BY id",orderId);
+        var refund=jdbc.queryForList("SELECT amount,transaction_reference AS reference,created_at AS createdAt FROM commerce_refunds WHERE order_id=?",orderId);
+        return java.util.Map.of("steps",rows,"refund",refund,"orderStatus",order.getStatus().name());
+    }
+    public OrderResponse requestReturn(Long userId,Long orderId,String description){
+        String reason=description==null?"":description.trim();
+        if(reason.length()<10||reason.length()>1500)throw new BadRequestException("Nhập lý do trả hàng từ 10 đến 1.500 ký tự.");
+        Order order=orderRepository.findForUpdate(orderId).orElseThrow(()->new ResourceNotFoundException("Order","id",orderId));
+        if(!order.getUserId().equals(userId))throw new org.springframework.security.access.AccessDeniedException("Đơn không thuộc tài khoản.");
+        if(order.getStatus()!=OrderStatus.DELIVERED)throw new BadRequestException("Chỉ yêu cầu trả hàng sau khi đã nhận đơn.");
+        if(jdbc.queryForObject("SELECT COUNT(*) FROM order_returns WHERE order_id=?",Long.class,orderId)>0)throw new BadRequestException("Đơn đã có yêu cầu trả hàng. Vui lòng nhắn shop để được hỗ trợ tiếp.");
+        for(OrderItem item:order.getItems())jdbc.update("INSERT INTO order_returns(order_id,order_item_id,user_id,reason,description,status) VALUES(?,?,?,'OTHER',?,'REQUESTED')",orderId,item.getId(),userId,reason);
+        return updateOrderStatus(orderId,OrderStatus.RETURNED);
+    }
     public OrderResponse transition(Long userId, Long orderId, OrderStatus target) {
+        if(target==OrderStatus.RETURNED)throw new BadRequestException("Vui lòng nhập lý do trả hàng.");
         Order order = orderRepository.findForUpdate(orderId).orElseThrow(() -> new ResourceNotFoundException("Order","id",orderId));
         OrderStatus expected;
         if (target == OrderStatus.WAITING_PICKUP || target == OrderStatus.SHIPPING) {
@@ -266,10 +284,6 @@ public class OrderService {
             expected = target == OrderStatus.DELIVERED ? OrderStatus.SHIPPING : OrderStatus.DELIVERED;
         }
         if (order.getStatus()!=expected) throw new BadRequestException("Trạng thái đơn hàng không hợp lệ");
-        if(target==OrderStatus.RETURNED){
-            if(jdbc.queryForObject("SELECT COUNT(*) FROM order_returns WHERE order_id=? AND status<>'REJECTED'",Long.class,orderId)>0)throw new BadRequestException("Đơn đã có yêu cầu trả hàng.");
-            for(OrderItem item:order.getItems())jdbc.update("INSERT INTO order_returns(order_id,order_item_id,user_id,reason,description,status) VALUES(?,?,?,'OTHER',?,'REQUESTED')",orderId,item.getId(),userId,"Khách yêu cầu trả toàn đơn; chờ shop kiểm tra và liên hệ xác nhận lý do.");
-        }
         return updateOrderStatus(orderId,target);
     }
 

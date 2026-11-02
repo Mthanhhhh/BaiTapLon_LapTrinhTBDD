@@ -8,6 +8,7 @@ export const API_BASE_URL = apiOrigin;
 
 export const apiClient = axios.create({
   baseURL,
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -91,7 +92,7 @@ apiClient.interceptors.response.use(
         const refreshToken = await tokenStorage.getRefreshToken();
         if (!refreshToken) throw new Error('No refresh token');
         
-        const response = await axios.post(`${baseURL}/api/v1/auth/refresh`, { refreshToken });
+        const response = await axios.post(`${baseURL}/api/v1/auth/refresh`, { refreshToken }, {timeout:15000});
         const newAccessToken = response.data.data.accessToken;
         const newRefreshToken = response.data.data.refreshToken;
         

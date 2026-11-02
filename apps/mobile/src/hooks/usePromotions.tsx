@@ -11,12 +11,14 @@ const Live=createContext({connected:false,offset:0});
 export const usePromotionLive=()=>useContext(Live);
 export function PromotionLiveProvider({children}:{children:React.ReactNode}){
  const cache=useQueryClient();const [connected,setConnected]=useState(false),[offset,setOffset]=useState(0);
- useEffect(()=>{let socket:WebSocket|undefined,retry:ReturnType<typeof setTimeout>|undefined,ping:ReturnType<typeof setInterval>|undefined,closed=false,attempt=0;
-  const refresh=()=>{for(const key of ['promotions','promotionQuote','orderPricing','cart','products','recommendations','product','notifications','orders','sellerProducts','shopProducts','commerce','admin','productOffers','skuQuote','cartPricing'])void cache.invalidateQueries({queryKey:[key]});};
-  const stop=()=>{clearTimeout(retry);clearInterval(ping);const old=socket;socket=undefined;old?.close();setConnected(false);};
+ useEffect(()=>{let socket:WebSocket|undefined,retry:ReturnType<typeof setTimeout>|undefined,ping:ReturnType<typeof setInterval>|undefined,refreshTimer:ReturnType<typeof setTimeout>|undefined,closed=false,hasConnected=false,attempt=0;
+  const refreshNow=()=>{for(const key of ['promotions','promotionQuote','orderPricing','cart','products','recommendations','product','notifications','orders','sellerProducts','shopProducts','commerce','admin','productOffers','skuQuote','cartPricing'])void cache.invalidateQueries({queryKey:[key]});};
+  // A checkout may emit several events; refetch each active query once per burst.
+  const refresh=()=>{if(!refreshTimer)refreshTimer=setTimeout(()=>{refreshTimer=undefined;refreshNow();},400);};
+  const stop=()=>{clearTimeout(refreshTimer);refreshTimer=undefined;clearTimeout(retry);clearInterval(ping);const old=socket;socket=undefined;old?.close();setConnected(false);};
   const connect=()=>{if(closed||AppState.currentState!=='active')return;clearTimeout(retry);const origin=API_BASE_URL.replace(/^http/,'ws');const current=new WebSocket(origin+'/ws/promotions');socket=current;
-   current.onopen=()=>{if(socket!==current)return;setConnected(true);attempt=0;refresh();ping=setInterval(()=>{if(current.readyState===1)current.send('ping');},20000);};
-   current.onmessage=event=>{if(socket!==current)return;try{const message=JSON.parse(event.data);if(message.serverTime)setOffset(new Date(message.serverTime).getTime()-Date.now());if(message.type==='PROMOTIONS_CHANGED')refresh();}catch{}};
+   current.onopen=()=>{if(socket!==current)return;setConnected(true);attempt=0;if(hasConnected)refresh();hasConnected=true;ping=setInterval(()=>{if(current.readyState===1)current.send('ping');},20000);};
+   current.onmessage=event=>{if(socket!==current)return;try{const message=JSON.parse(event.data);if(message.serverTime)setOffset(previous=>{const next=new Date(message.serverTime).getTime()-Date.now();return Number.isFinite(next)&&Math.abs(next-previous)>1000?next:previous;});if(message.type==='PROMOTIONS_CHANGED')refresh();}catch{}};
    current.onclose=()=>{if(socket!==current)return;socket=undefined;setConnected(false);clearInterval(ping);if(!closed&&AppState.currentState==='active')retry=setTimeout(connect,Math.min(30000,1000*2**Math.min(attempt++,5)));};current.onerror=()=>current.close();};
   const sub=AppState.addEventListener('change',state=>{stop();if(state==='active')connect();});connect();return()=>{closed=true;sub.remove();stop();};
  },[cache]);

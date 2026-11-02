@@ -1,3 +1,4 @@
+import {ReturnRequest} from '../components/ReturnRequest';
 import {OrderPriceDetails} from '../components/OrderPriceDetails';
 import { appAlert } from '../utils/appAlert';
 import { useShop } from '../hooks/useShop';
@@ -25,7 +26,6 @@ import {
   useConfirmOrder,
   useShipOrder,
   useReceiveOrder,
-  useReturnOrder,
   useCancelOrder,
   useRejectShopOrder,
   useSubmitReview,
@@ -68,7 +68,6 @@ export default function OrdersScreen() {
   const confirmOrderMutation = useConfirmOrder();
   const shipOrderMutation = useShipOrder();
   const receiveOrderMutation = useReceiveOrder();
-  const returnOrderMutation = useReturnOrder();
   const cancelOrderMutation = useCancelOrder();
   const rejectShopOrderMutation = useRejectShopOrder();
   const submitReviewMutation = useSubmitReview();
@@ -193,29 +192,8 @@ export default function OrdersScreen() {
     );
   };
 
-  const handleReturnOrder = (orderId: number) => {
-    appAlert.alert(
-      'Yêu cầu trả hàng / Hoàn tiền',
-      'Bạn muốn yêu cầu trả hàng hoặc hoàn tiền cho đơn hàng này?',
-      [
-        { text: 'Hủy bỏ', style: 'cancel' },
-        {
-          text: 'Gửi yêu cầu',
-          style: 'destructive',
-          onPress: () => {
-            returnOrderMutation.mutate(orderId, {
-              onSuccess: () => {
-                appAlert.alert('Đã gửi yêu cầu', 'Yêu cầu trả hàng của bạn đã được gửi tới Shop.');
-              },
-              onError: (err: any) => {
-                appAlert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi yêu cầu trả hàng.');
-              },
-            });
-          },
-        },
-      ]
-    );
-  };
+  const [returnId,setReturnId]=useState<number|null>(null);
+  const handleReturnOrder = (orderId:number)=>setReturnId(orderId);
 
   const openReviewModal = (order: OrderResponse, item: any) => {
     setSelectedOrder(order);
@@ -483,7 +461,6 @@ export default function OrdersScreen() {
                     variant="outline"
                     size="sm"
                     onPress={() => handleReturnOrder(item.id)}
-                    loading={returnOrderMutation.isPending}
                     style={styles.actionBtn}
                   >
                     Trả hàng / Hoàn tiền
@@ -502,9 +479,7 @@ export default function OrdersScreen() {
               )}
 
               {isReturned && (
-                <Typography variant="xs" color="danger" weight="medium">
-                  Đã gửi yêu cầu trả hàng / hoàn tiền
-                </Typography>
+                <Button size="sm" variant="outline" onPress={()=>setReturnId(item.id)}>Xem tiến độ trả hàng / hoàn tiền</Button>
               )}
 
               {isCancelled && (
@@ -520,7 +495,7 @@ export default function OrdersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}>{returnId!==null&&<ReturnRequest orderId={returnId} onClose={()=>setReturnId(null)}/>}
       {/* Screen Header */}
       <View style={styles.header}>
         <View>

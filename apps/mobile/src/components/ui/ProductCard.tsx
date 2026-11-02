@@ -137,7 +137,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(function Produ
           <Typography variant="md" weight="bold" style={styles.priceText}>
             {formatVND(shownPrice)}
           </Typography>
-          <Typography variant="xs" color="primaryDeep" numberOfLines={1}>{offer.data?'Giá sau voucher':'Giá shop'}</Typography>
+          {offer.data&&<Typography variant="xs" color="primaryDeep" numberOfLines={1}>Giá sau voucher</Typography>}
 
         </View>{!isShopOwner && <QuickCartButton productId={id} name={name}/>}</View>
 

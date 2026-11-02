@@ -358,7 +358,12 @@ public class ProductService {
     }
 
     private PageResponse<ProductListResponse> mapToPageResponse(Page<Product> page) {
-        Page<ProductListResponse> responsePage = page.map(p -> ProductListResponse.from(p, getCategoryName(p.getCategoryId())));
+        // Fetch category labels once per page instead of one SELECT for each card.
+        var ids = page.getContent().stream().map(Product::getCategoryId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        var names = categoryRepository.findAllById(ids).stream().collect(
+                java.util.stream.Collectors.toMap(Category::getId, Category::getName));
+        Page<ProductListResponse> responsePage = page.map(p -> ProductListResponse.from(p, names.get(p.getCategoryId())));
         return PageResponse.from(responsePage);
     }
 }
