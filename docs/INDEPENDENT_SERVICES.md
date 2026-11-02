@@ -71,7 +71,7 @@ Runner được cấu hình trong `.tools/github-runner`; lệnh `./.tools/githu
 
 Cloudflare Tunnel hiện có định tuyến `api-eshop.mtcord.io.vn` tới `http://localhost:8080`. Giữ tên miền này trong APK/web API URL; database chỉ trên server. Trình duyệt nhận HTTPS ở Cloudflare, lưu lượng tunnel được mã hóa tới cloudflared. Không đưa database ra tên miền công khai. OAuth phải giữ callback HTTPS đã đăng ký.
 
-Bạn cùng nhóm chỉ cần pull source và cấu hình `EXPO_PUBLIC_API_URL=https://api-eshop.mtcord.io.vn/api/v1` theo `docs/TEAM_QUICKSTART.md`; không cần bản sao database hoặc bí mật backend.
+Bạn cùng nhóm chỉ cần pull source và cấu hình `EXPO_PUBLIC_API_URL=https://api-eshop.mtcord.io.vn` theo `docs/TEAM_QUICKSTART.md`; không cần bản sao database hoặc bí mật backend.
 
 ## Đo kiểm
 
