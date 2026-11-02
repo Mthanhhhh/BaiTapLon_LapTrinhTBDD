@@ -1,5 +1,6 @@
 param([string]$EnvironmentFile='.env.independent.local',[string]$PublicApiUrl='https://api-eshop.mtcord.io.vn',[int]$Port=8080)
 $ErrorActionPreference='Stop'
+$env:COMPOSE_PARALLEL_LIMIT='1'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
 if (-not (Test-Path -LiteralPath $EnvironmentFile)) {

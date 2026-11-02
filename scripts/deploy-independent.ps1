@@ -1,5 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$EnvironmentFile,[switch]$SkipBuild)
 $ErrorActionPreference = 'Stop'
+$env:COMPOSE_PARALLEL_LIMIT='1'
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 $environmentPath = (Resolve-Path -LiteralPath $EnvironmentFile).Path

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 ARG SERVICE
+ENV MAVEN_OPTS="-Xmx256m"
 WORKDIR /build
 COPY services/${SERVICE}/pom.xml ./pom.xml
 RUN --mount=type=cache,target=/root/.m2 mvn -B dependency:go-offline -DskipTests
