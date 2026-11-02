@@ -11,36 +11,36 @@ spring:
           enabled: false
       routes:
         - id: promotion-websocket
-          uri: ws://${ORDER_SERVICE_HOST:localhost}:8085
+          uri: ${ORDER_WEBSOCKET_URL:ws://${ORDER_SERVICE_HOST:localhost}:8085}
           predicates:
             - Path=/ws/promotions,/ws/chat
         # Route 1: Auth APIs
         - id: auth-route
-          uri: http://${AUTH_SERVICE_HOST:localhost}:8083
+          uri: ${AUTH_SERVICE_URL:http://${AUTH_SERVICE_HOST:localhost}:8083}
           predicates:
             - Path=/api/v1/auth/**, /api/v1/addresses/**
 
         # Route 2: Product & Category APIs
         - id: product-route
-          uri: http://${PRODUCT_SERVICE_HOST:localhost}:8084
+          uri: ${PRODUCT_SERVICE_URL:http://${PRODUCT_SERVICE_HOST:localhost}:8084}
           predicates:
             - Path=/api/v1/products/**, /api/v1/categories/**, /api/v1/ai/**
 
         # Route 3: Cart, Order & Voucher APIs
         - id: order-route
-          uri: http://${ORDER_SERVICE_HOST:localhost}:8085
+          uri: ${ORDER_SERVICE_URL:http://${ORDER_SERVICE_HOST:localhost}:8085}
           predicates:
             - Path=/api/v1/cart/**, /api/v1/orders/**, /api/v1/vouchers/**, /api/v1/promotions/**
 
         # Route 4: Payment APIs
         - id: payment-route
-          uri: http://${PAYMENT_SERVICE_HOST:localhost}:8086
+          uri: ${PAYMENT_SERVICE_URL:http://${PAYMENT_SERVICE_HOST:localhost}:8086}
           predicates:
             - Path=/api/v1/payments/**
 
         # Route 5: Swagger Documentation
         - id: docs-route
-          uri: http://${PRODUCT_SERVICE_HOST:localhost}:8084
+          uri: ${PRODUCT_SERVICE_URL:http://${PRODUCT_SERVICE_HOST:localhost}:8084}
           predicates:
             - Path=/swagger-ui/**, /api-docs/**
 
@@ -48,13 +48,12 @@ spring:
         add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
-            allowedOriginPatterns:
-              - "*"
-            allowedMethods:
-              - "*"
-            allowedHeaders:
-              - "*"
+            allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:8082,http://localhost:8087,https://eshop.mtcord.io.vn}
+            allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+            allowedHeaders: [Authorization, Content-Type, Accept, X-Requested-With, X-Idempotency-Key, Cache-Control, Pragma]
+            exposedHeaders: [Location, X-Request-ID, X-Gateway-Instance, X-Service-Instance, Retry-After]
             allowCredentials: true
+            maxAge: 3600
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_LAST

@@ -33,19 +33,21 @@ import java.util.stream.Collectors;
 public class AiShoppingService {
     private final ProductService productService;
     private final JdbcTemplate jdbc;
+    private final com.team.ecommerce.shared.integration.IntegrationClient clients;
     private final ObjectMapper mapper;
     private final String apiKey;
     private final String model;
     private final HttpClient http;
     private final Duration requestTimeout;
 
-    public AiShoppingService(ProductService productService, JdbcTemplate jdbc, ObjectMapper mapper,
+    public AiShoppingService(ProductService productService, JdbcTemplate jdbc, ObjectMapper mapper, com.team.ecommerce.shared.integration.IntegrationClient clients,
             @Value("${app.ai.gemini.api-key:}") String apiKey,
             @Value("${app.ai.gemini.model:gemini-3.6-flash}") String model,
             @Value("${app.ai.gemini.connect-timeout-seconds:10}") long connectTimeoutSeconds,
             @Value("${app.ai.gemini.request-timeout-seconds:60}") long requestTimeoutSeconds) {
         this.productService = productService;
         this.jdbc = jdbc;
+        this.clients = clients;
         this.mapper = mapper;
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.model = model;
@@ -235,9 +237,7 @@ public class AiShoppingService {
         try {
             return switch (topic) {
                 case "ORDERS" -> {
-                    List<Map<String, Object>> rows = jdbc.queryForList(
-                            "SELECT order_no, status, DATE_FORMAT(created_at, '%d/%m/%Y') AS created_date " +
-                            "FROM order_db.orders WHERE user_id=? ORDER BY created_at DESC LIMIT 5", userId);
+                    var rows=(List<Map<String,Object>>)clients.get("order","/internal/domain/recent-orders/"+userId).get("orders");
                     if (rows.isEmpty()) yield "Tài khoản của bạn hiện chưa có đơn hàng.";
                     yield "Các đơn gần đây của bạn: " + rows.stream().map(row -> "#" + row.get("order_no") +
                             " đang ở trạng thái " + orderStatusLabel(String.valueOf(row.get("status"))) +
@@ -245,9 +245,7 @@ public class AiShoppingService {
                             ". Bạn có thể mở mục Đơn mua để xem chi tiết.";
                 }
                 case "ADDRESS" -> {
-                    List<String> provinces = jdbc.query(
-                            "SELECT province FROM auth_db.user_addresses WHERE user_id=? AND deleted_at IS NULL " +
-                            "ORDER BY is_default DESC, id DESC LIMIT 3", (rs, row) -> rs.getString("province"), userId);
+                    var provinces=(List<String>)clients.get("auth","/internal/domain/accounts/"+userId+"/provinces").get("provinces");
                     yield provinces.isEmpty() ? "Tài khoản của bạn chưa lưu địa chỉ nhận hàng. Mở mục Tài khoản để thêm địa chỉ." :
                             "Tỉnh/thành trong các địa chỉ đã lưu của bạn: " + String.join(", ", provinces) +
                                     ". Để xem địa chỉ đường và người nhận, mở mục Tài khoản; mình không đưa số điện thoại hoặc địa chỉ đầy đủ vào chat.";
@@ -262,19 +260,14 @@ public class AiShoppingService {
                             .collect(Collectors.joining("; ")) + ". Mở mục Quản lý shop để xem chi tiết.";
                 }
                 default -> {
-                    List<Map<String, Object>> accounts = jdbc.queryForList(
-                            "SELECT u.status, GROUP_CONCAT(r.name ORDER BY r.name SEPARATOR ', ') AS role_names " +
-                            "FROM auth_db.users u LEFT JOIN auth_db.user_roles ur ON ur.user_id=u.id " +
-                            "LEFT JOIN auth_db.roles r ON r.id=ur.role_id WHERE u.id=? AND u.deleted_at IS NULL GROUP BY u.id,u.status", userId);
-                    if (accounts.isEmpty()) yield "Không tìm thấy hồ sơ đang hoạt động cho phiên đăng nhập này.";
-                    Map<String, Object> account = accounts.get(0);
-                    Object roles = account.get("role_names");
+                    Map<String,Object> account=clients.account(userId);
+                    Object roles=account.get("roles");
                     yield "Tài khoản của bạn đang " + accountStatusLabel(String.valueOf(account.get("status"))) +
                             (roles == null ? ". Mở mục Tài khoản để xem hồ sơ." : "; quyền hệ thống: " + roles +
                                     ". Mở mục Tài khoản để xem hoặc cập nhật hồ sơ và địa chỉ.");
                 }
             };
-        } catch (DataAccessException e) {
+        } catch (RuntimeException e) {
             log.warn("Could not load account context for authenticated user: {}", e.getClass().getSimpleName());
             return "Mình chưa đọc được dữ liệu tài khoản lúc này. Bạn có thể xem thông tin trong mục Đơn mua, Tài khoản hoặc Quản lý shop.";
         }

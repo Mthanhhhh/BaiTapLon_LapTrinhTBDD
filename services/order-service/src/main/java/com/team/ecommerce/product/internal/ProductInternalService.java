@@ -14,8 +14,8 @@ public class ProductInternalService {
 
     private final RestClient restClient;
 
-    public ProductInternalService(@Value("${services.product.url:http://localhost:8084}") String productServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(productServiceUrl).build();
+    public ProductInternalService(@Value("${services.product.url:http://localhost:8084}") String productServiceUrl, @Value("${INTERNAL_SERVICE_TOKEN}") String internalToken) {
+        this.restClient = RestClient.builder().baseUrl(productServiceUrl).defaultHeader("X-Service-Token",internalToken).build();
     }
 
     public ProductInternalDTO getProductById(Long productId) {

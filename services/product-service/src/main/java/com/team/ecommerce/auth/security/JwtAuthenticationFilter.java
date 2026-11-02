@@ -22,7 +22,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final org.springframework.jdbc.core.JdbcTemplate accountStatusJdbc;
+    private final com.team.ecommerce.shared.integration.IntegrationClient accounts;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -33,10 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
                 Long userId = jwtProvider.getUserIdFromToken(jwt);
-                if (accountStatusJdbc.queryForObject("SELECT COUNT(*) FROM auth_db.users WHERE id=? AND status='ACTIVE' AND deleted_at IS NULL", Long.class, userId) == 0) { response.setStatus(401); response.setContentType("application/json"); response.getWriter().write("{\"message\":\"Tài khoản đang bị khóa\"}"); return; }
-                String role = jwtProvider.getRoleFromToken(jwt);
-                
-                List<SimpleGrantedAuthority> authorities = accountStatusJdbc.query("SELECT r.code FROM auth_db.user_roles ur JOIN auth_db.roles r ON r.id=ur.role_id WHERE ur.user_id=?",(rs,row)->new SimpleGrantedAuthority("ROLE_"+rs.getString(1)),userId);
+                var account=accounts.account(userId);
+                if(!"ACTIVE".equals(account.get("status"))||account.get("deletedAt")!=null){response.setStatus(401);return;}
+                List<SimpleGrantedAuthority> authorities=((List<?>)account.get("roles")).stream().map(role->new SimpleGrantedAuthority("ROLE_"+role)).toList();
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, authorities);

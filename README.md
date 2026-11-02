@@ -1,5 +1,7 @@
 # E-Commerce Marketplace
 
+**Cấu hình hiện tại: dịch vụ và database độc lập.** Chạy `./scripts/start-independent.ps1`; xem [triển khai, sao lưu, Redis/Kafka, CORS và CI/CD](docs/INDEPENDENT_SERVICES.md). Các hướng dẫn monolith phía dưới là legacy.
+
 **Thành viên nhóm:** [Pull code và chạy frontend với server/database chung](docs/TEAM_QUICKSTART.md). API: `https://api-eshop.mtcord.io.vn`.
 
 Voucher/Flash sale mới chạy trên các service tách riêng (gateway, auth, product, order, payment), dùng Redis, Kafka và WebSocket. Xem [hướng dẫn triển khai, sử dụng và kiểm thử](docs/PROMOTIONS.md). Phần quick start monolith bên dưới là hướng dẫn legacy.

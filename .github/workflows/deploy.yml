@@ -1,0 +1,23 @@
+name: Deploy personal server
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+permissions:
+  contents: read
+concurrency:
+  group: eshop-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: [self-hosted, Windows, X64, eshop-server]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Build, back up, migrate, deploy and verify
+        shell: powershell
+        run: ./scripts/deploy-independent.ps1 -EnvironmentFile T:/ProjectTBDD/.env.independent.local

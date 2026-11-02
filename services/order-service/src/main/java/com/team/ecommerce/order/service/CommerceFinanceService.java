@@ -41,7 +41,7 @@ public class CommerceFinanceService {
   totals.put("days",days);totals.put("daily",db.queryForList("SELECT DATE(o.created_at) AS date,COUNT(*) AS orders,COALESCE(SUM(CASE WHEN o.status='DELIVERED' THEN f.goods_net ELSE 0 END),0) AS revenue"+from+" GROUP BY DATE(o.created_at) ORDER BY date",args.toArray()));
   totals.put("policy",shop==null?Map.of():policy(shop));
   totals.put("statuses",db.queryForList("SELECT o.status,COUNT(*) AS count"+from+" GROUP BY o.status",args.toArray()));
-  totals.put("topProducts",db.queryForList("SELECT i.product_id AS id,MAX(i.product_name) AS name,MAX(p.thumbnail_url) AS image,SUM(i.quantity) AS units,SUM(i.line_total) AS gross FROM order_items i JOIN orders o ON o.id=i.order_id LEFT JOIN product_db.products p ON p.id=i.product_id WHERE o.currency='VND' AND o.status='DELIVERED' AND o.created_at>=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL ? DAY)"+(shop==null?"":" AND i.shop_id=?")+" GROUP BY i.product_id ORDER BY units DESC LIMIT 10",args.toArray()));
+  totals.put("topProducts",db.queryForList("SELECT i.product_id AS id,MAX(i.product_name) AS name,MAX(p.thumbnail_url) AS image,SUM(i.quantity) AS units,SUM(i.line_total) AS gross FROM order_items i JOIN orders o ON o.id=i.order_id LEFT JOIN ref_product_products p ON p.id=i.product_id WHERE o.currency='VND' AND o.status='DELIVERED' AND o.created_at>=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL ? DAY)"+(shop==null?"":" AND i.shop_id=?")+" GROUP BY i.product_id ORDER BY units DESC LIMIT 10",args.toArray()));
   return totals;
  }
 }

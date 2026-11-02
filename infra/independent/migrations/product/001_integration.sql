@@ -1,0 +1,28 @@
+CREATE TABLE IF NOT EXISTS service_outbox (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,table_name VARCHAR(64) NOT NULL,aggregate_key VARCHAR(160) NOT NULL,deleted BOOLEAN NOT NULL DEFAULT FALSE,created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),published_at DATETIME(3),claimed_until DATETIME(3),INDEX ix_outbox_pending(published_at,claimed_until,id));
+CREATE TABLE IF NOT EXISTS integration_applied (source_name VARCHAR(30) NOT NULL,table_name VARCHAR(64) NOT NULL,aggregate_key VARCHAR(160) NOT NULL,last_version BIGINT NOT NULL DEFAULT -1,PRIMARY KEY(source_name,table_name,aggregate_key));
+DROP TRIGGER IF EXISTS `ix_products_insert`;
+CREATE TRIGGER `ix_products_insert` AFTER INSERT ON `products` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('products',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_products_update`;
+CREATE TRIGGER `ix_products_update` AFTER UPDATE ON `products` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('products',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_products_delete`;
+CREATE TRIGGER `ix_products_delete` AFTER DELETE ON `products` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('products',CONCAT_WS(':',OLD.`id`),1);
+DROP TRIGGER IF EXISTS `ix_product_skus_insert`;
+CREATE TRIGGER `ix_product_skus_insert` AFTER INSERT ON `product_skus` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('product_skus',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_product_skus_update`;
+CREATE TRIGGER `ix_product_skus_update` AFTER UPDATE ON `product_skus` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('product_skus',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_product_skus_delete`;
+CREATE TRIGGER `ix_product_skus_delete` AFTER DELETE ON `product_skus` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('product_skus',CONCAT_WS(':',OLD.`id`),1);
+DROP TRIGGER IF EXISTS `ix_shops_insert`;
+CREATE TRIGGER `ix_shops_insert` AFTER INSERT ON `shops` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('shops',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_shops_update`;
+CREATE TRIGGER `ix_shops_update` AFTER UPDATE ON `shops` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('shops',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_shops_delete`;
+CREATE TRIGGER `ix_shops_delete` AFTER DELETE ON `shops` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('shops',CONCAT_WS(':',OLD.`id`),1);
+DROP TRIGGER IF EXISTS `ix_reviews_insert`;
+CREATE TRIGGER `ix_reviews_insert` AFTER INSERT ON `reviews` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('reviews',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_reviews_update`;
+CREATE TRIGGER `ix_reviews_update` AFTER UPDATE ON `reviews` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('reviews',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_reviews_delete`;
+CREATE TRIGGER `ix_reviews_delete` AFTER DELETE ON `reviews` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('reviews',CONCAT_WS(':',OLD.`id`),1);
+
+CREATE TABLE IF NOT EXISTS integration_bootstrap(source_key VARCHAR(100) PRIMARY KEY,completed_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3));

@@ -12,6 +12,7 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+@org.springframework.scheduling.annotation.EnableScheduling
 @SpringBootApplication
 @EnableCaching
 @ComponentScan(basePackages = {

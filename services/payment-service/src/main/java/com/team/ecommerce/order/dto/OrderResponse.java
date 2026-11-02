@@ -1,6 +1,6 @@
 package com.team.ecommerce.order.dto;
 
-import com.team.ecommerce.order.entity.OrderStatus;
+import com.team.ecommerce.shared.integration.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS service_outbox (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,table_name VARCHAR(64) NOT NULL,aggregate_key VARCHAR(160) NOT NULL,deleted BOOLEAN NOT NULL DEFAULT FALSE,created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),published_at DATETIME(3),claimed_until DATETIME(3),INDEX ix_outbox_pending(published_at,claimed_until,id));
+CREATE TABLE IF NOT EXISTS integration_applied (source_name VARCHAR(30) NOT NULL,table_name VARCHAR(64) NOT NULL,aggregate_key VARCHAR(160) NOT NULL,last_version BIGINT NOT NULL DEFAULT -1,PRIMARY KEY(source_name,table_name,aggregate_key));
+DROP TRIGGER IF EXISTS `ix_users_insert`;
+CREATE TRIGGER `ix_users_insert` AFTER INSERT ON `users` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('users',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_users_update`;
+CREATE TRIGGER `ix_users_update` AFTER UPDATE ON `users` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('users',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_users_delete`;
+CREATE TRIGGER `ix_users_delete` AFTER DELETE ON `users` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('users',CONCAT_WS(':',OLD.`id`),1);
+DROP TRIGGER IF EXISTS `ix_roles_insert`;
+CREATE TRIGGER `ix_roles_insert` AFTER INSERT ON `roles` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('roles',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_roles_update`;
+CREATE TRIGGER `ix_roles_update` AFTER UPDATE ON `roles` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('roles',CONCAT_WS(':',NEW.`id`),0);
+DROP TRIGGER IF EXISTS `ix_roles_delete`;
+CREATE TRIGGER `ix_roles_delete` AFTER DELETE ON `roles` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('roles',CONCAT_WS(':',OLD.`id`),1);
+DROP TRIGGER IF EXISTS `ix_user_roles_insert`;
+CREATE TRIGGER `ix_user_roles_insert` AFTER INSERT ON `user_roles` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('user_roles',CONCAT_WS(':',NEW.`user_id`,NEW.`role_id`),0);
+DROP TRIGGER IF EXISTS `ix_user_roles_update`;
+CREATE TRIGGER `ix_user_roles_update` AFTER UPDATE ON `user_roles` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('user_roles',CONCAT_WS(':',NEW.`user_id`,NEW.`role_id`),0);
+DROP TRIGGER IF EXISTS `ix_user_roles_delete`;
+CREATE TRIGGER `ix_user_roles_delete` AFTER DELETE ON `user_roles` FOR EACH ROW INSERT INTO service_outbox(table_name,aggregate_key,deleted) VALUES('user_roles',CONCAT_WS(':',OLD.`user_id`,OLD.`role_id`),1);
+CREATE TABLE IF NOT EXISTS `ref_order_notification_orders` (`id` bigint unsigned NOT NULL,`user_id` bigint unsigned NULL,`order_no` varchar(500) NULL,`status` varchar(500) NULL,`payment_status` varchar(500) NULL,`image_url` varchar(500) NULL,`created_at` datetime(3) NULL,`updated_at` datetime(3) NULL,PRIMARY KEY(`id`),INDEX (`user_id`));
+
+CREATE TABLE IF NOT EXISTS integration_bootstrap(source_key VARCHAR(100) PRIMARY KEY,completed_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3));

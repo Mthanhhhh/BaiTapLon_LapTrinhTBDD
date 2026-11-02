@@ -1,7 +1,7 @@
 package com.team.ecommerce.order.service;
 
 import com.team.ecommerce.order.dto.OrderResponse;
-import com.team.ecommerce.order.entity.OrderStatus;
+import com.team.ecommerce.shared.integration.OrderStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,8 +13,8 @@ public class OrderService {
 
     private final RestClient restClient;
 
-    public OrderService(@Value("${services.order.url:http://localhost:8085}") String orderServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(orderServiceUrl).build();
+    public OrderService(@Value("${services.order.url:http://localhost:8085}") String orderServiceUrl, @Value("${INTERNAL_SERVICE_TOKEN}") String internalToken) {
+        this.restClient = RestClient.builder().baseUrl(orderServiceUrl).defaultHeader("X-Service-Token",internalToken).build();
     }
 
     public OrderResponse getOrderById(Long userId, Long orderId) {

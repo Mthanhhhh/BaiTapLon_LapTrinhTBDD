@@ -1,0 +1,19 @@
+# Shared root build context; private files, database exports and native artifacts never enter images.
+.git
+.tools
+.env
+.env.*
+**/.env
+**/.env.*
+**/node_modules
+**/target
+**/.expo
+dist
+screenshots
+.taste-skill
+*.png
+*.sql
+**/*.apk
+**/*.jks
+**/*.keystore
+infra/apache-maven-*

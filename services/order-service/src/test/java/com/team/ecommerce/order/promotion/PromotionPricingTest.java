@@ -6,7 +6,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 class PromotionPricingTest {
- private final PromotionService service=new PromotionService(mock(JdbcTemplate.class),mock(PromotionEvents.class));
+ private final PromotionService service=new PromotionService(mock(JdbcTemplate.class),mock(PromotionEvents.class),mock(com.team.ecommerce.order.service.InventoryClient.class),mock(com.team.ecommerce.shared.integration.DomainOutbox.class),mock(com.team.ecommerce.shared.integration.IntegrationClient.class));
  private static BigDecimal d(String v){return new BigDecimal(v);}
  private Map<String,Object> coupon(String name,String layer,String type,String value,boolean stack,String budget){var c=new HashMap<String,Object>();c.put("name",name);c.put("layer",layer);c.put("discount_type",type);c.put("value",d(value));c.put("stackable",stack);c.put("budget_total",d(budget));c.put("budget_spent",BigDecimal.ZERO);c.put("budget_reserved",BigDecimal.ZERO);return c;}
  @Test void percentageIsCappedAndCannotMakePriceNegative(){assertEquals(d("20000"),PromotionService.discount("PERCENT",d("50"),d("20000"),d("100000")));assertEquals(d("5000"),PromotionService.discount("FIXED",d("20000"),null,d("5000")));}

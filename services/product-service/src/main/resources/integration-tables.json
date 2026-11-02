@@ -1,0 +1,508 @@
+{
+  "source": "product",
+  "exports": {
+    "products": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "shop_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "category_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "brand_id",
+          "type": "bigint unsigned",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "slug",
+          "type": "varchar(280)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "short_description",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "thumbnail_url",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "currency",
+          "type": "char(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "min_price",
+          "type": "decimal(12,2)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "max_price",
+          "type": "decimal(12,2)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "original_price",
+          "type": "decimal(12,2)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "discount_percent",
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "promo_label",
+          "type": "varchar(60)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "attributes",
+          "type": "json",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "weight_grams",
+          "type": "int unsigned",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "has_free_return_30d",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "has_buyer_protection",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "is_best_deal",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "supports_ship_to_store",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "rating_avg",
+          "type": "decimal(3,2)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "rating_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "sold_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "view_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "favorite_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "status",
+          "type": "enum('DRAFT','ACTIVE','HIDDEN','BANNED')",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ]
+    },
+    "product_skus": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "product_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "sku_code",
+          "type": "varchar(64)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "price",
+          "type": "decimal(12,2)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "original_price",
+          "type": "decimal(12,2)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "stock_quantity",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "sold_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "status",
+          "type": "enum('ACTIVE','INACTIVE')",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ]
+    },
+    "shops": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "owner_user_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(150)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "slug",
+          "type": "varchar(170)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "logo_url",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "banner_url",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "province",
+          "type": "varchar(100)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "is_authorized",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "rating_avg",
+          "type": "decimal(3,2)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "rating_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "follower_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "status",
+          "type": "enum('PENDING','ACTIVE','SUSPENDED')",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ]
+    },
+    "reviews": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "product_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "sku_id",
+          "type": "bigint unsigned",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "user_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "order_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "order_item_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "reviewer_name",
+          "type": "varchar(120)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "reviewer_avatar_url",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "rating",
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "sentiment",
+          "type": "enum('BAD','NEUTRAL','GOOD')",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "is_anonymous",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "status",
+          "type": "enum('VISIBLE','HIDDEN','PENDING')",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "like_count",
+          "type": "int unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "seller_reply",
+          "type": "text",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "seller_replied_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ]
+    }
+  },
+  "imports": {}
+}

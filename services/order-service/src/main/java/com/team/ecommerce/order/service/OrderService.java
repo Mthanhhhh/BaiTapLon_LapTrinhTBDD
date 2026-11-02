@@ -40,6 +40,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ShopAccessService shops;
+    private final InventoryClient inventory;
     private final OrderItemRepository orderItemRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
@@ -60,7 +61,7 @@ public class OrderService {
         var scopes=new java.util.ArrayList<java.util.List<Long>>();
         if(input.skuId()==null){
             if(input.cartItemIds()==null||input.cartItemIds().isEmpty()||input.cartItemIds().size()>100)throw new BadRequestException("Chọn 1–100 dòng giỏ hàng");
-            var rows=jdbc.queryForList("SELECT i.id,p.shop_id FROM cart_items i JOIN carts c ON c.id=i.cart_id JOIN product_db.products p ON p.id=i.product_id WHERE c.user_id=? ORDER BY p.shop_id,i.id",user);
+            var rows=jdbc.queryForList("SELECT i.id,p.shop_id FROM cart_items i JOIN carts c ON c.id=i.cart_id JOIN ref_product_products p ON p.id=i.product_id WHERE c.user_id=? ORDER BY p.shop_id,i.id",user);
             var byShop=new java.util.LinkedHashMap<Long,java.util.List<Long>>();
             for(var row:rows)if(input.cartItemIds().contains(((Number)row.get("id")).longValue()))byShop.computeIfAbsent(((Number)row.get("shop_id")).longValue(),key->new java.util.ArrayList<>()).add(((Number)row.get("id")).longValue());
             if(byShop.values().stream().mapToInt(java.util.List::size).sum()!=new java.util.HashSet<>(input.cartItemIds()).size())throw new BadRequestException("Giỏ hàng đã thay đổi");
@@ -71,7 +72,7 @@ public class OrderService {
         for(var ids:scopes){
             var before=java.util.List.copyOf(excluded);
             var codes=input.codes();
-            if(ids!=null&&codes!=null){long shop=jdbc.queryForObject("SELECT p.shop_id FROM cart_items i JOIN product_db.products p ON p.id=i.product_id WHERE i.id=?",Long.class,ids.get(0));var applicable=jdbc.queryForList("SELECT code FROM promo_campaigns WHERE shop_id IS NULL OR shop_id=?",String.class,shop);codes=codes.stream().filter(code->applicable.contains(code)&&!jdbc.queryForList("SELECT id FROM promo_campaigns WHERE code=?",Long.class,code).stream().anyMatch(excluded::contains)).toList();}
+            if(ids!=null&&codes!=null){long shop=jdbc.queryForObject("SELECT p.shop_id FROM cart_items i JOIN ref_product_products p ON p.id=i.product_id WHERE i.id=?",Long.class,ids.get(0));var applicable=jdbc.queryForList("SELECT code FROM promo_campaigns WHERE shop_id IS NULL OR shop_id=?",String.class,shop);codes=codes.stream().filter(code->applicable.contains(code)&&!jdbc.queryForList("SELECT id FROM promo_campaigns WHERE code=?",Long.class,code).stream().anyMatch(excluded::contains)).toList();}
             var quote=promotions.quote(user,new com.team.ecommerce.order.promotion.PromotionModels.QuoteInput(codes,input.autoBest(),ids,input.skuId(),input.quantity(),before,spent,uses));
             groups.add(new CheckoutGroup(ids,input.skuId(),input.quantity(),before,quote));
             for(var applied:quote.applied()){
@@ -164,7 +165,7 @@ public class OrderService {
 
         order.setItems(orderItems);
 
-        // One InnoDB transaction covers order, promotion counters and SKU stock across schemas.
+        // Local order/outbox transaction; inventory is reserved by its owner and compensated on rollback.
         orderRepository.flush();
         promotions.reserve(userId,order.getId(),quote,initialStatus==OrderStatus.WAITING_CONFIRMATION);
         finance.snapshot(order.getId(),quote);
@@ -216,9 +217,7 @@ public class OrderService {
             throw new BadRequestException("Only pending or waiting confirmation orders can be cancelled");
         }
 
-        if(!promotions.release(order.getId()))for (OrderItem item : order.getItems()) {
-            productInternalService.restoreStock(item.getProductId(), item.getVariantId(), item.getQuantity());
-        }
+        if(!promotions.release(order.getId()))inventory.movement("release",order.getId());
 
         order.setStatus(OrderStatus.CANCELLED);
         order = orderRepository.save(order);
@@ -243,9 +242,7 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.WAITING_CONFIRMATION) {
             throw new BadRequestException("Chỉ có thể từ chối đơn đang chờ xác nhận");
         }
-        if(!promotions.release(order.getId()))for (OrderItem item : order.getItems()) {
-            productInternalService.restoreStock(item.getProductId(), item.getVariantId(), item.getQuantity());
-        }
+        if(!promotions.release(order.getId()))inventory.movement("release",order.getId());
         order.setStatus(OrderStatus.CANCELLED);
         shops.notifyBuyer(order);
         return OrderResponse.from(orderRepository.save(order), null);
@@ -307,12 +304,7 @@ public class OrderService {
         order = orderRepository.save(order);
         shops.notifyBuyer(order);
         promotionEvents.enqueue("ORDER_STATUS_CHANGED",java.util.Map.of("orderId",orderId,"status",status.name()));
-        if (newlyDelivered) {
-            for (OrderItem item : order.getItems()) {
-                jdbc.update("UPDATE product_db.products SET sold_count=sold_count+? WHERE id=?", item.getQuantity(), item.getProductId());
-                if (item.getVariantId() != null) jdbc.update("UPDATE product_db.product_skus SET sold_count=sold_count+?,version=COALESCE(version,0)+1 WHERE id=? AND product_id=?", item.getQuantity(), item.getVariantId(), item.getProductId());
-            }
-        }
+        if(newlyDelivered)inventory.movement("delivered",orderId);
         
         String voucherCode = null;
         if (order.getVoucherId() != null) {

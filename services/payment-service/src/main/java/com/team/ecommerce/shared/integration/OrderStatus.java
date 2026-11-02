@@ -1,4 +1,4 @@
-package com.team.ecommerce.order.entity;
+package com.team.ecommerce.shared.integration;
 
 public enum OrderStatus {
     PENDING_PAYMENT,

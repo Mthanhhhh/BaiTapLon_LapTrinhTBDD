@@ -1,0 +1,365 @@
+name: eshop-independent
+services:
+  auth-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: auth_svc
+      MYSQL_PASSWORD: ${AUTH_DB_PASSWORD:?required}
+      MYSQL_ROOT_PASSWORD: ${AUTH_ROOT_PASSWORD:?required}
+    command: [--innodb-buffer-pool-size=64M, --max-connections=80, --performance-schema=OFF]
+    volumes:
+      - auth-data:/var/lib/mysql
+      - ${MIGRATION_DATA_DIR:-./empty-bootstrap}/auth.sql:/bootstrap/data.sql:ro
+      - ./schema/auth.sql:/schema/owned.sql:ro
+      - ./migrations/auth:/migrations:ro
+      - ./mysql-init.sh:/docker-entrypoint-initdb.d/99-owned-schema.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -u$$MYSQL_USER $$MYSQL_DATABASE -e "SELECT COUNT(*) FROM domain_inbox" >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 60
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  product-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: product_db
+      MYSQL_USER: product_svc
+      MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD:?required}
+      MYSQL_ROOT_PASSWORD: ${PRODUCT_ROOT_PASSWORD:?required}
+    command: [--innodb-buffer-pool-size=64M, --max-connections=80, --performance-schema=OFF]
+    volumes:
+      - product-data:/var/lib/mysql
+      - ${MIGRATION_DATA_DIR:-./empty-bootstrap}/product.sql:/bootstrap/data.sql:ro
+      - ./schema/product.sql:/schema/owned.sql:ro
+      - ./migrations/product:/migrations:ro
+      - ./mysql-init.sh:/docker-entrypoint-initdb.d/99-owned-schema.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -u$$MYSQL_USER $$MYSQL_DATABASE -e "SELECT COUNT(*) FROM domain_inbox" >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 60
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  order-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: order_svc
+      MYSQL_PASSWORD: ${ORDER_DB_PASSWORD:?required}
+      MYSQL_ROOT_PASSWORD: ${ORDER_ROOT_PASSWORD:?required}
+    command: [--innodb-buffer-pool-size=64M, --max-connections=80, --performance-schema=OFF]
+    volumes:
+      - order-data:/var/lib/mysql
+      - ${MIGRATION_DATA_DIR:-./empty-bootstrap}/order.sql:/bootstrap/data.sql:ro
+      - ./schema/order.sql:/schema/owned.sql:ro
+      - ./migrations/order:/migrations:ro
+      - ./mysql-init.sh:/docker-entrypoint-initdb.d/99-owned-schema.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -u$$MYSQL_USER $$MYSQL_DATABASE -e "SELECT COUNT(*) FROM domain_inbox" >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 60
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  payment-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: payment_db
+      MYSQL_USER: payment_svc
+      MYSQL_PASSWORD: ${PAYMENT_DB_PASSWORD:?required}
+      MYSQL_ROOT_PASSWORD: ${PAYMENT_ROOT_PASSWORD:?required}
+    command: [--innodb-buffer-pool-size=64M, --max-connections=80, --performance-schema=OFF]
+    volumes:
+      - payment-data:/var/lib/mysql
+      - ${MIGRATION_DATA_DIR:-./empty-bootstrap}/payment.sql:/bootstrap/data.sql:ro
+      - ./schema/payment.sql:/schema/owned.sql:ro
+      - ./migrations/payment:/migrations:ro
+      - ./mysql-init.sh:/docker-entrypoint-initdb.d/99-owned-schema.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -u$$MYSQL_USER $$MYSQL_DATABASE -e "SELECT COUNT(*) FROM domain_inbox" >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 60
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes', --maxmemory, 128mb, --maxmemory-policy, noeviction]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  kafka:
+    image: apache/kafka:4.1.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_HEAP_OPTS: -Xms128m -Xmx256m
+    volumes: [kafka-data:/tmp/kraft-combined-logs]
+    healthcheck:
+      test: [CMD-SHELL, '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null']
+      interval: 15s
+      timeout: 10s
+      retries: 30
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  auth-service:
+    image: eshop/auth:${IMAGE_TAG:-local}
+    build:
+      context: ../..
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: auth-service
+    environment:
+      SERVER_PORT: 8083
+      SPRING_PROFILES_ACTIVE: independent
+      DB_HOST: auth-db
+      DB_USERNAME: auth_svc
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?required}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      KAFKA_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      SERVICES_AUTH_URL: http://auth-service:8083
+      SERVICES_PRODUCT_URL: http://product-service:8084
+      SERVICES_ORDER_URL: http://order-service:8085
+      SERVICES_PAYMENT_URL: http://payment-service:8086
+      AUTH_SERVICE_HOST: auth-service
+      PRODUCT_SERVICE_HOST: product-service
+      ORDER_SERVICE_HOST: order-service
+      PAYMENT_SERVICE_HOST: payment-service
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OAUTH_ALLOWED_REDIRECTS: ${OAUTH_ALLOWED_REDIRECTS:-http://localhost:8082/oauth/callback}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+      PROMOTIONS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+    depends_on:
+      auth-db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  product-service:
+    image: eshop/product:${IMAGE_TAG:-local}
+    build:
+      context: ../..
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: product-service
+    environment:
+      SERVER_PORT: 8084
+      SPRING_PROFILES_ACTIVE: independent
+      DB_HOST: product-db
+      DB_USERNAME: product_svc
+      DB_PASSWORD: ${PRODUCT_DB_PASSWORD:?required}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      KAFKA_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      SERVICES_AUTH_URL: http://auth-service:8083
+      SERVICES_PRODUCT_URL: http://product-service:8084
+      SERVICES_ORDER_URL: http://order-service:8085
+      SERVICES_PAYMENT_URL: http://payment-service:8086
+      AUTH_SERVICE_HOST: auth-service
+      PRODUCT_SERVICE_HOST: product-service
+      ORDER_SERVICE_HOST: order-service
+      PAYMENT_SERVICE_HOST: payment-service
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OAUTH_ALLOWED_REDIRECTS: ${OAUTH_ALLOWED_REDIRECTS:-http://localhost:8082/oauth/callback}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+      PROMOTIONS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+    depends_on:
+      product-db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  order-service:
+    image: eshop/order:${IMAGE_TAG:-local}
+    build:
+      context: ../..
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: order-service
+    environment:
+      SERVER_PORT: 8085
+      SPRING_PROFILES_ACTIVE: independent
+      DB_HOST: order-db
+      DB_USERNAME: order_svc
+      DB_PASSWORD: ${ORDER_DB_PASSWORD:?required}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      KAFKA_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      SERVICES_AUTH_URL: http://auth-service:8083
+      SERVICES_PRODUCT_URL: http://product-service:8084
+      SERVICES_ORDER_URL: http://order-service:8085
+      SERVICES_PAYMENT_URL: http://payment-service:8086
+      AUTH_SERVICE_HOST: auth-service
+      PRODUCT_SERVICE_HOST: product-service
+      ORDER_SERVICE_HOST: order-service
+      PAYMENT_SERVICE_HOST: payment-service
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OAUTH_ALLOWED_REDIRECTS: ${OAUTH_ALLOWED_REDIRECTS:-http://localhost:8082/oauth/callback}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+      PROMOTIONS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+    depends_on:
+      order-db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  payment-service:
+    image: eshop/payment:${IMAGE_TAG:-local}
+    build:
+      context: ../..
+      dockerfile: services/Dockerfile
+      args:
+        SERVICE: payment-service
+    environment:
+      SERVER_PORT: 8086
+      SPRING_PROFILES_ACTIVE: independent
+      DB_HOST: payment-db
+      DB_USERNAME: payment_svc
+      DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?required}
+      JWT_SECRET: ${JWT_SECRET:?required}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      KAFKA_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      SERVICES_AUTH_URL: http://auth-service:8083
+      SERVICES_PRODUCT_URL: http://product-service:8084
+      SERVICES_ORDER_URL: http://order-service:8085
+      SERVICES_PAYMENT_URL: http://payment-service:8086
+      AUTH_SERVICE_HOST: auth-service
+      PRODUCT_SERVICE_HOST: product-service
+      ORDER_SERVICE_HOST: order-service
+      PAYMENT_SERVICE_HOST: payment-service
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OAUTH_ALLOWED_REDIRECTS: ${OAUTH_ALLOWED_REDIRECTS:-http://localhost:8082/oauth/callback}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+      PROMOTIONS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+    depends_on:
+      payment-db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  api-gateway:
+    image: eshop/gateway:${IMAGE_TAG:-local}
+    build:
+      context: ../..
+      dockerfile: services/Dockerfile
+      args: {SERVICE: api-gateway}
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: independent
+      SPRING_DATA_REDIS_HOST: redis
+      AUTH_SERVICE_URL: http://nginx:8081
+      PRODUCT_SERVICE_URL: http://nginx:8082
+      ORDER_SERVICE_URL: http://nginx:8083
+      PAYMENT_SERVICE_URL: http://nginx:8084
+      ORDER_WEBSOCKET_URL: ws://nginx:8083
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+    volumes: [search-data:/usr/share/elasticsearch/data]
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  frontend:
+    image: eshop/web:${IMAGE_TAG:-local}
+    build:
+      context: ../..
+      dockerfile: apps/mobile/Dockerfile
+      args:
+        EXPO_PUBLIC_API_URL: ${PUBLIC_API_URL:?required}/api/v1
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  nginx:
+    image: nginx:1.28-alpine
+    ports: ['127.0.0.1:${PUBLIC_PORT:-18080}:8080']
+    volumes: ['./nginx.conf:/etc/nginx/nginx.conf:ro']
+    depends_on: [api-gateway, frontend, auth-service, product-service, order-service, payment-service]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/nginx-health]
+      interval: 10s
+      retries: 20
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+volumes:
+  auth-data:
+  product-data:
+  order-data:
+  payment-data:
+  redis-data:
+  kafka-data:
+  search-data:

@@ -35,6 +35,8 @@ public class ReviewService {
     private final ProductRepository productRepository;
     private final FeedbackTagRepository feedbackTagRepository;
     private final JdbcTemplate jdbc;
+    private final com.team.ecommerce.shared.integration.IntegrationClient clients;
+    private final com.team.ecommerce.shared.integration.DomainOutbox outbox;
 
     @Transactional(readOnly = true)
     public PageResponse<ReviewResponse> getReviewsByProduct(Long productId, Pageable pageable) {
@@ -63,10 +65,7 @@ public class ReviewService {
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
 
-        var eligibleItems = jdbc.queryForList(
-                "SELECT i.id,i.sku_id FROM order_db.orders o JOIN order_db.order_items i ON i.order_id=o.id " +
-                        "WHERE o.id=? AND o.user_id=? AND o.status='DELIVERED' AND i.product_id=?",
-                request.getOrderId(), userId, productId);
+        var eligibleItems=(List<java.util.Map<String,Object>>)clients.get("order","/internal/domain/review-proof?user="+userId+"&order="+request.getOrderId()+"&product="+productId).get("items");
         if (eligibleItems.isEmpty()) {
             throw new BadRequestException("Chỉ có thể đánh giá sản phẩm thuộc đơn hàng đã giao thành công");
         }
@@ -97,7 +96,7 @@ public class ReviewService {
                 .orderId(request.getOrderId())
                 .orderItemId(((Number)eligibleItems.get(0).get("id")).longValue())
                 .skuId(((Number)eligibleItems.get(0).get("sku_id")).longValue())
-                .reviewerName(jdbc.queryForObject("SELECT full_name FROM auth_db.users WHERE id=?",String.class,userId))
+                .reviewerName(clients.account(userId).get("fullName").toString())
                 .rating(request.getRating())
                 .comment(request.getComment())
                 .emotion(request.getEmotion())
@@ -114,7 +113,7 @@ public class ReviewService {
         product.setRatingAvg(BigDecimal.valueOf(avgRating != null ? avgRating : 0.0).setScale(2, RoundingMode.HALF_UP));
         product.setRatingCount(ratingCount != null ? ratingCount : 0);
         productRepository.save(product);
-        jdbc.update("UPDATE order_db.order_items SET is_reviewed=1 WHERE id=?", savedReview.getOrderItemId());
+        outbox.enqueue("order","review-recorded",java.util.Map.of("orderItemId",savedReview.getOrderItemId()),"review:"+savedReview.getId());
 
         return ReviewResponse.from(savedReview, savedReview.getReviewerName());
     }

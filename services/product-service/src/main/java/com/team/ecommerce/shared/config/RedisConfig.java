@@ -46,6 +46,7 @@ public class RedisConfig {
     }
 
     @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="app.cache.enabled",havingValue="true",matchIfMissing=true)
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         ObjectMapper om = new ObjectMapper();
         om.registerModule(new JavaTimeModule());
@@ -65,7 +66,11 @@ public class RedisConfig {
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
+                .withInitialCacheConfigurations(java.util.Map.of("products",config.entryTtl(Duration.ofSeconds(30))))
                 .build();
     }
+    @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="app.cache.enabled",havingValue="false")
+    public org.springframework.cache.CacheManager noCacheManager(){return new org.springframework.cache.support.NoOpCacheManager();}
 }
 

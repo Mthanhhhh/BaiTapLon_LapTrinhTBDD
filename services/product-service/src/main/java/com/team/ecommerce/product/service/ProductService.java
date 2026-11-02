@@ -105,6 +105,7 @@ public class ProductService {
     }
 
     @Transactional(value = "productTransactionManager", readOnly = true)
+    @Cacheable(value = "products", key = "'id:' + #id", sync = true)
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", id));

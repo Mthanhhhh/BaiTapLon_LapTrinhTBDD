@@ -1,0 +1,163 @@
+{
+  "source": "auth",
+  "exports": {
+    "users": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "email",
+          "type": "varchar(255)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "phone",
+          "type": "varchar(20)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "full_name",
+          "type": "varchar(120)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "avatar_url",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "status",
+          "type": "enum('ACTIVE','LOCKED','DELETED')",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime(3)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ]
+    },
+    "roles": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "code",
+          "type": "varchar(30)",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(60)",
+          "nullable": false,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ]
+    },
+    "user_roles": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "role_id",
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "pk": true
+        }
+      ],
+      "keys": [
+        "user_id",
+        "role_id"
+      ]
+    }
+  },
+  "imports": {
+    "order.notification_orders": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": true
+        },
+        {
+          "name": "user_id",
+          "type": "bigint unsigned",
+          "nullable": false,
+          "pk": false
+        },
+        {
+          "name": "order_no",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "status",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "payment_status",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "image_url",
+          "type": "varchar(500)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime(3)",
+          "nullable": true,
+          "pk": false
+        }
+      ],
+      "keys": [
+        "id"
+      ],
+      "target": "ref_order_notification_orders"
+    }
+  }
+}

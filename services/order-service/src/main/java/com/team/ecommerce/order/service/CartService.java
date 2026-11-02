@@ -174,7 +174,7 @@ public class CartService {
 
             itemResponses.add(CartItemResponse.builder()
                     .id(item.getId())
-                    .productId(product.getId()).shopId(product.getShopId()).shopName(jdbc.queryForObject("SELECT name FROM product_db.shops WHERE id=?",String.class,product.getShopId()))
+                    .productId(product.getId()).shopId(product.getShopId()).shopName(jdbc.queryForObject("SELECT name FROM ref_product_shops WHERE id=?",String.class,product.getShopId()))
                     .variantId(variant.getId())
                     .productName(product.getName())
                     .variantName(variant.getName())

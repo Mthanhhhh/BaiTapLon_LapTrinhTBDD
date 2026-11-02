@@ -1,7 +1,7 @@
 package com.team.ecommerce.payment.service;
 
 import com.team.ecommerce.order.dto.OrderResponse;
-import com.team.ecommerce.order.entity.OrderStatus;
+import com.team.ecommerce.shared.integration.OrderStatus;
 import com.team.ecommerce.order.service.OrderService;
 import com.team.ecommerce.payment.dto.PaymentRequest;
 import com.team.ecommerce.payment.dto.PaymentResponse;

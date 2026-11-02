@@ -11,8 +11,8 @@ public class AuthInternalService {
 
     private final RestClient restClient;
 
-    public AuthInternalService(@Value("${services.auth.url:http://localhost:8083}") String authServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(authServiceUrl).build();
+    public AuthInternalService(@Value("${services.auth.url:http://localhost:8083}") String authServiceUrl, @Value("${INTERNAL_SERVICE_TOKEN}") String internalToken) {
+        this.restClient = RestClient.builder().baseUrl(authServiceUrl).defaultHeader("X-Service-Token",internalToken).build();
     }
 
     public AddressInternalDTO getAddressByIdAndUserId(Long addressId, Long userId) {
