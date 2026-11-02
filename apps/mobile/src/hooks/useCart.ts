@@ -87,12 +87,8 @@ export interface OrderResponse {
 
 export interface PaymentRequest {
   orderId: number;
-  method: 'VISA' | 'MAESTRO' | 'PAYPAL';
-  cardNumber?: string;
-  cardHolderName?: string;
-  cardExpiry?: string;
-  cardCvv?: string;
-  paypalEmail?: string;
+  method: 'VISA' | 'DOMESTIC';
+  paymentToken?: string;
 }
 
 export interface PaymentResponse {

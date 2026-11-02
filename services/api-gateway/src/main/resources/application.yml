@@ -5,7 +5,7 @@ spring:
   application:
     name: api-gateway
   cloud:
-    gateway:
+    gateway.server.webflux:
       discovery:
         locator:
           enabled: false
@@ -50,7 +50,7 @@ spring:
           '[/**]':
             allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:8082,http://localhost:8087,https://eshop.mtcord.io.vn}
             allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-            allowedHeaders: [Authorization, Content-Type, Accept, X-Requested-With, X-Idempotency-Key, Cache-Control, Pragma]
+            allowedHeaders: [Authorization, Content-Type, Accept, X-Requested-With, X-Idempotency-Key, X-QR-Poll-Secret, Cache-Control, Pragma]
             exposedHeaders: [Location, X-Request-ID, X-Gateway-Instance, X-Service-Instance, Retry-After]
             allowCredentials: true
             maxAge: 3600

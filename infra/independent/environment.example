@@ -21,3 +21,13 @@ GOOGLE_CLIENT_SECRET=
 FACEBOOK_APP_ID=
 FACEBOOK_APP_SECRET=
 GEMINI_API_KEY=
+
+# Optional verified email delivery; keep disabled until configured.
+SMTP_ENABLED=false
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_FROM=
+# Migration window only; default rejects legacy untyped JWTs.
+SECURITY_LEGACY_TOKEN_UNTIL=0

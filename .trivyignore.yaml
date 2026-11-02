@@ -1,0 +1,7 @@
+vulnerabilities:
+  - id: CVE-2026-47884
+    statement: "Not reachable: REST controllers only; no XsltView, XSLT view resolver or implicit view rendering. Boot 3 requires Spring 6; re-review before expiry."
+    expired_at: 2026-12-03
+  - id: CVE-2026-47890
+    statement: "Not reachable: no SSE with view fragments; real-time transport is WebSocket. No Spring 6.2 patch published at verification time."
+    expired_at: 2026-12-03

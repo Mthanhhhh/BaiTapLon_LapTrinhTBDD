@@ -14,7 +14,7 @@ public class AuthDomainController implements DomainCommandHandler {
  private final IntegrationClient clients;
  private final org.springframework.data.redis.core.StringRedisTemplate redis;
  @GetMapping("/accounts/{id}") public Map<String,Object> account(@PathVariable long id){
-  var rows=db.queryForList("SELECT id,full_name AS fullName,email,phone,avatar_url AS avatarUrl,status,deleted_at AS deletedAt FROM users WHERE id=?",id);
+  var rows=db.queryForList("SELECT id,full_name AS fullName,email,phone,avatar_url AS avatarUrl,status,security_version AS securityVersion,deleted_at AS deletedAt FROM users WHERE id=?",id);
   if(rows.isEmpty())throw new BadRequestException("Account not found");
   var row=rows.get(0);row.put("roles",db.queryForList("SELECT r.code FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=?",String.class,id));return row;
  }
@@ -33,7 +33,7 @@ public class AuthDomainController implements DomainCommandHandler {
     if(id==actor||((List<?>)account(id).get("roles")).contains("ADMIN"))throw new BadRequestException("Cannot lock an administrator");
     if(!Set.of("ACTIVE","LOCKED").contains(status))throw new BadRequestException("Invalid account status");
     db.update("UPDATE users SET status=? WHERE id=? AND deleted_at IS NULL",status,id);
-    if(status.equals("LOCKED"))db.update("DELETE FROM refresh_tokens WHERE user_id=?",id);
+    if(status.equals("LOCKED")){db.update("DELETE FROM refresh_tokens WHERE user_id=?",id);db.update("UPDATE auth_refresh_sessions SET revoked_at=UTC_TIMESTAMP(3) WHERE user_id=? AND revoked_at IS NULL",id);db.update("UPDATE users SET security_version=security_version+1 WHERE id=?",id);}
     db.update("INSERT INTO domain_audit(actor_id,action,entity_id,reason) VALUES(?,'MODERATE_USER',?,?)",actor,id,Objects.toString(input.get("reason"),""));
    }
    default -> throw new BadRequestException("Unsupported account command");

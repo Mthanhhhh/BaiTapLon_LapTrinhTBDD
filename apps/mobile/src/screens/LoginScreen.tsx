@@ -47,7 +47,7 @@ export default function LoginScreen() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMsg, setForgotMsg] = useState('');
 
-  const { user, login, forgotPassword, resetPassword } = useContext(AuthContext);
+  const { user, login, forgotPassword, resetPassword, completeSession } = useContext(AuthContext);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(()=>{if(user&&!user.roles.some(r=>r==='ADMIN'||r==='ROLE_ADMIN'))navigation.navigate('Main');},[user,navigation]);
@@ -58,16 +58,17 @@ export default function LoginScreen() {
     try {
       setQrLoading(true);
       const res = await apiClient.post('/api/v1/auth/qr/generate');
-      const token = res.data.data?.qrToken || res.data.qrToken;
+      const token = res.data.data.qrToken as string;
+      const pollSecret = res.data.data.pollSecret as string;
       setQrToken(token);
 
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       pollTimerRef.current = setInterval(async () => {
         try {
-          const checkRes = await apiClient.get(`/api/v1/auth/qr/check?qrToken=${token}`);
+          const checkRes = await apiClient.get(`/api/v1/auth/qr/check?qrToken=${token}`,{headers:{'X-QR-Poll-Secret':pollSecret}});
           if (checkRes.data.data?.status === 'CONFIRMED' || checkRes.data.status === 'CONFIRMED') {
             clearInterval(pollTimerRef.current);
-            navigation.navigate('Main');
+            await completeSession(checkRes.data.data.authResponse);
           }
         } catch (e) {
           // keep polling
@@ -112,30 +113,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSimulateQrScan = async () => {
-    if (!qrToken) return;
-    try {
-      setQrLoading(true);
-      await apiClient.post(`/api/v1/auth/qr/confirm?qrToken=${qrToken}`);
-      if (Platform.OS === 'web') {
-        alert('Đã quét mã QR thành công!');
-      } else {
-        appAlert.alert('Thành công', 'Đã quét mã QR thành công!');
-      }
-      setTimeout(() => {
-        navigation.navigate('Main');
-      }, 600);
-    } catch (e: any) {
-      if (Platform.OS === 'web') {
-        alert(e.message || 'Mô phỏng thất bại');
-      } else {
-        appAlert.alert('Lỗi', e.message || 'Mô phỏng thất bại');
-      }
-    } finally {
-      setQrLoading(false);
-    }
-  };
-
   const handleRequestOtp = async () => {
     if (!forgotIdentifier.trim()) {
       const msg = 'Vui lòng nhập Email hoặc Số điện thoại';
@@ -147,12 +124,8 @@ export default function LoginScreen() {
     try {
       const data = await forgotPassword(forgotIdentifier.trim());
       setForgotStep(2);
-      if (data && data.otp) {
-        setOtpCode(data.otp);
-        setForgotMsg(`Mã OTP xác thực của bạn: ${data.otp}`);
-      } else {
-        setForgotMsg('Mã OTP đã được gửi tới thông tin liên hệ của bạn.');
-      }
+      setOtpCode('');
+      setForgotMsg(data?.message || 'Kiểm tra email đã đăng ký để nhận mã xác nhận.');
     } catch (err: any) {
       const msg = err.message || 'Không tìm thấy tài khoản với thông tin này';
       if (Platform.OS === 'web') alert(msg);
@@ -169,8 +142,8 @@ export default function LoginScreen() {
       else appAlert.alert('Lỗi', msg);
       return;
     }
-    if (!newPassword || newPassword.length < 6) {
-      const msg = 'Mật khẩu mới phải có ít nhất 6 ký tự';
+    if (!newPassword || newPassword.length < 8) {
+      const msg = 'Mật khẩu mới phải có ít nhất 8 ký tự';
       if (Platform.OS === 'web') alert(msg);
       else appAlert.alert('Lỗi', msg);
       return;
@@ -227,7 +200,7 @@ export default function LoginScreen() {
                 <TouchableOpacity
                   style={styles.qrSwitchButton}
                   activeOpacity={0.8}
-                  onPress={() => setLoginMode(loginMode === 'password' ? 'qr' : 'password')}
+                  onPress={() => appAlert.alert('Đăng nhập QR', 'Đăng nhập bằng mật khẩu hoặc Google/Facebook. Giao diện quét QR sẽ được bật sau khi hoàn tất ghép thiết bị an toàn.')}
                 >
                   <View style={styles.qrTooltip}>
                     <Typography variant="xs" weight="semiBold" style={styles.qrTooltipText}>
@@ -407,28 +380,10 @@ export default function LoginScreen() {
                     Quét mã QR bằng ứng dụng di động E-Shop để đăng nhập tức thì không cần mật khẩu
                   </Typography>
 
-                  {/* Simulate Scan Button for testing on web */}
-                  <TouchableOpacity
-                    style={styles.simulateScanButton}
-                    activeOpacity={0.8}
-                    onPress={handleSimulateQrScan}
-                    disabled={qrLoading}
-                  >
-                    <Ionicons name="phone-portrait-outline" size={18} color={COLORS.primaryDeep} />
-                    <Typography variant="sm" weight="semiBold" style={{ color: COLORS.primaryDeep, marginLeft: 6 }}>
-                      Mô phỏng quét mã thành công
-                    </Typography>
-                  </TouchableOpacity>
+                  <Typography variant="xs" color="muted">
+                    Chỉ thiết bị đã đăng nhập mới được phép xác nhận phiên QR. Không có chế độ mô phỏng đăng nhập.
+                  </Typography>
 
-                  <TouchableOpacity
-                    style={styles.refreshQrBtn}
-                    onPress={startQrSession}
-                  >
-                    <Ionicons name="refresh-outline" size={16} color={COLORS.muted} />
-                    <Typography variant="xs" color="muted" style={{ marginLeft: 4 }}>
-                      Làm mới mã QR
-                    </Typography>
-                  </TouchableOpacity>
                 </View>
               )}
             </View>

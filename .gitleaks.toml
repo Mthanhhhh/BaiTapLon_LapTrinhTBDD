@@ -1,0 +1,19 @@
+title = "E-Shop secret scanning"
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public SHA-256 catalog source identifiers, not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['^data/curated-brand-catalog[.]json$']
+regexTarget = "match"
+regexes = ['sourceKey"\s*:\s*"[a-f0-9]{64}"']
+
+[[allowlists]]
+description = "Public deterministic WebSocket handshake nonce in replay test"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['^scripts/verify-promotions-replay[.]mjs$']
+regexTarget = "match"
+regexes = ['Sec-WebSocket-Key.*YWJjZGVmZ2hpamtsbW5vcA==']

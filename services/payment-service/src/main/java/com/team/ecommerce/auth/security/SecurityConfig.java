@@ -41,9 +41,10 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers("/internal/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/api/dev/**", "/actuator/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").denyAll()
+                .requestMatchers("/api/dev/**", "/actuator/**").denyAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
                 .anyRequest().authenticated()
             )

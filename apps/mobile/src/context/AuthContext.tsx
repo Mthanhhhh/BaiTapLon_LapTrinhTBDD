@@ -22,6 +22,7 @@ interface AuthContextProps {
   socialLogin: (data: { provider: string; code: string; redirectUri: string; codeVerifier?: string }) => Promise<void>;
   forgotPassword: (identifier: string) => Promise<any>;
   resetPassword: (data: { identifier: string; otp: string; newPassword: string }) => Promise<any>;
+  completeSession: (tokens: {accessToken:string;refreshToken:string}) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -33,6 +34,7 @@ export const AuthContext = createContext<AuthContextProps>({
   socialLogin: async () => {},
   forgotPassword: async () => {},
   resetPassword: async () => {},
+  completeSession: async () => {},
   logout: async () => {},
 });
 
@@ -125,15 +127,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = async () => {
-    await tokenStorage.clearTokens();
-    searchHistory.setAccount();
-      setUser(null);
+  const completeSession = async (tokens: {accessToken:string;refreshToken:string}) => {
+    await tokenStorage.setTokens(tokens.accessToken,tokens.refreshToken);
     queryClient.clear();
+    await loadUser();
+  };
+
+  const logout = async () => {
+    try {
+      const refreshToken=await tokenStorage.getRefreshToken();
+      if(refreshToken)await apiClient.post('/api/v1/auth/logout',{refreshToken},{timeout:5000});
+    } catch { /* Local logout remains available offline. */ }
+    finally {
+      await tokenStorage.clearTokens();
+      searchHistory.setAccount();
+      setUser(null);
+      queryClient.clear();
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, socialLogin, forgotPassword, resetPassword, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, socialLogin, forgotPassword, resetPassword, completeSession, logout }}>
       {children}
     </AuthContext.Provider>
   );

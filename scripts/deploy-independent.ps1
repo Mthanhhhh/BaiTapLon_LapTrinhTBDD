@@ -14,7 +14,11 @@ New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
 $stateFile = Join-Path $stateDirectory 'current.json'
 $previous = if (Test-Path $stateFile) { Get-Content $stateFile -Raw | ConvertFrom-Json } else { $null }
 $env:IMAGE_TAG = (& git rev-parse --short=12 HEAD).Trim()
-if (-not $SkipBuild) { Invoke-Compose @('build') }
+if (-not $SkipBuild) {
+    foreach ($service in @('auth-service','product-service','order-service','payment-service','api-gateway','frontend')) {
+        Invoke-Compose @('build',$service)
+    }
+}
 & py -3 (Join-Path $PSScriptRoot 'independent-ops.py') backup --env $environmentPath --destination T:/ProjectTBDD/.tools/backups
 if ($LASTEXITCODE -ne 0) { throw 'Backup failed; deployment stopped.' }
 & py -3 (Join-Path $PSScriptRoot 'independent-ops.py') migrate --env $environmentPath

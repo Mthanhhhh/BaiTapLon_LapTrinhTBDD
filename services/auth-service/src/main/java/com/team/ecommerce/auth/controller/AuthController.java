@@ -35,7 +35,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ApiResponse<java.util.Map<String, Object>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        return ApiResponse.success("OTP sent", authService.forgotPassword(request));
+        return ApiResponse.success("Yêu cầu đã được tiếp nhận", authService.forgotPassword(request));
     }
 
     @PostMapping("/reset-password")
@@ -50,13 +50,13 @@ public class AuthController {
     }
 
     @GetMapping("/qr/check")
-    public ApiResponse<QrLoginResponse> checkQrSession(@RequestParam String qrToken) {
-        return ApiResponse.success("QR status checked", authService.checkQrSession(qrToken));
+    public ApiResponse<QrLoginResponse> checkQrSession(@RequestParam String qrToken, @RequestHeader("X-QR-Poll-Secret") String pollSecret) {
+        return ApiResponse.success("QR status checked", authService.checkQrSession(qrToken,pollSecret));
     }
 
     @PostMapping("/qr/confirm")
-    public ApiResponse<String> confirmQrLogin(@RequestParam String qrToken, @RequestParam(required = false) Long userId) {
-        authService.confirmQrLogin(qrToken, userId);
+    public ApiResponse<String> confirmQrLogin(@RequestParam String qrToken) {
+        authService.confirmQrLogin(qrToken, authService.getCurrentUserId());
         return ApiResponse.success("QR login confirmed", "Confirmed successfully");
     }
 
@@ -65,6 +65,13 @@ public class AuthController {
         return ApiResponse.success("Token refreshed", authService.refreshToken(request.getRefreshToken()));
     }
 
+    @PostMapping("/logout")
+    public ApiResponse<String> logout(@RequestBody(required=false) RefreshTokenRequest request) {
+        authService.logout(request==null?null:request.getRefreshToken());return ApiResponse.success("Đã đăng xuất");
+    }
+    @PostMapping("/logout-all")
+    public ApiResponse<String> logoutAll() { authService.logoutAll();return ApiResponse.success("Đã thu hồi các phiên đăng nhập"); }
+
     @GetMapping("/me")
     public ApiResponse<UserProfileResponse> getProfile() {
         Long userId = authService.getCurrentUserId();
@@ -72,7 +79,7 @@ public class AuthController {
     }
 
     @PutMapping("/me")
-    public ApiResponse<UserProfileResponse> updateProfile(@RequestBody UpdateProfileRequest request) {
+    public ApiResponse<UserProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         Long userId = authService.getCurrentUserId();
         return ApiResponse.success("Profile updated", authService.updateProfile(userId, request));
     }

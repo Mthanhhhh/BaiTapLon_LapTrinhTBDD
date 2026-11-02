@@ -20,3 +20,15 @@ else:
             sql=migration.read_bytes()+f"\nINSERT INTO schema_migrations(name) VALUES('{migration.name}');\n".encode()
             subprocess.run(command,input=sql,check=True)
             print("Applied",owner,migration.name)
+
+    # Audit tables are append-only for application users. Migration/root credentials stay in ops.
+    for owner in ("auth","product","order","payment"):
+        script = r"""export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"
+mysql -uroot "$MYSQL_DATABASE" -e "REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$MYSQL_USER'@'%';"
+for table in $(mysql -uroot -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='$MYSQL_DATABASE' AND TABLE_TYPE='BASE TABLE';"); do
+case "$table" in security_audit|domain_audit|commerce_audit) rights='SELECT,INSERT' ;; *) rights='SELECT,INSERT,UPDATE,DELETE' ;; esac
+mysql -uroot "$MYSQL_DATABASE" -e "GRANT $rights ON \`$MYSQL_DATABASE\`.\`$table\` TO '$MYSQL_USER'@'%';"
+done
+"""
+        subprocess.run(base+["exec","-T",f"{owner}-db","sh","-c",script],check=True)
+        print("Updated least-privilege grants:",owner)

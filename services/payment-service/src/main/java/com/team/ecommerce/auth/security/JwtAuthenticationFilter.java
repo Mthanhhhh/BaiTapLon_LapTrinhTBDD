@@ -31,10 +31,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
+            if (StringUtils.hasText(jwt) && jwtProvider.validateAccessToken(jwt)) {
                 Long userId = jwtProvider.getUserIdFromToken(jwt);
                 var account=accounts.account(userId);
-                if(!"ACTIVE".equals(account.get("status"))||account.get("deletedAt")!=null){response.setStatus(401);return;}
+                if(!"ACTIVE".equals(account.get("status"))||account.get("deletedAt")!=null||jwtProvider.getSecurityVersion(jwt)!=((Number)account.getOrDefault("securityVersion",0)).intValue()){response.setStatus(401);return;}
                 List<SimpleGrantedAuthority> authorities=((List<?>)account.get("roles")).stream().map(role->new SimpleGrantedAuthority("ROLE_"+role)).toList();
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -42,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                request.setAttribute("security.userId",userId);
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);

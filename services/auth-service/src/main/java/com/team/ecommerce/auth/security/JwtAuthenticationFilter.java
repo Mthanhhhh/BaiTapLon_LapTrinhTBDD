@@ -30,9 +30,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
+            if (StringUtils.hasText(jwt) && jwtProvider.validateAccessToken(jwt)) {
                 Long userId = jwtProvider.getUserIdFromToken(jwt);
-                if (accountStatusJdbc.queryForObject("SELECT COUNT(*) FROM auth_db.users WHERE id=? AND status='ACTIVE' AND deleted_at IS NULL", Long.class, userId) == 0) { response.setStatus(401); response.setContentType("application/json"); response.getWriter().write("{\"message\":\"Tài khoản đang bị khóa\"}"); return; }
+                if (accountStatusJdbc.queryForObject("SELECT COUNT(*) FROM auth_db.users WHERE id=? AND status='ACTIVE' AND deleted_at IS NULL AND security_version=?", Long.class, userId,jwtProvider.getSecurityVersion(jwt)) == 0) { response.setStatus(401); response.setContentType("application/json"); response.getWriter().write("{\"message\":\"Phiên đăng nhập không còn hợp lệ\"}"); return; }
                 String email = jwtProvider.getEmailFromToken(jwt);
                 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
@@ -42,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                request.setAttribute("security.userId",userId);
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);

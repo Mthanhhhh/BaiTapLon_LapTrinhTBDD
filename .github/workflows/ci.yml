@@ -39,6 +39,45 @@ jobs:
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
       - run: npm ci
+      - run: npm audit --audit-level=moderate
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: node --test tests/*.test.mjs
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --config /repo/.gitleaks.toml --redact
+  container-security:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth-service, product-service, order-service, payment-service, api-gateway]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f services/Dockerfile --build-arg SERVICE=${{ matrix.service }} -t security-target .
+      - uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: security-target
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          trivyignores: .trivyignore.yaml
+  zap-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/mobile/Dockerfile --build-arg EXPO_PUBLIC_API_URL=https://api-eshop.mtcord.io.vn -t security-web .
+      - run: docker run -d --name security-web -p 18080:80 security-web
+      - run: mkdir -p reports && chmod 777 reports
+      - name: Passive scan of built frontend (warnings retained in report)
+        run: docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:18080 -m 1 -I -J zap.json -r zap.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-baseline
+          path: reports

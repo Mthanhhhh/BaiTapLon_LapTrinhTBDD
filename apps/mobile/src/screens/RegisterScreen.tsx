@@ -25,7 +25,7 @@ export default function RegisterScreen() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!email.includes('@')) newErrors.email = 'Email không hợp lệ.';
-    if (password.length < 6) newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự.';
+    if (password.length < 8) newErrors.password = 'Mật khẩu phải có ít nhất 8 ký tự.';
     if (!fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ và tên.';
     
     setErrors(newErrors);

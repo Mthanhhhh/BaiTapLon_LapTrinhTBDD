@@ -54,10 +54,19 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication failed", request, null);
     }
 
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,jakarta.validation.ConstraintViolationException.class,org.springframework.web.bind.ServletRequestBindingException.class,org.springframework.data.mapping.PropertyReferenceException.class})
+    public ResponseEntity<ErrorResponse> handleMalformedInput(Exception ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST,"INVALID_REQUEST","Yêu cầu không hợp lệ",request,null);
+    }
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(Exception ex, WebRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT,"CONFLICT","Thông tin trùng hoặc không hợp lệ",request,null);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
-        // In đầy đủ lỗi thật ra console (nếu không sẽ không biết vì sao 500)
-        log.error("Unexpected error at {}", request.getDescription(false), ex);
+        // Log metadata only; never include submitted credentials or tokens.
+        log.error("Unexpected error type={} at {}",ex.getClass().getSimpleName(),request.getDescription(false).split("[?]",2)[0]);
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "An unexpected error occurred", request, null);
     }
 
@@ -67,7 +76,7 @@ public class GlobalExceptionHandler {
                 .status(status.value())
                 .code(code)
                 .message(message)
-                .path(request.getDescription(false).replace("uri=", ""))
+                .path(request.getDescription(false).replace("uri=", "").split("[?]",2)[0])
                 .errors(errors)
                 .build();
         return new ResponseEntity<>(errorResponse, status);

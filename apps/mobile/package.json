@@ -44,5 +44,10 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "zod": "4.6.6",
+    "glob": "14.0.2",
+    "minimatch": "11.0.1"
+  }
 }

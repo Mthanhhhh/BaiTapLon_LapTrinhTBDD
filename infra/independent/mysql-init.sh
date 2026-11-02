@@ -8,8 +8,9 @@ for migration in /migrations/*.sql; do
  name=$(basename "$migration")
  mysql -uroot "$MYSQL_DATABASE" -e "INSERT IGNORE INTO schema_migrations(name) VALUES('$name');"
 done
-mysql -uroot "$MYSQL_DATABASE" <<SQL
-REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$MYSQL_USER'@'%';
-GRANT SELECT,INSERT,UPDATE,DELETE ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%';
-FLUSH PRIVILEGES;
-SQL
+mysql -uroot "$MYSQL_DATABASE" -e "REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$MYSQL_USER'@'%';"
+tables=$(mysql -uroot -N -e "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='$MYSQL_DATABASE' AND TABLE_TYPE='BASE TABLE';")
+for table in $tables; do
+ case "$table" in security_audit|domain_audit|commerce_audit) rights='SELECT,INSERT' ;; *) rights='SELECT,INSERT,UPDATE,DELETE' ;; esac
+ mysql -uroot "$MYSQL_DATABASE" -e "GRANT $rights ON \`$MYSQL_DATABASE\`.\`$table\` TO '$MYSQL_USER'@'%';"
+done

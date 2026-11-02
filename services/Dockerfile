@@ -4,9 +4,9 @@ ARG SERVICE
 ENV MAVEN_OPTS="-Xmx256m"
 WORKDIR /build
 COPY services/${SERVICE}/pom.xml ./pom.xml
-RUN --mount=type=cache,target=/root/.m2 mvn -B dependency:go-offline -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B -U dependency:go-offline -DskipTests
 COPY services/${SERVICE}/src ./src
-RUN --mount=type=cache,target=/root/.m2 mvn -B package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B verify
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app

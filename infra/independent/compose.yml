@@ -138,11 +138,18 @@ services:
     environment:
       SERVER_PORT: 8083
       SPRING_PROFILES_ACTIVE: independent
+      SMTP_ENABLED: ${SMTP_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       DB_HOST: auth-db
       DB_USERNAME: auth_svc
       DB_PASSWORD: ${AUTH_DB_PASSWORD:?required}
       JWT_SECRET: ${JWT_SECRET:?required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      SECURITY_LEGACY_TOKEN_UNTIL: ${SECURITY_LEGACY_TOKEN_UNTIL:-0}
       KAFKA_SERVERS: kafka:9092
       REDIS_HOST: redis
       SERVICES_AUTH_URL: http://auth-service:8083
@@ -188,6 +195,7 @@ services:
       DB_PASSWORD: ${PRODUCT_DB_PASSWORD:?required}
       JWT_SECRET: ${JWT_SECRET:?required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      SECURITY_LEGACY_TOKEN_UNTIL: ${SECURITY_LEGACY_TOKEN_UNTIL:-0}
       KAFKA_SERVERS: kafka:9092
       REDIS_HOST: redis
       SERVICES_AUTH_URL: http://auth-service:8083
@@ -233,6 +241,7 @@ services:
       DB_PASSWORD: ${ORDER_DB_PASSWORD:?required}
       JWT_SECRET: ${JWT_SECRET:?required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      SECURITY_LEGACY_TOKEN_UNTIL: ${SECURITY_LEGACY_TOKEN_UNTIL:-0}
       KAFKA_SERVERS: kafka:9092
       REDIS_HOST: redis
       SERVICES_AUTH_URL: http://auth-service:8083
@@ -278,6 +287,7 @@ services:
       DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?required}
       JWT_SECRET: ${JWT_SECRET:?required}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?required}
+      SECURITY_LEGACY_TOKEN_UNTIL: ${SECURITY_LEGACY_TOKEN_UNTIL:-0}
       KAFKA_SERVERS: kafka:9092
       REDIS_HOST: redis
       SERVICES_AUTH_URL: http://auth-service:8083

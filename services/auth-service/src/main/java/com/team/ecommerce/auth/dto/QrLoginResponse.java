@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class QrLoginResponse {
     private String qrToken;
+    private String pollSecret;
     private String status; // PENDING, SCANNED, CONFIRMED
     private AuthResponse authResponse;
 }

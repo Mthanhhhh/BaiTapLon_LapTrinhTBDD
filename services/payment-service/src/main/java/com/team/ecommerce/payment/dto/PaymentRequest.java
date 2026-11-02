@@ -18,9 +18,11 @@ public class PaymentRequest {
     @NotNull(message = "Payment method is required")
     private PaymentMethod method;
 
-    private String cardNumber;
-    private String cardHolderName;
-    private String cardExpiry;
-    private String cardCvv;
-    private String paypalEmail;
+    @jakarta.validation.constraints.Size(max=512)
+    private String paymentToken;
+
+    @com.fasterxml.jackson.annotation.JsonAnySetter
+    public void rejectUnrecognizedInstrument(String field,Object value) {
+        throw new com.team.ecommerce.shared.exception.BadRequestException("Không gửi số thẻ hoặc CVV tới E-Shop. Chỉ sử dụng cổng thanh toán đã cấu hình.");
+    }
 }

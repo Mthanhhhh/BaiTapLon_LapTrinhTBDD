@@ -29,7 +29,7 @@ public class RedisConfig {
         ObjectMapper om = new ObjectMapper();
         om.registerModule(new JavaTimeModule());
         om.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
+                com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator.builder().allowIfSubType("com.team.ecommerce.").allowIfSubType("java.util.").allowIfSubType("java.time.").allowIfSubType("java.math.").build(),
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
@@ -51,7 +51,7 @@ public class RedisConfig {
         ObjectMapper om = new ObjectMapper();
         om.registerModule(new JavaTimeModule());
         om.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
+                com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator.builder().allowIfSubType("com.team.ecommerce.").allowIfSubType("java.util.").allowIfSubType("java.time.").allowIfSubType("java.math.").build(),
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );

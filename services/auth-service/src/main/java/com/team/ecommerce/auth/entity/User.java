@@ -55,6 +55,10 @@ public class User extends BaseEntity {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
+    @Column(name = "security_version", nullable = false)
+    @Builder.Default
+    private Integer securityVersion = 0;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
