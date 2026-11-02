@@ -76,3 +76,5 @@ Bạn cùng nhóm chỉ cần pull source và cấu hình `EXPO_PUBLIC_API_URL=h
 ## Đo kiểm
 
 `python scripts/check-service-boundaries.py` chặn SQL/import entity xuyên dịch vụ. `infra/k6/catalog.js` đo 20 request/giây trong 30 giây, ngưỡng lỗi <1%, p95 <1500ms. Đổi `CACHE_ENABLED` rồi recreate Product để so sánh. Báo cáo đo trên máy thực tế sẽ nêu rõ cấu hình và giới hạn, không suy ra sức chịu tải production từ một bài test ngắn.
+
+Lệnh cũ `./scripts/start-cloud-server.ps1` và `./scripts/start-microservices.ps1` hiện cũng chuyển sang Docker độc lập, không khởi động JAR cũ hoặc database chung. Có thể dùng `./scripts/start-cloud-server.ps1 -Restart -Service product-service` để restart riêng Product.

@@ -7,5 +7,5 @@ $user=[Security.Principal.WindowsIdentity]::GetCurrent().Name
 $trigger=New-ScheduledTaskTrigger -AtLogOn -User $user
 $principal=New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 $settings=New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 2) -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-Register-ScheduledTask -TaskName 'Eshop-Cloud-Server' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Start existing E-Shop backend and data containers after Windows login.' -Force | Out-Null
+Register-ScheduledTask -TaskName 'Eshop-Cloud-Server' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Start independent E-Shop Docker services after Windows login.' -Force | Out-Null
 Write-Output 'Startup task Eshop-Cloud-Server installed. Docker Desktop must also start at login.'

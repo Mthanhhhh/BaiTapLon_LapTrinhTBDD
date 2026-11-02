@@ -24,3 +24,16 @@ p95 giảm 74.5%. Bài đo cố định 20 request/giây nên không dùng số 
 - PASS: 16 request phân phối 8/8 vào hai Product và 8/8 vào hai Gateway.
 
 Các phép thử tạo giao dịch QA được chạy trên database staging riêng, không ghi vào database nguồn đang phục vụ người dùng. Không có thanh toán ngân hàng thật.
+
+## Kiểm tra sau triển khai
+
+- 47 backend unit tests và 3 bài test batch loader; CI GitHub đã đạt.
+- Giữ nguyên số bản ghi từ nguồn: 414 tài khoản, 1.140 sản phẩm, 55.471 đơn, 54.833 bản ghi thanh toán (lịch sử demo; không phải khoản thu ngân hàng thật).
+- Quyền DB của cả bốn app từ chối truy cập schema khác.
+- HTTPS trả 200 cho health, chi tiết sản phẩm, cấu hình OAuth và trang web.
+- Mở shop qua owner API idempotent; vai trò SELLER được cấp qua Kafka; bản ghi QA đã xóa.
+- Redis rate limit: 20 request hợp lệ với ngưỡng, 5 request tiếp theo bị HTTP 429 trên IP QA riêng.
+- Dừng một Product instance: 15/15 request vẫn HTTP 200; sau phép thử khôi phục đủ hai instance.
+- WebSocket với Origin web hợp lệ nhận CONNECTED; Origin lạ bị 403.
+
+CI và CD là hai bước riêng: CI đã được kiểm chứng; CD end-to-end còn cần runner máy chủ online.
