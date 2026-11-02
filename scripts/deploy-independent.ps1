@@ -25,6 +25,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Backup failed; deployment stopped.' }
 if ($LASTEXITCODE -ne 0) { throw 'Migration failed; deployment stopped.' }
 try {
 Invoke-Compose @('up','-d','--wait','--wait-timeout','420','--scale','product-service=2','--scale','api-gateway=2','--scale','order-service=2')
+Invoke-Compose @('exec','-T','nginx','nginx','-t')
+Invoke-Compose @('exec','-T','nginx','nginx','-s','reload')
 $port = ((Get-Content -LiteralPath $environmentPath | Where-Object { $_ -match '^PUBLIC_PORT=' }) -replace '^PUBLIC_PORT=','').Trim()
 if (-not $port) { $port = '18080' }
 $health = Invoke-RestMethod "http://127.0.0.1:$port/actuator/health"

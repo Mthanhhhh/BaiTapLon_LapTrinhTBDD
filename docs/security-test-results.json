@@ -1,0 +1,202 @@
+[
+  {
+    "test": "Product gateway routing and cache",
+    "pass": true
+  },
+  {
+    "test": "Security response headers",
+    "pass": true
+  },
+  {
+    "test": "Product cache repeat",
+    "pass": true
+  },
+  {
+    "test": "Existing account 1 login",
+    "pass": true
+  },
+  {
+    "test": "Existing account 1 profile",
+    "pass": true
+  },
+  {
+    "test": "Existing account 2 login",
+    "pass": true
+  },
+  {
+    "test": "Existing account 2 profile",
+    "pass": true
+  },
+  {
+    "test": "Existing account 3 login",
+    "pass": true
+  },
+  {
+    "test": "Existing account 3 profile",
+    "pass": true
+  },
+  {
+    "test": "Refresh token rejected as access",
+    "pass": true
+  },
+  {
+    "test": "Access token rejected as refresh",
+    "pass": true
+  },
+  {
+    "test": "Refresh rotation",
+    "pass": true
+  },
+  {
+    "test": "Refresh replay denied",
+    "pass": true
+  },
+  {
+    "test": "Replay revokes child session",
+    "pass": true
+  },
+  {
+    "test": "Buyer cannot view admin audit",
+    "pass": true
+  },
+  {
+    "test": "Admin can view audit",
+    "pass": true
+  },
+  {
+    "test": "Anonymous QR confirm denied",
+    "pass": true
+  },
+  {
+    "test": "QR generated",
+    "pass": true
+  },
+  {
+    "test": "QR requires browser proof",
+    "pass": true
+  },
+  {
+    "test": "Wrong proof cannot obtain tokens",
+    "pass": true
+  },
+  {
+    "test": "Authenticated QR approval",
+    "pass": true
+  },
+  {
+    "test": "QR single-use token delivery",
+    "pass": true
+  },
+  {
+    "test": "QR cannot replay",
+    "pass": true
+  },
+  {
+    "test": "Password reset does not expose OTP",
+    "pass": true
+  },
+  {
+    "test": "Password reset does not expose OTP",
+    "pass": true
+  },
+  {
+    "test": "Invalid OTP rejected",
+    "pass": true
+  },
+  {
+    "test": "Page bound",
+    "pass": true
+  },
+  {
+    "test": "Sort injection denied",
+    "pass": true
+  },
+  {
+    "test": "Internal API blocked",
+    "pass": true
+  },
+  {
+    "test": "Swagger blocked",
+    "pass": true
+  },
+  {
+    "test": "Actuator env blocked",
+    "pass": true
+  },
+  {
+    "test": "Other buyer order IDOR blocked",
+    "pass": true
+  },
+  {
+    "test": "All original password fingerprints unchanged",
+    "pass": true
+  },
+  {
+    "test": "Existing short password remains compatible",
+    "pass": true
+  },
+  {
+    "test": "Wrong password attempt 1",
+    "pass": true
+  },
+  {
+    "test": "Wrong password attempt 2",
+    "pass": true
+  },
+  {
+    "test": "Wrong password attempt 3",
+    "pass": true
+  },
+  {
+    "test": "Wrong password attempt 4",
+    "pass": true
+  },
+  {
+    "test": "Wrong password attempt 5",
+    "pass": true
+  },
+  {
+    "test": "Locked account rejects correct password",
+    "pass": true
+  },
+  {
+    "test": "Lock counter committed",
+    "pass": true
+  },
+  {
+    "test": "New short password registration rejected",
+    "pass": true
+  },
+  {
+    "test": "Audit append-only database permission",
+    "pass": true
+  },
+  {
+    "test": "Reset rate limit",
+    "pass": true
+  },
+  {
+    "test": "Valid DB challenge resets only QA fixture",
+    "pass": true
+  },
+  {
+    "test": "Consumed reset challenge cannot replay",
+    "pass": true
+  },
+  {
+    "test": "Reset revokes existing access immediately",
+    "pass": true
+  },
+  {
+    "test": "Reset revokes existing refresh",
+    "pass": true
+  },
+  {
+    "test": "New fixture password works",
+    "pass": true
+  },
+  {
+    "test": "Reset leaves 414 original passwords unchanged",
+    "pass": true
+  }
+]
