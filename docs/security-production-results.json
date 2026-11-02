@@ -1,0 +1,90 @@
+[
+  {
+    "test": "Public HTTPS health",
+    "pass": true
+  },
+  {
+    "test": "Public storefront and CSP",
+    "pass": true
+  },
+  {
+    "test": "Public product gateway",
+    "pass": true
+  },
+  {
+    "test": "Production old account 1 login",
+    "pass": true
+  },
+  {
+    "test": "Production old account 1 profile",
+    "pass": true
+  },
+  {
+    "test": "Public refresh rotation",
+    "pass": true
+  },
+  {
+    "test": "Public refresh cannot act as access",
+    "pass": true
+  },
+  {
+    "test": "Production old account 2 login",
+    "pass": true
+  },
+  {
+    "test": "Production old account 2 profile",
+    "pass": true
+  },
+  {
+    "test": "Production old account 3 login",
+    "pass": true
+  },
+  {
+    "test": "Production old account 3 profile",
+    "pass": true
+  },
+  {
+    "test": "Production 414 old password hashes unchanged",
+    "pass": true
+  },
+  {
+    "test": "Original user count preserved",
+    "pass": true
+  },
+  {
+    "test": "Hidden /internal/auth/accounts/1",
+    "pass": true
+  },
+  {
+    "test": "Hidden /v3/api-docs",
+    "pass": true
+  },
+  {
+    "test": "Hidden /actuator/env",
+    "pass": true
+  },
+  {
+    "test": "CORS allow-list",
+    "pass": true
+  },
+  {
+    "test": "CORS untrusted rejected",
+    "pass": true
+  },
+  {
+    "test": "WebSocket 101",
+    "pass": true
+  },
+  {
+    "test": "WebSocket 403",
+    "pass": true
+  },
+  {
+    "counts": {
+      "auth": 414,
+      "product": 1140,
+      "order": 55471,
+      "payment": 54833
+    }
+  }
+]

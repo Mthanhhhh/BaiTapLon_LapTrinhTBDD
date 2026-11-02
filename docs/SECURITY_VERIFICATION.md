@@ -2,6 +2,15 @@
 
 The independent service deployment is the target of this verification. Existing account password hashes are not migrated or re-encoded.
 
+## Deployment result
+
+- Release image tag `70c694253434` deployed successfully at 2026-11-03 02:24 +07 to the personal server. Nginx configuration validated and reloaded; all service healthchecks passed. Product, Order and Gateway retain two instances each.
+- Public HTTPS verification: **20/20 passed**, including three existing-account logins/profile reads, refresh rotation and token-purpose rejection, CORS allow-list and hostile-origin rejection, WebSocket 101 for the allowed origin and 403 for an untrusted origin, and hidden internal/debug endpoints.
+- All **414 original password hashes are unchanged** on the deployed database. Counts preserved: 414 users, 1,140 products, 55,471 orders and 54,833 payment records. These are application/demo records, not proof of external bank settlement.
+- CI [41509108374](https://github.com/Mthanhhhh/BaiTapLon_LapTrinhTBDD/actions/runs/41509108374) passed all backend/mobile, gitleaks, five Trivy image and ZAP jobs. Independent final Gateway image scan also reports zero HIGH/CRITICAL after the three documented conditional exceptions.
+- Private pre-deployment backups remain in `.tools/backups/20261103-021813` and the deployment script's subsequent backup. No database volumes were removed.
+- Deployment was executed locally with the checked-in deployment script. Automatic GitHub CD still needs the self-hosted runner online; do not interpret a queued CD job as an executed deployment.
+
 ## Verified locally
 
 - 50 HTTP/database security checks passed on an isolated clone: three existing-account logins and profiles; access/refresh separation; rotating refresh and replay-family revocation; buyer/admin authorization; QR browser proof, authenticated approval and one-time delivery; reset responses without OTP disclosure; invalid OTP; pagination/sort limits; hidden internal/docs/actuator routes; foreign-order denial; original password fingerprints unchanged; legacy short-password login; five failed logins and persistent temporary lock; new short-password rejection; append-only audit grants; reset rate limit; valid reset challenge, one-time consumption, immediate access/refresh revocation and new fixture-password login.
