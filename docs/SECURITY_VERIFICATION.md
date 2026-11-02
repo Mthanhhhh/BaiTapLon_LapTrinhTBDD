@@ -14,7 +14,7 @@ The independent service deployment is the target of this verification. Existing 
 
 ## Scoped advisory exceptions
 
-Two Spring 6.2 advisories have no patch on that line at verification time: CVE-2026-47884 (XsltView with implicit view rendering) and CVE-2026-47890 (SSE view fragments). The application uses REST controllers and WebSocket and has none of these view/SSE APIs. `.trivyignore.yaml` records these two conditional exceptions, expiring 2026-12-03. Re-review whenever adding MVC views/SSE or upgrading Spring; do not suppress all Spring advisories.
+Three Spring 6.2 advisories have no public patch on that line at verification time: CVE-2026-47884 (XsltView with implicit view rendering), CVE-2026-47890 (SSE view fragments), and CVE-2026-47892 (header predicates in WebFlux functional endpoints deployed with DispatcherServlet). The application uses REST controllers and WebSocket; Gateway runs Reactor Netty, not DispatcherServlet. `.trivyignore.yaml` records these conditional exceptions, expiring 2026-12-03. Re-review whenever adding views/SSE/functional endpoint authorization or upgrading Spring; do not suppress all Spring advisories. The [vendor advisory](https://spring.io/security/cve-2026-47892/) documents the last condition. Gateway Bouncy Castle dependencies are explicitly updated to 1.86.
 
 ## Reproduce / operate
 
