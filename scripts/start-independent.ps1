@@ -16,7 +16,7 @@ if (-not (Test-Path -LiteralPath $EnvironmentFile)) {
  $template=$template -replace '(?m)^MIGRATION_DATA_DIR=.*',"MIGRATION_DATA_DIR=$empty"
  $template=$template -replace '(?m)^PUBLIC_PORT=.*',"PUBLIC_PORT=$Port"
  $template=$template -replace '(?m)^PUBLIC_API_URL=.*',"PUBLIC_API_URL=$PublicApiUrl"
- [System.IO.File]::WriteAllText((Join-Path $root $EnvironmentFile),$template,(New-Object System.Text.UTF8Encoding($false)))
+ [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($EnvironmentFile),$template,(New-Object System.Text.UTF8Encoding($false)))
  Write-Host 'Created private environment file with distinct random credentials.'
 }
 & docker compose --env-file $EnvironmentFile -f infra/independent/compose.yml up -d --build --wait --wait-timeout 420 --scale product-service=2 --scale order-service=2 --scale api-gateway=2

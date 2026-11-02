@@ -11,7 +11,10 @@ if($Restart) {
  if($LASTEXITCODE -ne 0){throw 'Could not restart application containers.'}
 }
 if($Service) {
- & docker @composeArgs up -d --no-deps --wait --wait-timeout 420 @Service
+ $selectedArgs=@('up','-d','--no-deps','--wait','--wait-timeout','420')
+ foreach($name in $Service){if($name -in @('product-service','order-service','api-gateway')){$selectedArgs+=@('--scale',"$name=2")}}
+ $selectedArgs+=$Service
+ & docker @composeArgs @selectedArgs
 } else {
  & docker @composeArgs up -d --wait --wait-timeout 420 --scale product-service=2 --scale order-service=2 --scale api-gateway=2
 }

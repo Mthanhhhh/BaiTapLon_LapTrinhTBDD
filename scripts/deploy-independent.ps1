@@ -30,7 +30,7 @@ Write-Host 'Deployment verified. Database volumes and backups retained.'
 } catch {
     if ($previous -and $previous.tag) {
         $env:IMAGE_TAG = $previous.tag
-        Invoke-Compose @('up','-d','--no-build','--wait','--wait-timeout','420')
+        Invoke-Compose @('up','-d','--no-build','--wait','--wait-timeout','420','--scale','product-service=2','--scale','order-service=2','--scale','api-gateway=2')
         Write-Warning 'Previous application images restored; additive database migrations retained.'
     }
     throw
