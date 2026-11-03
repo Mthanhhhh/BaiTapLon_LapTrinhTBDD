@@ -50,7 +50,7 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 | D6 | Đã trong phạm vi đơn/tồn kho | Kafka, transactional outbox, Saga giữ/hoàn kho, inbox/version chống trùng, retry và DLT. Chưa có Saga qua cổng thanh toán tiền thật. |
 | D7 | Đã | Elasticsearch và đồng bộ catalog; có đường tìm kiếm SQL dự phòng. |
 | D8 | Làm hơn | Đã tách cả Auth, Product, Order, Payment và thêm Gateway. |
-| D9 | Chưa | Chưa có Prometheus + Grafana; mới có health, logs, k6. |
+| D9 | Đã | Prometheus + Grafana đang chạy; 18 panel, scrape đủ 8 instance, JVM/HTTP/Hikari/Outbox, 8 alert rules và test firing/recovery. Monitoring chỉ mở loopback, metrics có token riêng; chưa cấu hình gửi cảnh báo ra email/webhook. |
 | D10 | Chưa | Chưa dùng MongoDB; audit hiện lưu MySQL. |
 
 ## E. Bảo mật
@@ -75,7 +75,7 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 
 | Mã | Trạng thái | Hiện trạng |
 |---|---|---|
-| F1 | Đã | 56 backend unit tests (Auth 24, Product 13, Order 19), JUnit 5/Mockito; CI đã chạy đạt. |
+| F1 | Đã | 62 backend unit tests (Auth 30, Product 13, Order 19), JUnit 5/Mockito; CI đã chạy đạt. |
 | F2 | Một phần | Đã kiểm thử API/DB/Redis/Kafka thật bằng script; chưa có bộ MockMvc/Testcontainers tự động trong CI. |
 | F3 | Chưa | Có tài liệu API/samples, chưa có Postman collection hoàn chỉnh. |
 | F4 | Một phần | Có 3 bài test Node cho batch loader; chưa có Jest/test UI React Native. |
@@ -89,7 +89,7 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 | G1 | Đã | Dockerfile backend/web, Compose toàn hệ thống, lệnh khởi động một bước. |
 | G2 | Đã | GitHub, nhánh/commit, hợp nhất và push main. |
 | G3 | Đã | Actions build/test 5 dịch vụ, TypeScript/lint và test mobile; CI main đã đạt. |
-| G4 | Một phần | Workflow CD, runner, backup/migrate/health/rollback đã cấu hình. Runner đang offline, CD end-to-end chưa chạy xong. |
+| G4 | Đã | CI main → preflight đúng SHA → runner Windows → build/backup/migrate/deploy → kiểm tra HTTPS/monitoring đã chạy thành công, run 41577038006. Có khóa chống deploy đồng thời, chặn nhánh khác và rollback image khi lỗi. Runner cần giữ online. |
 | G5 | Đã | HTTPS qua Cloudflare Tunnel; API công khai đã kiểm tra. |
 | G6 | Đã | README và tài liệu khởi động, cập nhật, backup, rollback, dùng chung server cho nhóm. |
 | G7 | Đã ở cấu hình hiện tại | Secret trong file riêng bị ignore, có example, không đóng secret vào image/APK; đã quét lịch sử bằng gitleaks và thêm gate trong CI. |
@@ -112,4 +112,4 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 - AI Gemini hỗ trợ tư vấn/xếp hạng; batch request, giảm N+1, cache token và phân trang.
 - Đã có APK cài thử dùng API chung; chưa build lại APK cho mọi thay đổi code mới nhất.
 
-Ưu tiên tiếp theo: cấu hình SMTP/merchant thực tế; bật runner để xác nhận G4; bổ sung F2/F3/F5 và D9. Không nên xem bộ dữ liệu/lịch sử demo hay thanh toán COD là bằng chứng đã tích hợp thu tiền ngân hàng thật.
+Ưu tiên tiếp theo: cấu hình SMTP/merchant thực tế; bổ sung F2/F3/F5; cấu hình gửi cảnh báo ra ngoài nếu cần. Không nên xem bộ dữ liệu/lịch sử demo hay thanh toán COD là bằng chứng đã tích hợp thu tiền ngân hàng thật.

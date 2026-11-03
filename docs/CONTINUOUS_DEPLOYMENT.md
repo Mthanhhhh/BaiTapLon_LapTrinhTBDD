@@ -48,3 +48,12 @@ The script requires a clean tracked checkout, validates the expected SHA in CI, 
 - A failed deploy can leave the prior release running after rollback; inspect `last-attempt.json` and the workflow log.
 - A failure before container replacement (build/backup/migration) stops deployment. There is no need to replace healthy prior images in that case.
 - The server is still one personal machine; this does not provide cloud-provider uptime or host-level HA.
+
+## Verified run — 2026-11-03
+
+- Main CI: [41576816603](https://github.com/Mthanhhhh/BaiTapLon_LapTrinhTBDD/actions/runs/41576816603) — success.
+- Automatic deployment: [41577038006](https://github.com/Mthanhhhh/BaiTapLon_LapTrinhTBDD/actions/runs/41577038006) — preflight and deploy both succeeded on the personal Windows runner.
+- Deployed SHA: `b984ea546786356cf9b7e5cb24cd30d62395f263`, verified at 11:21 +07. `current.json` records this SHA and GitHub run ID; `last-attempt.json` reports SUCCESS.
+- Negative gate test: [41576694971](https://github.com/Mthanhhhh/BaiTapLon_LapTrinhTBDD/actions/runs/41576694971) deliberately dispatched from `codex/observability`; preflight rejected it with “Manual production deployments must target main” and the server job was skipped. This red run is an expected security test.
+- Post-deployment: 20/20 public HTTPS/auth/CORS/WebSocket checks and 11/11 live monitoring checks passed. All 414 existing password fingerprints and original data counts remained unchanged.
+- The rollback branch is implemented but this verification did not deliberately force a production failure/DB restoration. A successful deployment does not prove host-level disaster recovery.

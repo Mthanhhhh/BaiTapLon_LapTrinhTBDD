@@ -47,3 +47,9 @@ The helper preserves existing credentials and writes ignored secret files. On Li
 Prometheus and alert configuration: `infra/independent/monitoring`. CI checks rule syntax and firing/recovery tests. The live verifier checks all eight targets, real read-only catalog traffic, JVM/DB/Outbox metrics, loaded alert rules, Grafana datasource/dashboard and denied anonymous dashboard access.
 
 References: [Prometheus configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/), [Spring Boot Actuator](https://docs.spring.io/spring-boot/3.5/how-to/actuator.html), [Grafana provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/).
+
+## Live verification — 2026-11-03
+
+`verify-monitoring.py` passed 11/11 checks after the GitHub deployment. All eight application instances were scraped; real catalog requests, HTTP histogram buckets, JVM/Hikari/Outbox series and all eight alert rules were present. Grafana's provisioned 18-panel dashboard and Prometheus datasource were healthy, and anonymous dashboard access returned 401.
+
+Additional live tests confirmed that all five applications reject unauthenticated metrics requests (403); public Actuator restrictions remain in place. Alert firing/recovery fixtures passed promtool. At verification, Docker reported about 273 MiB for Grafana and 66 MiB for Prometheus; these are observations, not fixed RAM requirements.

@@ -1,0 +1,46 @@
+[
+  {
+    "test": "All eight service instances discovered and scraped",
+    "pass": true
+  },
+  {
+    "test": "Real catalog requests recorded",
+    "pass": true
+  },
+  {
+    "test": "HTTP histogram buckets available for p95",
+    "pass": true
+  },
+  {
+    "test": "JVM metrics from all five applications",
+    "pass": true
+  },
+  {
+    "test": "Database pool metrics available",
+    "pass": true
+  },
+  {
+    "test": "Outbox metrics collection healthy",
+    "pass": true
+  },
+  {
+    "test": "Eight alert rules loaded without errors",
+    "pass": true
+  },
+  {
+    "test": "Grafana database healthy",
+    "pass": true
+  },
+  {
+    "test": "Grafana can query Prometheus",
+    "pass": true
+  },
+  {
+    "test": "Operations dashboard provisioned",
+    "pass": true
+  },
+  {
+    "test": "Dashboard requires login",
+    "pass": true
+  }
+]
