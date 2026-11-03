@@ -55,7 +55,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,prometheus
 springdoc:
   api-docs:
     enabled: false
@@ -73,3 +73,8 @@ server.tomcat.threads.max: 40
 server.tomcat.accept-count: 40
 server.tomcat.connection-timeout: 5s
 server.max-http-request-header-size: 16KB
+
+management.metrics.tags.application: ${spring.application.name}
+management.metrics.tags.instance: ${HOSTNAME:local}
+management.metrics.distribution.percentiles-histogram.http.server.requests: true
+management.metrics.distribution.slo.http.server.requests: 50ms,100ms,250ms,500ms,1s,1500ms,3s

@@ -1,0 +1,53 @@
+groups:
+  - name: eshop-services
+    rules:
+      - alert: EShopInstanceDown
+        expr: up{job=~"auth-service|product-service|order-service|payment-service|api-gateway"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: 'Cannot scrape {{ $labels.job }} instance {{ $labels.instance }}'
+          description: 'Check container state, network and monitoring credential. A scrape failure does not alone prove the app is down.'
+      - alert: EShopServiceMissing
+        expr: absent(up{job="auth-service"}) or absent(up{job="product-service"}) or absent(up{job="order-service"}) or absent(up{job="payment-service"}) or absent(up{job="api-gateway"})
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: 'No discovered target for {{ $labels.job }}'
+      - alert: EShopHighErrorRate
+        expr: (sum by (application) (rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / clamp_min(sum by (application) (rate(http_server_requests_seconds_count[5m])), 0.001) > 0.05) and (sum by (application) (rate(http_server_requests_seconds_count[5m])) > 1)
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: '{{ $labels.application }} has more than 5% server errors'
+      - alert: EShopHighLatency
+        expr: (histogram_quantile(0.95, sum by (le,application) (rate(http_server_requests_seconds_bucket{uri!~"/actuator.*"}[5m]))) > 1.5) and (sum by (application) (rate(http_server_requests_seconds_count{uri!~"/actuator.*"}[5m])) > 0.2)
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: '{{ $labels.application }} p95 exceeds 1.5 seconds'
+      - alert: EShopHeapPressure
+        expr: sum by (application,instance) (jvm_memory_used_bytes{area="heap"}) / clamp_min(sum by (application,instance) (jvm_memory_max_bytes{area="heap"}),1) > 0.85
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: '{{ $labels.application }} heap exceeds 85%'
+      - alert: EShopDatabasePoolWaiting
+        expr: hikaricp_connections_pending > 0
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: '{{ $labels.application }} is waiting for database connections'
+      - alert: EShopOutboxStalled
+        expr: eshop_outbox_oldest_seconds > 120
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: '{{ $labels.application }} {{ $labels.kind }} outbox is delayed'
+          description: 'Inspect Kafka connectivity, publisher retries and consumer logs before replaying commands.'
+      - alert: EShopOutboxMetricsUnavailable
+        expr: eshop_outbox_collection_up == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: '{{ $labels.application }} cannot collect outbox metrics'

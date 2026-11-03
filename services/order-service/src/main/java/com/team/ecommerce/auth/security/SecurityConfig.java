@@ -42,6 +42,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                  .requestMatchers("/ws/promotions", "/ws/chat", "/api/v1/promotions/prices", "/api/v1/promotions/catalog").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                 .requestMatchers("/actuator/prometheus").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").denyAll()

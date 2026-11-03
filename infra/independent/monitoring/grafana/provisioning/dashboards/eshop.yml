@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: E-Shop Operations
+    orgId: 1
+    folder: E-Shop
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

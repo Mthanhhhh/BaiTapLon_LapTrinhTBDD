@@ -5,4 +5,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,prometheus
+
+management.metrics.tags.application: ${spring.application.name}
+management.metrics.tags.instance: ${HOSTNAME:local}
+management.metrics.distribution.percentiles-histogram.http.server.requests: true
+management.metrics.distribution.percentiles-histogram.spring.cloud.gateway.requests: true
+management.metrics.distribution.slo.http.server.requests: 50ms,100ms,250ms,500ms,1s,1500ms,3s

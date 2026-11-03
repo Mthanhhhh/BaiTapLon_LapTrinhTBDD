@@ -7,17 +7,67 @@ on:
     types: [completed]
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: eshop-production
   cancel-in-progress: false
 jobs:
+  preflight:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.gate.outputs.sha }}
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - name: Require current main SHA and successful CI before using the server runner
+        id: gate
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const {data: main} = await github.rest.repos.getBranch({owner, repo, branch: 'main'});
+            const sha = context.eventName === 'workflow_run' ? context.payload.workflow_run.head_sha : context.sha;
+            if (context.eventName === 'workflow_dispatch' && context.ref !== 'refs/heads/main') {
+              core.setFailed('Manual production deployments must target main.'); return;
+            }
+            if (sha !== main.commit.sha) {
+              core.notice('Skipping superseded commit; production deploys only the current main SHA.');
+              core.setOutput('deploy', 'false'); return;
+            }
+            const {data} = await github.rest.actions.listWorkflowRuns({owner, repo, workflow_id: 'ci.yml', head_sha: sha, branch: 'main', per_page: 100});
+            const passed = data.workflow_runs.some(run => run.head_sha === sha && run.conclusion === 'success' && ['push', 'workflow_dispatch'].includes(run.event));
+            if (!passed) {
+              core.setFailed('No successful CI for this exact main SHA. Run CI on main first.'); return;
+            }
+            core.setOutput('sha', sha);
+            core.setOutput('deploy', 'true');
   deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    needs: preflight
+    if: needs.preflight.outputs.deploy == 'true'
     runs-on: [self-hosted, Windows, X64, eshop-server]
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.preflight.outputs.sha }}
+          persist-credentials: false
+      - name: Reject stale job after runner wait
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const {data} = await github.rest.repos.getBranch({...context.repo, branch: 'main'});
+            if (data.commit.sha !== '${{ needs.preflight.outputs.sha }}') core.setFailed('Main advanced while queued; do not deploy a stale commit.');
       - name: Build, back up, migrate, deploy and verify
         shell: powershell
+        env:
+          DEPLOY_EXPECTED_SHA: ${{ needs.preflight.outputs.sha }}
         run: ./scripts/deploy-independent.ps1 -EnvironmentFile T:/ProjectTBDD/.env.independent.local
+      - name: Deployment summary
+        if: always()
+        shell: powershell
+        run: |
+          $state = 'T:/ProjectTBDD/.tools/deployment/current.json'
+          if (Test-Path -LiteralPath $state) {
+            '### Server deployment state' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content -LiteralPath $state | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }

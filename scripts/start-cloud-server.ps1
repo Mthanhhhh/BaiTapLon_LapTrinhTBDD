@@ -4,6 +4,8 @@ $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
 $environmentFile=Join-Path $root '.env.independent.local'
 if(-not(Test-Path -LiteralPath $environmentFile)) { & (Join-Path $PSScriptRoot 'start-independent.ps1'); return }
+& py -3 (Join-Path $PSScriptRoot 'setup-monitoring.py') --env $environmentFile
+if ($LASTEXITCODE -ne 0) { throw 'Monitoring credentials setup failed.' }
 $composeArgs=@('compose','--env-file',$environmentFile,'-f',(Join-Path $root 'infra/independent/compose.yml'))
 if($Restart) {
  $targets=if($Service){$Service}else{@('auth-service','product-service','order-service','payment-service','api-gateway')}

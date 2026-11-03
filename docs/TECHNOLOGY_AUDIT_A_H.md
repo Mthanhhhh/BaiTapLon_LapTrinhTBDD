@@ -20,13 +20,13 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 
 | Mã | Trạng thái | Hiện trạng |
 |---|---|---|
-| B1 | Đã | Java 21, Spring Boot 3.3.5. |
+| B1 | Đã | Java 21, Spring Boot 3.5.16; Gateway dùng Spring Cloud 2025.0.3. |
 | B2 | Đã | REST /api/v1, ApiResponse, PageResponse và xử lý lỗi tập trung. |
 | B3 | Đã | JPA/Hibernate; JdbcTemplate cho truy vấn, nghiệp vụ cần kiểm soát SQL. |
 | B4 | Đã | Security, JWT access/refresh, BCrypt, BUYER/SELLER/ADMIN. JWT hardening đã bổ sung: xem E2–E3. |
 | B5 | Đã | Bean Validation ở DTO và kiểm tra nghiệp vụ phía server. |
 | B6 | Làm hơn | Đã chuyển từ modular monolith sang 4 dịch vụ, 4 MySQL độc lập; mỗi dịch vụ chỉ dùng database của mình. Trao đổi qua API/Kafka, bản chiếu cục bộ. |
-| B7 | Đã | Swagger/OpenAPI cho phát triển; tắt ở profile triển khai. |
+| B7 | Một phần | Monolith cũ có springdoc/Swagger; POM của 4 service độc lập chưa có springdoc. Endpoint tài liệu bị chặn ngoài môi trường dev; cần bổ sung OpenAPI cho kiến trúc mới. |
 | B8 | Đã | Actuator health và Docker healthcheck. |
 | B9 | Đã | CORS allow-list, kiểm tra Origin WebSocket; có kiểm thử nguồn được phép và bị chặn. |
 
@@ -75,7 +75,7 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 
 | Mã | Trạng thái | Hiện trạng |
 |---|---|---|
-| F1 | Đã | 47 backend unit tests, JUnit 5/Mockito; CI đã chạy đạt. |
+| F1 | Đã | 56 backend unit tests (Auth 24, Product 13, Order 19), JUnit 5/Mockito; CI đã chạy đạt. |
 | F2 | Một phần | Đã kiểm thử API/DB/Redis/Kafka thật bằng script; chưa có bộ MockMvc/Testcontainers tự động trong CI. |
 | F3 | Chưa | Có tài liệu API/samples, chưa có Postman collection hoàn chỉnh. |
 | F4 | Một phần | Có 3 bài test Node cho batch loader; chưa có Jest/test UI React Native. |
@@ -92,7 +92,7 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 | G4 | Một phần | Workflow CD, runner, backup/migrate/health/rollback đã cấu hình. Runner đang offline, CD end-to-end chưa chạy xong. |
 | G5 | Đã | HTTPS qua Cloudflare Tunnel; API công khai đã kiểm tra. |
 | G6 | Đã | README và tài liệu khởi động, cập nhật, backup, rollback, dùng chung server cho nhóm. |
-| G7 | Đã ở cấu hình hiện tại | Secret trong file riêng bị ignore, có example, không đóng secret vào image/APK; quét lịch sử tự động còn thiếu ở E8. |
+| G7 | Đã ở cấu hình hiện tại | Secret trong file riêng bị ignore, có example, không đóng secret vào image/APK; đã quét lịch sử bằng gitleaks và thêm gate trong CI. |
 
 ## H. Seller và admin
 

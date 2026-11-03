@@ -1,0 +1,32 @@
+rule_files: [alerts.yml]
+evaluation_interval: 15s
+tests:
+  - name: Scrape failure fires and then recovers
+    interval: 15s
+    input_series:
+      - series: 'up{job="product-service",instance="test:8084"}'
+        values: '1 0x8 1x8'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: EShopInstanceDown
+        exp_alerts:
+          - exp_labels: {job: product-service, instance: 'test:8084', severity: critical}
+            exp_annotations:
+              summary: 'Cannot scrape product-service instance test:8084'
+              description: 'Check container state, network and monitoring credential. A scrape failure does not alone prove the app is down.'
+      - eval_time: 3m
+        alertname: EShopInstanceDown
+        exp_alerts: []
+  - name: Persistent outbox delay fires
+    interval: 15s
+    input_series:
+      - series: 'eshop_outbox_oldest_seconds{application="order-service",kind="command"}'
+        values: '180x16'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: EShopOutboxStalled
+        exp_alerts:
+          - exp_labels: {application: order-service, kind: command, severity: warning}
+            exp_annotations:
+              summary: 'order-service command outbox is delayed'
+              description: 'Inspect Kafka connectivity, publisher retries and consumer logs before replaying commands.'

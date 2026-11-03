@@ -19,5 +19,7 @@ if (-not (Test-Path -LiteralPath $EnvironmentFile)) {
  [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($EnvironmentFile),$template,(New-Object System.Text.UTF8Encoding($false)))
  Write-Host 'Created private environment file with distinct random credentials.'
 }
+& py -3 (Join-Path $PSScriptRoot 'setup-monitoring.py') --env $EnvironmentFile
+if ($LASTEXITCODE -ne 0) { throw 'Monitoring credentials setup failed.' }
 & docker compose --env-file $EnvironmentFile -f infra/independent/compose.yml up -d --build --wait --wait-timeout 420 --scale product-service=2 --scale order-service=2 --scale api-gateway=2
 if($LASTEXITCODE -ne 0){throw 'Startup failed; inspect docker compose logs.'}

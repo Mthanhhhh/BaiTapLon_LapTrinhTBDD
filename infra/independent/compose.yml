@@ -138,6 +138,7 @@ services:
     environment:
       SERVER_PORT: 8083
       SPRING_PROFILES_ACTIVE: independent
+      MONITORING_TOKEN: ${MONITORING_TOKEN:-}
       SMTP_ENABLED: ${SMTP_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -190,6 +191,7 @@ services:
     environment:
       SERVER_PORT: 8084
       SPRING_PROFILES_ACTIVE: independent
+      MONITORING_TOKEN: ${MONITORING_TOKEN:-}
       DB_HOST: product-db
       DB_USERNAME: product_svc
       DB_PASSWORD: ${PRODUCT_DB_PASSWORD:?required}
@@ -236,6 +238,7 @@ services:
     environment:
       SERVER_PORT: 8085
       SPRING_PROFILES_ACTIVE: independent
+      MONITORING_TOKEN: ${MONITORING_TOKEN:-}
       DB_HOST: order-db
       DB_USERNAME: order_svc
       DB_PASSWORD: ${ORDER_DB_PASSWORD:?required}
@@ -282,6 +285,7 @@ services:
     environment:
       SERVER_PORT: 8086
       SPRING_PROFILES_ACTIVE: independent
+      MONITORING_TOKEN: ${MONITORING_TOKEN:-}
       DB_HOST: payment-db
       DB_USERNAME: payment_svc
       DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?required}
@@ -327,6 +331,7 @@ services:
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: independent
+      MONITORING_TOKEN: ${MONITORING_TOKEN:-}
       SPRING_DATA_REDIS_HOST: redis
       AUTH_SERVICE_URL: http://nginx:8081
       PRODUCT_SERVICE_URL: http://nginx:8082
@@ -374,6 +379,56 @@ services:
       driver: json-file
       options: {max-size: 10m, max-file: "3"}
     restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    command: [--config.file=/etc/prometheus/prometheus.yml, --storage.tsdb.path=/prometheus, --storage.tsdb.retention.time=7d, --storage.tsdb.retention.size=512MB, --query.max-concurrency=4, --query.timeout=15s]
+    environment: {GOMEMLIMIT: 192MiB}
+    mem_limit: 320m
+    ports: ['127.0.0.1:${PROMETHEUS_PORT:-9090}:9090']
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ${MONITORING_SECRETS_DIR:-../../.tools/monitoring}/metrics.token:/run/secrets/metrics.token:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:9090/-/ready]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana:13.3.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-eshop-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana.password
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_PLUGINS_PREINSTALL_DISABLED: 'true'
+      GF_SERVER_ROOT_URL: http://localhost:${GRAFANA_PORT:-3000}
+      GOMEMLIMIT: 192MiB
+    mem_limit: 320m
+    ports: ['127.0.0.1:${GRAFANA_PORT:-3000}:3000']
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${MONITORING_SECRETS_DIR:-../../.tools/monitoring}/grafana.password:/run/secrets/grafana.password:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3000/api/health]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+    restart: unless-stopped
 volumes:
   auth-data:
   product-data:
@@ -382,3 +437,5 @@ volumes:
   redis-data:
   kafka-data:
   search-data:
+  prometheus-data:
+  grafana-data:
