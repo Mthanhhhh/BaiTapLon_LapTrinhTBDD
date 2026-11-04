@@ -75,12 +75,14 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 
 | Mã | Trạng thái | Hiện trạng |
 |---|---|---|
-| F1 | Đã | 62 backend unit tests (Auth 30, Product 13, Order 19), JUnit 5/Mockito; CI đã chạy đạt. |
-| F2 | Một phần | Đã kiểm thử API/DB/Redis/Kafka thật bằng script; chưa có bộ MockMvc/Testcontainers tự động trong CI. |
-| F3 | Chưa | Có tài liệu API/samples, chưa có Postman collection hoàn chỉnh. |
-| F4 | Một phần | Có 3 bài test Node cho batch loader; chưa có Jest/test UI React Native. |
-| F5 | Một phần | Có báo cáo PASS các luồng chính; chưa có ma trận testcase đầy đủ toàn hệ thống. |
+| F1 | Đã | JUnit 5/Mockito; 63 test backend chạy đạt ở workspace, gồm 2 MockMvc. |
+| F2 | Đã | MockMvc trong Maven verify của Product, cùng các script kiểm thử API/DB/Redis/Kafka đã có. |
+| F3 | Đã | Postman smoke collection; Newman local đạt 13 request, 22 assertion. |
+| F4 | Đã | Jest + React Native Testing Library cho giỏ nhanh, 3 bài test Node cho batch loader. CI có bước chạy cả hai. |
+| F5 | Đã | Ma trận tổng hợp Pass/Fail và phạm vi từng môi trường trong TEST_MATRIX.md. |
 | F6 | Đã | Có script, JSON kết quả và báo cáo k6 trước/sau Redis. |
+
+Xem [ma trận kiểm thử](TEST_MATRIX.md) để phân biệt lượt chạy mới, kết quả đã lưu và các ca cần thiết bị hoặc merchant.
 
 ## G. Triển khai và vận hành
 
@@ -99,7 +101,7 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 | Mã | Trạng thái | Hiện trạng |
 |---|---|---|
 | H1 | Đã | API seller/admin cho catalog, tồn kho, đơn, người dùng, danh mục và khuyến mãi; prefix một số API nằm dưới /api/v1/orders. |
-| H2 | Một phần/khác stack | Có giao diện seller/admin trong Expo/React Native Web; chưa có ứng dụng React + Vite + Ant Design riêng. |
+| H2 | Đã về chức năng | Có giao diện quản lý seller/admin trong Expo/React Native Web. React + Vite + Ant Design là stack từng cân nhắc trong danh sách tự chọn. |
 | H3 | Đã | Upload và phân phối ảnh qua Cloudinary. |
 
 ## Phần làm thêm ngoài kế hoạch ban đầu
@@ -112,4 +114,4 @@ Trạng thái: **Đã** = có triển khai; **Một phần** = còn thiếu tiê
 - AI Gemini hỗ trợ tư vấn/xếp hạng; batch request, giảm N+1, cache token và phân trang.
 - Đã có APK cài thử dùng API chung; chưa build lại APK cho mọi thay đổi code mới nhất.
 
-Ưu tiên tiếp theo: cấu hình SMTP/merchant thực tế; bổ sung F2/F3/F5; cấu hình gửi cảnh báo ra ngoài nếu cần. Không nên xem bộ dữ liệu/lịch sử demo hay thanh toán COD là bằng chứng đã tích hợp thu tiền ngân hàng thật.
+Ưu tiên tiếp theo: cấu hình SMTP/merchant thực tế; cấu hình gửi cảnh báo ra ngoài nếu cần. Không nên xem bộ dữ liệu/lịch sử demo hay thanh toán COD là bằng chứng đã tích hợp thu tiền ngân hàng thật.

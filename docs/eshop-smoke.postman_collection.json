@@ -1,0 +1,315 @@
+{
+  "info": {
+    "name": "E-Shop API smoke tests",
+    "description": "Kiểm tra HTTP chỉ đọc. Chạy cả collection theo thứ tự; danh sách đầu tiên tự lấy productId. Backend cần có dữ liệu sản phẩm.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "productId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Catalog và khuyến mãi",
+      "item": [
+        {
+          "name": "Danh sách và lấy ID sản phẩm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/products?page=0&size=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Danh sách đúng cấu trúc', () => pm.expect(pm.response.json().data.content).to.be.an('array'));",
+                  "const first = pm.response.json().data.content[0];",
+                  "pm.test('Có sản phẩm để kiểm tra', () => pm.expect(first?.id).to.be.a('number'));",
+                  "if (first?.id) pm.collectionVariables.set('productId', first.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chi tiết sản phẩm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/products/{{productId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Đúng ID', () => pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get('productId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tìm kiếm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/products/search?keyword=iphone&page=0&size=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Danh sách đúng cấu trúc', () => pm.expect(pm.response.json().data.content).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bộ lọc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/products/filter-options"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Có dữ liệu bộ lọc', () => pm.expect(pm.response.json().data).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gợi ý khách chưa đăng nhập",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/ai/recommendations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sessionId\":\"{{$guid}}\",\"keywords\":[],\"page\":0,\"size\":5}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Có trang đề xuất', () => pm.expect(pm.response.json().data.page.content).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Báo giá theo lô",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/promotions/prices",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productIds\":[{{productId}}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Phản hồi dạng danh sách', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Danh sách khuyến mãi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/promotions/catalog"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Có thời gian máy chủ và danh sách chiến dịch', () => { const data = pm.response.json().data; pm.expect(data.serverTime).to.be.a('string'); pm.expect(data.campaigns).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth và bảo mật",
+      "item": [
+        {
+          "name": "Cấu hình OAuth công khai",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/auth/oauth/config"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hồ sơ yêu cầu đăng nhập",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Yêu cầu đăng nhập', () => pm.expect(pm.response.code).to.be.oneOf([401,403]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Địa chỉ yêu cầu đăng nhập",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/addresses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Yêu cầu đăng nhập', () => pm.expect(pm.response.code).to.be.oneOf([401,403]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ví voucher yêu cầu đăng nhập",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/promotions/wallet"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Yêu cầu đăng nhập', () => pm.expect(pm.response.code).to.be.oneOf([401,403]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CORS cho frontend local",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:8082"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products?page=0&size=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Origin hợp lệ được phép', () => pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql('http://localhost:8082'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CORS chặn origin lạ",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "https://invalid.example"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products?page=0&size=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Origin lạ không được cấp quyền', () => { pm.expect(pm.response.code).to.be.oneOf([200,403]); pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.not.exist; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -69,6 +69,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(function Produ
       <View style={[styles.imageContainer, compact && {aspectRatio:1.15}]}>
         <RemoteImage
           sourceUrl={thumbnailUrl}
+          targetWidth={640}
           name={name}
           style={styles.image}
           resizeMode="cover"

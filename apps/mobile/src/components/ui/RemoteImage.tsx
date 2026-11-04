@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, ImageStyle, StyleProp, ViewStyle, ImageResizeMode } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../theme/colors';
+import { imageDeliveryUrl } from '../../utils/imageDelivery';
 
 /**
  * resolveImageUrl:
@@ -45,6 +46,7 @@ export interface RemoteImageProps {
   containerStyle?: StyleProp<ViewStyle>;
   resizeMode?: ImageResizeMode;
   iconSize?: number;
+  targetWidth?: number;
 }
 
 const getInitials = (str?: string | null): string => {
@@ -63,15 +65,19 @@ export const RemoteImage: React.FC<RemoteImageProps> = ({
   containerStyle,
   resizeMode = 'cover',
   iconSize = 28,
+  targetWidth,
 }) => {
   const [hasError, setHasError] = useState(false);
-  const resolved = resolveImageUrl(sourceUrl);
+  const original = resolveImageUrl(sourceUrl);
+  const resolved = original ? imageDeliveryUrl(original, targetWidth) : null;
+  const [useOriginal, setUseOriginal] = useState(false);
   const pastelColor = getPastelColorByName(name);
 
   // Reset error state when sourceUrl changes
   useEffect(() => {
     setHasError(false);
-  }, [sourceUrl]);
+    setUseOriginal(false);
+  }, [sourceUrl, targetWidth]);
 
   if (!resolved || hasError) {
     const initials = getInitials(name);
@@ -89,10 +95,10 @@ export const RemoteImage: React.FC<RemoteImageProps> = ({
 
   return (
     <Image
-      source={{ uri: resolved }}
+      source={{ uri: useOriginal ? original! : resolved }}
       style={style}
       resizeMode={resizeMode}
-      onError={() => setHasError(true)}
+      onError={() => !useOriginal && resolved !== original ? setUseOriginal(true) : setHasError(true)}
     />
   );
 };

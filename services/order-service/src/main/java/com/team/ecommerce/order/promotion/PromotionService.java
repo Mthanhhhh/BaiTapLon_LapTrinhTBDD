@@ -118,10 +118,17 @@ public class PromotionService {
  public List<Map<String,Object>> productPrices(Long user,List<Long> ids){
   require(ids!=null&&!ids.isEmpty()&&ids.size()<=60,"Cần 1–60 sản phẩm");var result=new ArrayList<Map<String,Object>>();
   var reads=new PriceReadContext();
-  for(Long id:new LinkedHashSet<>(ids)){
-   var skus=db.queryForList("SELECT s.id FROM ref_product_product_skus s JOIN ref_product_products p ON p.id=s.product_id WHERE p.id=? AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL AND s.stock_quantity>0 ORDER BY s.price,s.id LIMIT 1",Long.class,id);
-   if(skus.isEmpty())continue;
-   var candidates=new LinkedHashSet<>(skus);candidates.addAll(db.queryForList("SELECT f.sku_id FROM promo_flash_items f JOIN promo_campaigns c ON c.id=f.campaign_id WHERE f.product_id=? AND c.status='ACTIVE' AND c.starts_at<=UTC_TIMESTAMP(3) AND c.ends_at>UTC_TIMESTAMP(3)",Long.class,id));
+  var productIds=new LinkedHashSet<>(ids);require(productIds.stream().allMatch(id->id!=null&&id>0),"Mã sản phẩm không hợp lệ");
+  String placeholders=String.join(",",Collections.nCopies(productIds.size(),"?"));
+  // Read SKU summaries once for the batch; never read any buyer's cart for listing prices.
+  var skuRows=db.queryForList("SELECT -s.id AS cart_item_id,1 AS quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM ref_product_product_skus s JOIN ref_product_products p ON p.id=s.product_id JOIN ref_product_shops sh ON sh.id=p.shop_id WHERE p.id IN ("+placeholders+") AND s.deleted_at IS NULL AND s.stock_quantity>0 AND p.deleted_at IS NULL AND p.status='ACTIVE' AND sh.status='ACTIVE' AND sh.deleted_at IS NULL ORDER BY s.product_id,s.price,s.id",productIds.toArray());
+  Map<Long,LinkedHashSet<Long>> candidatesByProduct=new LinkedHashMap<>();
+  Map<Long,Map<String,Object>> rowsBySku=new HashMap<>();
+  for(var row:skuRows){long product=number(row.get("product_id")),sku=number(row.get("sku_id"));rowsBySku.put(sku,row);reads.values.put("sku-line:"+sku+":1",List.of(row));candidatesByProduct.computeIfAbsent(product,k->new LinkedHashSet<>());if(candidatesByProduct.get(product).isEmpty())candidatesByProduct.get(product).add(sku);}
+  var flashes=db.queryForList("SELECT f.product_id,f.sku_id FROM promo_flash_items f JOIN promo_campaigns c ON c.id=f.campaign_id WHERE f.product_id IN ("+placeholders+") AND c.status='ACTIVE' AND c.starts_at<=UTC_TIMESTAMP(3) AND c.ends_at>UTC_TIMESTAMP(3)",productIds.toArray());
+  for(var flash:flashes){long product=number(flash.get("product_id")),sku=number(flash.get("sku_id"));var row=rowsBySku.get(sku);if(row!=null&&number(row.get("product_id"))==product)candidatesByProduct.get(product).add(sku);}
+  for(Long id:productIds){
+   var candidates=candidatesByProduct.get(id);if(candidates==null)continue;
    Quote best=null;for(Long sku:candidates)try{Quote q=quote(user==null?0:user,new QuoteInput(List.of(),true,null,sku,1),reads);if(best==null||q.subtotal().subtract(q.discount()).compareTo(best.subtotal().subtract(best.discount()))<0)best=q;}catch(BadRequestException ignored){}
    if(best!=null){var offer=new LinkedHashMap<String,Object>();offer.put("productId",id);offer.put("skuId",best.lines().get(0).skuId());offer.put("shopPrice",best.subtotal());offer.put("afterVoucher",best.subtotal().subtract(best.discount()));offer.put("basePrice",best.lines().get(0).basePrice());offer.put("applied",best.applied());offer.put("note","Giá cho 1 sản phẩm; phí giao hàng tính riêng. Chỉ gồm mã tài khoản đủ điều kiện.");result.add(offer);}
   }return result;
@@ -135,11 +142,11 @@ public class PromotionService {
  private <T> T read(PriceReadContext context,String key,java.util.function.Supplier<T> loader){return context==null?loader.get():context.read(key,loader);}
  public Quote quote(long user,QuoteInput input){return quote(user,input,null);}
  private Quote quote(long user,QuoteInput input,PriceReadContext reads){
-  var items=db.queryForList("SELECT ci.id AS cart_item_id,ci.quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM cart_items ci JOIN carts cart ON cart.id=ci.cart_id JOIN ref_product_product_skus s ON s.id=ci.sku_id AND s.product_id=ci.product_id JOIN ref_product_products p ON p.id=s.product_id WHERE cart.user_id=? AND EXISTS(SELECT 1 FROM ref_product_shops sh WHERE sh.id=p.shop_id AND sh.status='ACTIVE' AND sh.deleted_at IS NULL) AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY s.id",user);
+  List<Map<String,Object>> items=input!=null&&input.skuId()!=null?new ArrayList<>():db.queryForList("SELECT ci.id AS cart_item_id,ci.quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM cart_items ci JOIN carts cart ON cart.id=ci.cart_id JOIN ref_product_product_skus s ON s.id=ci.sku_id AND s.product_id=ci.product_id JOIN ref_product_products p ON p.id=s.product_id WHERE cart.user_id=? AND EXISTS(SELECT 1 FROM ref_product_shops sh WHERE sh.id=p.shop_id AND sh.status='ACTIVE' AND sh.deleted_at IS NULL) AND p.status='ACTIVE' AND p.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY s.id",user);
   if(input!=null&&input.skuId()!=null){
    require(input.cartItemIds()==null,"Chỉ chọn mua ngay hoặc giỏ hàng");
    int quantity=input.quantity()==null?1:input.quantity();require(quantity>0&&quantity<=99,"Số lượng từ 1 đến 99");
-   items=db.queryForList("SELECT -s.id AS cart_item_id,? AS quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM ref_product_product_skus s JOIN ref_product_products p ON p.id=s.product_id JOIN ref_product_shops sh ON sh.id=p.shop_id WHERE s.id=? AND s.deleted_at IS NULL AND p.deleted_at IS NULL AND p.status='ACTIVE' AND sh.status='ACTIVE' AND sh.deleted_at IS NULL",quantity,input.skuId());
+   items=read(reads,"sku-line:"+input.skuId()+":"+quantity,()->db.queryForList("SELECT -s.id AS cart_item_id,? AS quantity,s.id AS sku_id,s.price,s.stock_quantity,s.name AS variant_name,p.id AS product_id,p.shop_id,p.name,p.thumbnail_url FROM ref_product_product_skus s JOIN ref_product_products p ON p.id=s.product_id JOIN ref_product_shops sh ON sh.id=p.shop_id WHERE s.id=? AND s.deleted_at IS NULL AND p.deleted_at IS NULL AND p.status='ACTIVE' AND sh.status='ACTIVE' AND sh.deleted_at IS NULL",quantity,input.skuId()));
   }else if(input!=null&&input.cartItemIds()!=null){
    var ids=new HashSet<>(input.cartItemIds());require(!ids.isEmpty()&&ids.size()<=100,"Chọn 1–100 sản phẩm");items.removeIf(i->!ids.contains(number(i.get("cart_item_id"))));require(items.size()==ids.size(),"Một số dòng giỏ hàng không còn hợp lệ hoặc không thuộc bạn");
   }else require(items.size()==db.queryForObject("SELECT COUNT(*) FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=?",Integer.class,user),"Giỏ hàng có phân loại không hợp lệ");

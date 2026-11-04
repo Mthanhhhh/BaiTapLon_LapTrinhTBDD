@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -27,7 +29,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment) throws Exception {
         http
             .cors(AbstractHttpConfigurer::disable)
             .csrf(AbstractHttpConfigurer::disable)
@@ -45,7 +47,9 @@ public class SecurityConfig {
                  .requestMatchers("/actuator/prometheus").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers("/internal/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").denyAll()
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs", "/v3/api-docs.yaml", "/v3/api-docs/**")
+                .access((authentication, context) -> new org.springframework.security.authorization.AuthorizationDecision(
+                        environment.acceptsProfiles(Profiles.of("api-docs"))))
                 .requestMatchers("/api/dev/**", "/actuator/**").denyAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
                 .anyRequest().authenticated()

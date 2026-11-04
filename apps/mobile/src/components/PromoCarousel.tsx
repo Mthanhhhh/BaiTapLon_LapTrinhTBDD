@@ -6,16 +6,16 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
 const BANNERS = [
- {title:'Mua vui mỗi ngày',image:require('../../assets/banners/eshop-original-01.png'),colors:['#184AE2','#6C8EFF'] as const,ink:'#FFFFFF',accent:'#FFEF65'},
- {title:'Flash sale đang mở',image:require('../../assets/banners/eshop-original-02.png'),colors:['#E4284D','#FF7890'] as const,ink:'#FFFFFF',accent:'#FFF2A1'},
- {title:'Công nghệ bên bạn',image:require('../../assets/banners/eshop-original-03.png'),colors:['#6E27C5','#BA8BFF'] as const,ink:'#FFFFFF',accent:'#FFF0A0'},
- {title:'Chăm mình một chút',image:require('../../assets/banners/eshop-original-04.png'),colors:['#FFDC46','#FFF09F'] as const,ink:'#332943',accent:'#442347'},
- {title:'Mặc đẹp mỗi ngày',image:require('../../assets/banners/eshop-original-05.png'),colors:['#007B83','#58CBBE'] as const,ink:'#FFFFFF',accent:'#F8F29A'},
- {title:'Góc nhà yêu thương',image:require('../../assets/banners/eshop-original-06.png'),colors:['#ED5424','#FFB37C'] as const,ink:'#FFFFFF',accent:'#FFF8B6'},
- {title:'Niềm vui bé xinh',image:require('../../assets/banners/eshop-original-07.png'),colors:['#B52279','#F39BCF'] as const,ink:'#FFFFFF',accent:'#FFEB94'},
- {title:'Sẵn sàng vận động',image:require('../../assets/banners/eshop-original-08.png'),colors:['#1055AA','#64B2EB'] as const,ink:'#FFFFFF',accent:'#BDFBE5'},
- {title:'Bếp ấm, nhà vui',image:require('../../assets/banners/eshop-original-09.png'),colors:['#E6B920','#FFE785'] as const,ink:'#332943',accent:'#3F3150'},
- {title:'Góc làm việc mới',image:require('../../assets/banners/eshop-original-10.png'),colors:['#4D33A8','#A99BED'] as const,ink:'#FFFFFF',accent:'#FFED9B'},
+ {title:'Mua vui mỗi ngày',image:require('../../assets/banners/eshop-original-01.webp'),colors:['#184AE2','#6C8EFF'] as const,ink:'#FFFFFF',accent:'#FFEF65'},
+ {title:'Flash sale đang mở',image:require('../../assets/banners/eshop-original-02.webp'),colors:['#E4284D','#FF7890'] as const,ink:'#FFFFFF',accent:'#FFF2A1'},
+ {title:'Công nghệ bên bạn',image:require('../../assets/banners/eshop-original-03.webp'),colors:['#6E27C5','#BA8BFF'] as const,ink:'#FFFFFF',accent:'#FFF0A0'},
+ {title:'Chăm mình một chút',image:require('../../assets/banners/eshop-original-04.webp'),colors:['#FFDC46','#FFF09F'] as const,ink:'#332943',accent:'#442347'},
+ {title:'Mặc đẹp mỗi ngày',image:require('../../assets/banners/eshop-original-05.webp'),colors:['#007B83','#58CBBE'] as const,ink:'#FFFFFF',accent:'#F8F29A'},
+ {title:'Góc nhà yêu thương',image:require('../../assets/banners/eshop-original-06.webp'),colors:['#ED5424','#FFB37C'] as const,ink:'#FFFFFF',accent:'#FFF8B6'},
+ {title:'Niềm vui bé xinh',image:require('../../assets/banners/eshop-original-07.webp'),colors:['#B52279','#F39BCF'] as const,ink:'#FFFFFF',accent:'#FFEB94'},
+ {title:'Sẵn sàng vận động',image:require('../../assets/banners/eshop-original-08.webp'),colors:['#1055AA','#64B2EB'] as const,ink:'#FFFFFF',accent:'#BDFBE5'},
+ {title:'Bếp ấm, nhà vui',image:require('../../assets/banners/eshop-original-09.webp'),colors:['#E6B920','#FFE785'] as const,ink:'#332943',accent:'#3F3150'},
+ {title:'Góc làm việc mới',image:require('../../assets/banners/eshop-original-10.webp'),colors:['#4D33A8','#A99BED'] as const,ink:'#FFFFFF',accent:'#FFED9B'},
 ] as const;
 export function PromoCarousel(){
  const navigation=useNavigation<NativeStackNavigationProp<RootStackParamList>>();

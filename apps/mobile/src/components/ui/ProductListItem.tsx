@@ -34,7 +34,7 @@ export const ProductListItem: React.FC<ProductCardProps> = React.memo(function P
       onPress={onPress}
     >
       <View style={styles.imageContainer}>
-        <RemoteImage
+        <RemoteImage targetWidth={256}
           sourceUrl={thumbnailUrl}
           name={name}
           style={styles.image}
