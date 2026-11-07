@@ -33,5 +33,15 @@ public class PromotionJobs {
  @KafkaListener(topics="payment-events",groupId="promotion-payment-compensation") @Transactional("orderTransactionManager")
  public void paymentFailed(Map<String,Object> event){Object order=event.get("orderId");if(!(order instanceof Number)||!(event.get("reason") instanceof String))return;long id=PromotionService.number(order);if(db.queryForObject("SELECT COUNT(*) FROM promo_reservations WHERE order_id=?",Integer.class,id)==0)return;var orders=db.queryForList("SELECT status,user_id FROM orders WHERE id=? FOR UPDATE",id);if(orders.isEmpty()||!"PENDING_PAYMENT".equals(orders.get(0).get("status")))return;if(promotions.release(id)){db.update("UPDATE orders SET status='CANCELLED',updated_at=UTC_TIMESTAMP(3) WHERE id=?",id);notify(PromotionService.number(orders.get(0).get("user_id")),"payment-failed-"+id,"Thanh toán không thành công","Đơn #"+id+" đã hủy; hàng và ưu đãi được hoàn lại.",id);}}
  private void notify(long user,String key,String title,String body,Long order){var input=new LinkedHashMap<String,Object>();input.put("userId",user);input.put("eventKey",key);input.put("title",title);input.put("body",body);input.put("orderId",order);outbox.enqueue("auth","notification",input,key+":"+user);}
- @Scheduled(fixedDelay=10000) public void clock(){if(db.queryForObject("SELECT COUNT(*) FROM promo_campaigns WHERE status='ACTIVE' AND (starts_at BETWEEN DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 10 SECOND) AND UTC_TIMESTAMP(3) OR ends_at BETWEEN DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 10 SECOND) AND UTC_TIMESTAMP(3))",Integer.class)>0)events.changed();else events.heartbeat();}
+ @Scheduled(fixedDelay=10000)
+ public void publishCampaignTransitions() {
+  Integer transitions = db.queryForObject("""
+      SELECT COUNT(*) FROM promo_campaigns
+      WHERE status = 'ACTIVE' AND (
+          starts_at BETWEEN DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 10 SECOND) AND UTC_TIMESTAMP(3)
+          OR ends_at BETWEEN DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 10 SECOND) AND UTC_TIMESTAMP(3)
+      )
+      """, Integer.class);
+  if (transitions != null && transitions > 0) events.changed();
+ }
 }

@@ -4,7 +4,7 @@ import {useNavigation,useRoute} from '@react-navigation/native';
 import {useQueryClient} from '@tanstack/react-query';
 import {AuthContext} from '../context/AuthContext';
 import {apiClient} from '../api/client';
-import {Campaign,useCountdown,usePromotionCatalog,useVoucherWallet,usePromotionLive} from '../hooks/usePromotions';
+import {Campaign,useCountdown,usePromotionCatalog,useVoucherWallet,usePromotionLive,usePromotionRealtime} from '../hooks/usePromotions';
 import {Typography,Button,RemoteImage} from '../components/ui';
 import {MarketplaceHeader} from '../components/MarketplaceHeader';
 import {COLORS} from '../theme';
@@ -20,6 +20,7 @@ function CampaignCard({campaign:c,onChange}:{campaign:Campaign;onChange:()=>void
  </View>;
 }
 export default function PromotionsScreen(){
+ usePromotionRealtime();
  const route=useRoute<any>();const [walletFilter,setWalletFilter]=useState('ALL');const [tab,setTab]=useState<'FLASH'|'VOUCHER'|'WALLET'>(route.params?.mode==='wallet'?'WALLET':'FLASH');const {user}=useContext(AuthContext);const n=useNavigation<any>(),cache=useQueryClient();const catalog=usePromotionCatalog(),wallet=useVoucherWallet();const live=usePromotionLive();const {now}=useCountdown();
  const refresh=()=>{void cache.invalidateQueries({queryKey:['promotions']});};
  const saved=new Map((wallet.data||[]).map(c=>[c.id,c]));const items=tab==='WALLET'?(wallet.data||[]).filter(c=>walletFilter==='ALL'||walletFilter==='USED'&&c.userUsed>0||walletFilter==='ENDING'&&new Date(c.endsAt).getTime()>now&&new Date(c.endsAt).getTime()-now<=86400000):(catalog.data?.campaigns||[]).filter(c=>c.kind===tab).map(c=>({...c,...saved.get(c.id)}));

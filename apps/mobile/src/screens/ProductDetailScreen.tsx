@@ -1,6 +1,6 @@
 import {useProductOffer} from '../hooks/useProductOffer';
 import {PurchaseSelector} from '../components/PurchaseSelector';
-import {usePromotionCatalog,useCountdown} from '../hooks/usePromotions';
+import {usePromotionCatalog,useCountdown,usePromotionRealtime} from '../hooks/usePromotions';
 import {provinceLabel} from '../utils/vietnamShipping';
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
@@ -89,6 +89,8 @@ export default function ProductDetailScreen() {
   const listingOffer=useProductOffer(numericProductId);
   const { data: ownedShop } = useShop();
   const promotionCatalog=usePromotionCatalog();
+  usePromotionRealtime(!!promotionCatalog.data?.campaigns.some(c=>
+    c.kind==='FLASH'&&c.phase==='LIVE'&&c.items?.some(item=>item.product_id===numericProductId)));
   const promotionClock=useCountdown();
   const contentWidth = useContentWidth();
 

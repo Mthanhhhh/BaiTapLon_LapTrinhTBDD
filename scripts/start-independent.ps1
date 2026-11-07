@@ -3,6 +3,7 @@ $ErrorActionPreference='Stop'
 $env:COMPOSE_PARALLEL_LIMIT='1'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
+$EnvironmentFile=$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($EnvironmentFile)
 if (-not (Test-Path -LiteralPath $EnvironmentFile)) {
  $template=Get-Content (Join-Path $root 'infra/independent/environment.example') -Raw
  foreach($name in @('JWT_SECRET','INTERNAL_SERVICE_TOKEN','AUTH_DB_PASSWORD','AUTH_ROOT_PASSWORD','PRODUCT_DB_PASSWORD','PRODUCT_ROOT_PASSWORD','ORDER_DB_PASSWORD','ORDER_ROOT_PASSWORD','PAYMENT_DB_PASSWORD','PAYMENT_ROOT_PASSWORD')) {
@@ -16,7 +17,7 @@ if (-not (Test-Path -LiteralPath $EnvironmentFile)) {
  $template=$template -replace '(?m)^MIGRATION_DATA_DIR=.*',"MIGRATION_DATA_DIR=$empty"
  $template=$template -replace '(?m)^PUBLIC_PORT=.*',"PUBLIC_PORT=$Port"
  $template=$template -replace '(?m)^PUBLIC_API_URL=.*',"PUBLIC_API_URL=$PublicApiUrl"
- [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($EnvironmentFile),$template,(New-Object System.Text.UTF8Encoding($false)))
+ [System.IO.File]::WriteAllText($EnvironmentFile,$template,(New-Object System.Text.UTF8Encoding($false)))
  Write-Host 'Created private environment file with distinct random credentials.'
 }
 & py -3 (Join-Path $PSScriptRoot 'setup-monitoring.py') --env $EnvironmentFile

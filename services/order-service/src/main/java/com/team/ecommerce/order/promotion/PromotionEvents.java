@@ -28,9 +28,7 @@ public class PromotionEvents extends TextWebSocketHandler {
  public List<Map<String,Object>> cachedCatalog(java.util.function.Supplier<List<Map<String,Object>>> loader){try{String cached=redis.opsForValue().get("promo:catalog");if(cached!=null)return json.readValue(cached,new com.fasterxml.jackson.core.type.TypeReference<List<Map<String,Object>>>(){});}catch(Exception ignored){}
   var value=loader.get();try{redis.opsForValue().set("promo:catalog",json.writeValueAsString(value),Duration.ofSeconds(1));}catch(Exception ignored){}return value;
  }
- public void broadcast(){broadcastType("PROMOTIONS_CHANGED");}
- public void heartbeat(){broadcastType("CLOCK");}
- private void broadcastType(String type){try{String message=json.writeValueAsString(Map.of("type",type,"serverTime",Instant.now().toString()));for(var s:sessions.values())try{if(s.isOpen())s.sendMessage(new TextMessage(message));}catch(Exception e){sessions.remove(s.getId());try{s.close();}catch(Exception ignored){}}}catch(Exception ignored){}}
+ public void broadcast(){try{String message=json.writeValueAsString(Map.of("type","PROMOTIONS_CHANGED","serverTime",Instant.now().toString()));for(var s:sessions.values())try{if(s.isOpen())s.sendMessage(new TextMessage(message));}catch(Exception e){sessions.remove(s.getId());try{s.close();}catch(Exception ignored){}}}catch(Exception ignored){}}
  @Override public void afterConnectionEstablished(WebSocketSession session)throws Exception{sessions.put(session.getId(),new ConcurrentWebSocketSessionDecorator(session,5000,16384));session.sendMessage(new TextMessage(json.writeValueAsString(Map.of("type","CONNECTED","serverTime",Instant.now().toString()))));}
  @Override public void afterConnectionClosed(WebSocketSession session,CloseStatus status){sessions.remove(session.getId());}
  @Override protected void handleTextMessage(WebSocketSession session,TextMessage message)throws Exception{if(message.getPayloadLength()>128){session.close(CloseStatus.TOO_BIG_TO_PROCESS);return;}if("ping".equals(message.getPayload()))sessions.get(session.getId()).sendMessage(new TextMessage("{\"type\":\"PONG\",\"serverTime\":\""+Instant.now()+"\"}"));}

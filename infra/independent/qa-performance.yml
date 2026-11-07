@@ -1,0 +1,7 @@
+services:
+  order-service:
+    environment:
+      JAVA_OPTS: -Xmx384m -XX:+ExitOnOutOfMemoryError -Dsun.net.inetaddr.ttl=5
+  api-gateway:
+    environment:
+      JAVA_OPTS: -Xmx256m -XX:+ExitOnOutOfMemoryError

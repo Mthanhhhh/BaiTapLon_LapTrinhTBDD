@@ -3,7 +3,7 @@ import {ScrollView,View,TextInput,TouchableOpacity,StyleSheet} from 'react-nativ
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {AuthContext} from '../context/AuthContext';
 import {apiClient} from '../api/client';
-import {Campaign,usePromotionLive} from '../hooks/usePromotions';
+import {Campaign,usePromotionLive,usePromotionRealtime} from '../hooks/usePromotions';
 import {useProductDetail} from '../hooks/useProducts';
 import {MarketplaceHeader} from '../components/MarketplaceHeader';
 import {Typography,Button} from '../components/ui';
@@ -14,6 +14,7 @@ type SkuDraft={skuId:number;name:string;salePrice:string;quota:string;perUserLim
 function Field({label,value,onChange,number=false}:{label:string;value:string;onChange:(v:string)=>void;number?:boolean}){return <View style={{gap:5}}><Typography variant="sm" weight="medium">{label}</Typography><TextInput accessibilityLabel={label} value={value} onChangeText={v=>onChange(number?v.replace(/[^0-9]/g,''):v)} keyboardType={number?'numeric':'default'} style={s.input}/></View>;}
 function iso(value:string){const date=new Date(value.trim().replace(' ','T'));if(!Number.isFinite(date.getTime()))throw Error('Nhập ngày giờ theo dạng YYYY-MM-DD HH:mm, ví dụ 2026-11-01 09:00.');return date.toISOString();}
 export default function PromotionManageScreen(){
+ usePromotionRealtime();
  const {user}=useContext(AuthContext),cache=useQueryClient(),live=usePromotionLive();
  const q=useQuery({queryKey:['promotions','manage',user?.id],enabled:!!user,queryFn:async()=>(await apiClient.get('/api/v1/promotions/manage')).data.data as {campaigns:Campaign[];admin:boolean;shopId:number}});
  const products=useQuery({queryKey:['sellerProducts',q.data?.shopId],enabled:!!q.data?.shopId,queryFn:async()=>(await apiClient.get(`/api/v1/products/shops/${q.data!.shopId}/manage/products`)).data.data as {id:number;name:string;status:string}[]});
